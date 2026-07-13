@@ -28,23 +28,9 @@ function remove_non_text($text) {
     return base64_decode($text);
 }
 
-$dev_sand_box = filter_var($_ENV['DEV_SANDBOX'] ?? 'true', FILTER_VALIDATE_BOOLEAN);
-
-if (isset($_ENV['THAID_CLIENT_ID']) && $_ENV['THAID_CLIENT_ID'] !== '') {
-    $client_id = remove_non_text($_ENV['THAID_CLIENT_ID']);
-    $redirect_uri = $_ENV['THAID_REDIRECT_URI'] ?? '';
-    $url_auth = $_ENV['THAID_URL_AUTH'] ?? '';
-} else {
-    if ($dev_sand_box == true) {
-        $client_id = remove_non_text('MlBDd0dKVjBJN2gwNDlQRXZYN0pxdGozZzBjb3VCWWQ');
-        $redirect_uri = "https://mis.kpo.go.th/systemapi/internet_authen_snb.php";  
-        $url_auth = 'https://imauthsbx.bora.dopa.go.th/api/v2/oauth2/auth/';
-    } else {
-        $client_id = remove_non_text('Z0ZiTXJoaHhwUWRtUnhoNVVtREliZUNFMUpWT1c2TjY');
-        $redirect_uri = "https://mis.kpo.go.th/systemapi/internet_authen_snb.php";  
-        $url_auth = 'https://imauth.bora.dopa.go.th/api/v2/oauth2/auth/';    
-    }
-}
+$client_id = remove_non_text($_ENV['THAID_CLIENT_ID'] ?? '');
+$redirect_uri = $_ENV['THAID_REDIRECT_URI'] ?? '';
+$url_auth = $_ENV['THAID_URL_AUTH'] ?? '';
 
 $link = $url_auth . '?response_type=code&client_id=' . urlencode($client_id) . '&redirect_uri=' . urlencode($redirect_uri) . '&scope=pid%20name%20address&state=authen';
 ?>

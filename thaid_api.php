@@ -134,30 +134,11 @@ $database = $_ENV['DB_NAME'] ?? 'moph_db';
 // Connect to Database
 $db = new mysql_connect($server, $database, $username, $password, 3306);
 
-// Sandbox environment detection
-$dev_sand_box = filter_var($_ENV['DEV_SANDBOX'] ?? 'true', FILTER_VALIDATE_BOOLEAN);
-
-if (isset($_ENV['THAID_CLIENT_ID']) && $_ENV['THAID_CLIENT_ID'] !== '') {
-    $client_id = remove_non_text($_ENV['THAID_CLIENT_ID']);
-    $secret_id = remove_non_text($_ENV['THAID_SECRET_ID'] ?? '');
-    $redirect_uri = $_ENV['THAID_REDIRECT_URI'] ?? '';
-    $url_token = $_ENV['THAID_URL_TOKEN'] ?? '';
-    $url_auth = $_ENV['THAID_URL_AUTH'] ?? '';
-} else {
-    if ($dev_sand_box == true) {
-        $client_id = remove_non_text('MlBDd0dKVjBJN2gwNDlQRXZYN0pxdGozZzBjb3VCWWQ');
-        $secret_id = remove_non_text('NlNhRHBUQ21PblhYd3B4elNXUnhIVjlNcEpFVWV2TTNiaDZMN2NFMA');
-        $redirect_uri = "https://mis.kpo.go.th/systemapi/internet_authen_snb.php";  
-        $url_token = 'https://imauthsbx.bora.dopa.go.th/api/v2/oauth2/token/';
-        $url_auth = 'https://imauthsbx.bora.dopa.go.th/api/v2/oauth2/auth/';
-    } else {
-        $secret_id = remove_non_text('Z2JJV0NHRFREcEo4cmZxeUhwckoyQ2JURlNlb0J6OG4ycGgyc3lCMg');
-        $client_id = remove_non_text('Z0ZiTXJoaHhwUWRtUnhoNVVtREliZUNFMUpWT1c2TjY');
-        $redirect_uri = "https://mis.kpo.go.th/systemapi/internet_authen_snb.php";  
-        $url_token = 'https://imauth.bora.dopa.go.th/api/v2/oauth2/token/';
-        $url_auth = 'https://imauth.bora.dopa.go.th/api/v2/oauth2/auth/';    
-    }
-}
+$client_id = remove_non_text($_ENV['THAID_CLIENT_ID'] ?? '');
+$secret_id = remove_non_text($_ENV['THAID_SECRET_ID'] ?? '');
+$redirect_uri = $_ENV['THAID_REDIRECT_URI'] ?? '';
+$url_token = $_ENV['THAID_URL_TOKEN'] ?? '';
+$url_auth = $_ENV['THAID_URL_AUTH'] ?? '';
 
 // POST handling
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
