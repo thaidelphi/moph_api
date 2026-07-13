@@ -11424,4 +11424,19 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
+--
+-- Table structure for table `sso_unauthorized_logs`
+--
+
+DROP TABLE IF EXISTS `sso_unauthorized_logs`;
+CREATE TABLE `sso_unauthorized_logs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `email` varchar(255) NOT NULL,
+  `fullname` varchar(255) DEFAULT NULL,
+  `google_id` varchar(100) DEFAULT NULL,
+  `login_time` datetime NOT NULL,
+  `note` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
+
 -- Dump completed on 2026-07-13 18:42:29

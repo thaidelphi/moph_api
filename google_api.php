@@ -187,25 +187,15 @@ if (($code_google == "") or ($state_google == "")) {
                     }
                 }
             } else {
-                // 3. กรณีไม่มี Gmail นี้ในระบบ: ให้บันทึกข้อมูลแต่กำหนด active = 'N' (ไม่สร้างบัญชีใน radcheck)
-                $stmt_check = $conn->prepare("SELECT COUNT(*) as count FROM radcheck_mirror WHERE username = ?");
-                $username_temp = $email;
-                $stmt_check->bind_param("s", $username_temp);
-                $stmt_check->execute();
-                $result_check = $stmt_check->get_result();
-                $row_check = $result_check->fetch_assoc();
+                // 3. กรณีไม่มี Gmail นี้ในระบบ: ให้บันทึกข้อมูลการพยายามล็อกอินลงตาราง Log แยกเฉพาะ (sso_unauthorized_logs) เท่านั้น
+                $login_time = date('Y-m-d H:i:s');
+                $note = "พยายามเข้าใช้งานระบบผ่าน Google แต่ไม่พบบัญชีที่เชื่อมโยง";
                 
-                if ($row_check['count'] == 0) {
-                    $date_register = date('Y-m-d H:i:s');
-                    $note = "ลงทะเบียนผ่าน Google (ยังไม่อนุมัติ)";
-                    $active = "N";
-                    
-                    $stmt_insert = $conn->prepare("INSERT INTO radcheck_mirror (username, email, fullname, date_register, active, note) VALUES (?, ?, ?, ?, ?, ?)");
-                    $stmt_insert->bind_param("ssssss", $username_temp, $email, $fullname, $date_register, $active, $note);
-                    $stmt_insert->execute();
-                }
+                $stmt_insert = $conn->prepare("INSERT INTO sso_unauthorized_logs (email, fullname, google_id, login_time, note) VALUES (?, ?, ?, ?, ?)");
+                $stmt_insert->bind_param("sssss", $email, $fullname, $google_id, $login_time, $note);
+                $stmt_insert->execute();
                 
-                $error_msg = "อีเมลนี้ยังไม่มีสิทธิ์เข้าใช้งานระบบ แต่อุปกรณ์ได้บันทึกข้อมูลของท่านเรียบร้อยแล้ว กรุณาติดต่อผู้ดูแลระบบเพื่อเปิดสิทธิ์การใช้งาน";
+                $error_msg = "อีเมลนี้ยังไม่มีสิทธิ์เข้าใช้งานระบบ แต่อุปกรณ์ได้บันทึกประวัติการพยายามล็อกอินของท่านเรียบร้อยแล้ว กรุณาติดต่อผู้ดูแลระบบเพื่อเปิดสิทธิ์การใช้งาน";
             }
             $conn->close();
         }
