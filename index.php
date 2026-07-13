@@ -53,253 +53,58 @@ $link = $url_auth . '?response_type=code&client_id=' . urlencode($client_id) . '
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>เข้าสู่ระบบด้วย ThaID - MOPH API</title>
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <title>Scan ThaID</title>
     <style>
-        :root {
-            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #020617 100%);
-            --panel-bg: rgba(30, 41, 59, 0.45);
-            --panel-border: rgba(255, 255, 255, 0.08);
-            --primary: #6366f1;
-            --primary-hover: #4f46e5;
-            --text-light: #f8fafc;
-            --text-muted: #94a3b8;
-            --accent: #14b8a6;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
         body {
-            font-family: 'Sarabun', 'Outfit', sans-serif;
-            background: var(--bg-gradient);
-            min-height: 100vh;
+            font-family: 'Sarabun', sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
             display: flex;
             justify-content: center;
             align-items: center;
-            color: var(--text-light);
-            overflow: hidden;
-            position: relative;
+            height: 100vh;
         }
-
-        /* Ambient light effects */
-        body::before {
-            content: '';
-            position: absolute;
-            width: 300px;
-            height: 300px;
-            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
-            top: 20%;
-            left: 25%;
-            z-index: 0;
-        }
-
-        body::after {
-            content: '';
-            position: absolute;
-            width: 350px;
-            height: 350px;
-            background: radial-gradient(circle, rgba(20, 184, 166, 0.15) 0%, transparent 70%);
-            bottom: 15%;
-            right: 20%;
-            z-index: 0;
-        }
-
-        .login-card {
-            background: var(--panel-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--panel-border);
-            border-radius: 24px;
-            padding: 40px 30px;
-            width: 100%;
-            max-width: 440px;
+        .container {
             text-align: center;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            z-index: 10;
-            position: relative;
-            animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            max-width: 400px;
+            width: 100%;
         }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .logo-container {
-            margin-bottom: 24px;
-            position: relative;
+        .thaid-link {
             display: inline-block;
+            transition: transform 0.2s ease;
+            margin-top: 20px;
         }
-
-        .logo-ring {
-            position: absolute;
-            top: -10px;
-            left: -10px;
-            right: -10px;
-            bottom: -10px;
-            border: 2px dashed rgba(99, 102, 241, 0.3);
-            border-radius: 50%;
-            animation: rotate 20s linear infinite;
+        .thaid-link:hover {
+            transform: scale(1.05);
         }
-
-        @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        .moph-logo {
-            width: 90px;
-            height: 90px;
-            background: rgba(15, 23, 42, 0.6);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 10px;
-        }
-
-        .moph-logo svg {
-            width: 100%;
-            height: 100%;
-            fill: var(--accent);
-        }
-
-        h1 {
-            font-size: 22px;
-            font-weight: 600;
-            margin-bottom: 12px;
-            letter-spacing: -0.5px;
-            background: linear-gradient(120deg, #f8fafc 0%, #cbd5e1 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .subtitle {
-            font-size: 14px;
-            color: var(--text-muted);
-            line-height: 1.6;
-            margin-bottom: 35px;
-        }
-
-        .thaid-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            color: var(--text-light);
-            text-decoration: none;
-            padding: 16px 28px;
-            border-radius: 16px;
-            font-size: 16px;
-            font-weight: 500;
+        img {
+            width: 150px;
+            height: auto;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            position: relative;
-            overflow: hidden;
         }
-
-        .thaid-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(
-                90deg,
-                transparent,
-                rgba(255, 255, 255, 0.08),
-                transparent
-            );
-            transition: 0.5s;
+        h2 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 20px;
         }
-
-        .thaid-btn:hover::before {
-            left: 100%;
-        }
-
-        .thaid-btn:hover {
-            transform: translateY(-2px);
-            border-color: var(--primary);
-            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.25);
-            background: linear-gradient(135deg, #273549 0%, #131d2e 100%);
-        }
-
-        .thaid-btn:active {
-            transform: translateY(1px);
-        }
-
-        .thaid-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            object-fit: contain;
-            transition: transform 0.3s ease;
-        }
-
-        .thaid-btn:hover .thaid-icon {
-            transform: scale(1.1);
-        }
-
-        .footer {
-            margin-top: 35px;
-            font-size: 11px;
-            color: var(--text-muted);
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            padding-top: 20px;
-        }
-
-        .footer a {
-            color: var(--accent);
-            text-decoration: none;
-            transition: color 0.2s ease;
-        }
-
-        .footer a:hover {
-            color: var(--primary);
-            text-decoration: underline;
+        p {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 20px;
         }
     </style>
 </head>
 <body>
-
-    <div class="login-card">
-        <div class="logo-container">
-            <div class="logo-ring"></div>
-            <div class="moph-logo">
-                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
-                </svg>
-            </div>
-        </div>
-        
-        <h1>เข้าสู่ระบบด้วย Digital ID</h1>
-        <p class="subtitle">ระบบยืนยันตัวตนสำหรับลงทะเบียนเข้าใช้งานอินเตอร์เน็ต<br>สำนักงานสาธารณสุขจังหวัดกำแพงเพชร</p>
-        
-        <a href="<?= htmlspecialchars($link) ?>" class="thaid-btn">
-            <img class="thaid-icon" src="./images/thaid1.png" alt="ThaID Logo" onerror="this.src='https://imauthsbx.bora.dopa.go.th/api/v2/oauth2/auth/favicon.ico';">
-            <span>เข้าสู่ระบบด้วย ThaID</span>
+    <div class="container">
+        <h2>ลงทะเบียนเข้าใช้งานอินเตอร์เน็ต</h2>
+        <p>คลิกรูปภาพด้านล่างเพื่อยืนยันตัวตนด้วย ThaID</p>
+        <a href="<?= htmlspecialchars($link) ?>" class="thaid-link">
+            <img src="./images/thaid.png" alt="Scan with ThaID" onerror="this.src='https://imauthsbx.bora.dopa.go.th/api/v2/oauth2/auth/favicon.ico';">
         </a>
-        
-        <div class="footer">
-            <p>ความปลอดภัยระดับมาตรฐานภาครัฐตามพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล (PDPA)</p>
-            <p style="margin-top: 6px;">พัฒนาโดย <a href="https://kpo.moph.go.th" target="_blank">สสจ.กำแพงเพชร</a></p>
-        </div>
     </div>
-
 </body>
 </html>

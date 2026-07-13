@@ -173,7 +173,7 @@ $state_thaid = _PARAM("state", "");
 
 if (($code_thaid == "") or ($state_thaid == "")) {
     $link = $url_auth.'?response_type=code&client_id='.$client_id.'&redirect_uri='.$redirect_uri.'&scope=pid name address&state=authen';  
-    echo "<a href='$link'><img src='./images/thaid1.png' width='100' height='100'></a>";
+    echo "<a href='$link'><img src='./images/thaid.png' width='100' height='100'></a>";
     exit;
 } elseif ($state_thaid == "authen") {
     $thaid_data = ThaID_GETDATA($code_thaid, $client_id, $secret_id, $redirect_uri);
