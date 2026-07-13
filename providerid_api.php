@@ -142,6 +142,10 @@ $moph_id_Secret_Key = getenv('MOPH_ID_SECRET_KEY') ?: ($_ENV['MOPH_ID_SECRET_KEY
 $providerID_Client_ID = getenv('PROVIDER_ID_CLIENT_ID') ?: ($_ENV['PROVIDER_ID_CLIENT_ID'] ?? '');
 $providerID_Secret_Key = getenv('PROVIDER_ID_SECRET_KEY') ?: ($_ENV['PROVIDER_ID_SECRET_KEY'] ?? '');
 $redirect_uri = getenv('PROVIDER_ID_REDIRECT_URI') ?: ($_ENV['PROVIDER_ID_REDIRECT_URI'] ?? '');
+// ตรวจสอบเพื่อรองรับกรณีเรียกผ่านไฟล์ alias provider.php เพื่อป้องกันการเกิด Mismatch Redirect URI กับระบบ MOPH ID
+if (basename($_SERVER['SCRIPT_NAME']) === 'provider.php') {
+    $redirect_uri = str_replace('providerid_api.php', 'provider.php', $redirect_uri);
+}
 
 // Check for callback parameters
 $code = $_GET['code'] ?? '';
