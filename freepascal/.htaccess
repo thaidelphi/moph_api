@@ -1,0 +1,12 @@
+# บล็อกการเข้าถึงโฟลเดอร์ freepascal ทั้งหมดจากภายนอก
+# โฟลเดอร์นี้ใช้เก็บ Source Code และ Binary ของ FreePascal เท่านั้น ไม่ควรเข้าถึงได้จาก Web
+
+<IfModule mod_authz_core.c>
+    # Apache 2.4+: ปฏิเสธการเข้าถึงจากทุก IP
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    # Apache 2.2 (Fallback): ปฏิเสธการเข้าถึงจากทุก IP
+    Order allow,deny
+    Deny from all
+</IfModule>
