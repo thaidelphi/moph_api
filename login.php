@@ -109,8 +109,8 @@ $provider_link = "{$moph_id_url}/oauth/redirect?client_id={$moph_id_client_id}&r
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>เข้าสู่ระบบ - ERP Management System</title>
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="assets/css/fonts.css" rel="stylesheet">
+    <link href="assets/fontawesome/css/all.min.css" rel="stylesheet">
     <style>
         :root {
             --primary:       #2563eb;
@@ -618,7 +618,7 @@ $provider_link = "{$moph_id_url}/oauth/redirect?client_id={$moph_id_client_id}&r
                 </p>
             </div>
             <div class="sidebar-graphic">
-                <img src="images/erp_dashboard.png" alt="ERP Dashboard">
+                <img src="images/login_illustration.png" alt="ERP Dashboard">
             </div>
         </div>
 

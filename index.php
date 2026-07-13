@@ -62,7 +62,7 @@ $provider_link = "{$moph_id_url}/oauth/redirect?client_id={$moph_id_Client_ID}&r
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>เลือกช่องทางเข้าสู่ระบบ - MOPH API</title>
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="assets/css/fonts.css" rel="stylesheet">
     <style>
         body {
             font-family: 'Sarabun', sans-serif;
