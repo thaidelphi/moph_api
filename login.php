@@ -123,7 +123,8 @@ $thaid_link = $thaid_url_auth . '?response_type=code&client_id=' . urlencode($th
 $moph_id_url = getenv('MOPH_ID_URL') ?: ($_ENV['MOPH_ID_URL'] ?? 'https://moph.id.th');
 $moph_id_client_id = getenv('MOPH_ID_CLIENT_ID') ?: ($_ENV['MOPH_ID_CLIENT_ID'] ?? '');
 $provider_redirect_uri = getenv('PROVIDER_ID_REDIRECT_URI') ?: ($_ENV['PROVIDER_ID_REDIRECT_URI'] ?? '');
-$provider_link = "{$moph_id_url}/oauth/redirect?client_id={$moph_id_client_id}&redirect_uri=" . urlencode($provider_redirect_uri) . "&response_type=code";
+$provider_redirect_uri_old = str_replace('providerid_api.php', 'provider.php', $provider_redirect_uri);
+$provider_link = "{$moph_id_url}/oauth/redirect?client_id={$moph_id_client_id}&redirect_uri=" . urlencode($provider_redirect_uri_old) . "&response_type=code";
 ?>
 <!DOCTYPE html>
 <html lang="th">
@@ -550,6 +551,45 @@ $provider_link = "{$moph_id_url}/oauth/redirect?client_id={$moph_id_client_id}&r
             transform: scale(0.95);
         }
 
+        /* ===== SSO Long Button (Wide Display) ===== */
+        .sso-long-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            text-decoration: none;
+            color: #475569;
+            font-weight: 600;
+            font-size: 0.875rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            transition: all var(--transition);
+            margin-top: 1rem;
+            cursor: pointer;
+        }
+
+        .sso-long-btn img {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+            border-radius: 4px;
+        }
+
+        .sso-long-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(37, 99, 235, 0.1);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .sso-long-btn:active {
+            transform: scale(0.98);
+        }
+
         /* ===== Alerts ===== */
         .alert {
             display: flex;
@@ -703,21 +743,13 @@ $provider_link = "{$moph_id_url}/oauth/redirect?client_id={$moph_id_client_id}&r
                 </div>
 
                 <!-- SSO Alternative Logins -->
-                <div class="sso-grid">
+                <div class="sso-grid" style="grid-template-columns: repeat(2, 1fr);">
                     <!-- ThaID Link -->
                     <a href="<?= htmlspecialchars($thaid_link) ?>" class="sso-grid-item">
                         <div class="sso-icon-box thaid-bg">
                             <img src="images/thaid.png" alt="ThaID Logo">
                         </div>
                         <span class="sso-label"><?=$label_thaid?></span>
-                    </a>
-
-                    <!-- ProviderID Link -->
-                    <a href="<?= htmlspecialchars($provider_link) ?>" class="sso-grid-item">
-                        <div class="sso-icon-box providerid-bg">
-                            <img src="images/providerid.png" alt="Provider ID Logo" onerror="this.src='https://moph.id.th/favicon.ico';">
-                        </div>
-                        <span class="sso-label"><?=$label_providerid?></span>
                     </a>
 
                     <!-- Google Authentication Option (Mock link) -->
@@ -733,6 +765,12 @@ $provider_link = "{$moph_id_url}/oauth/redirect?client_id={$moph_id_client_id}&r
                         <span class="sso-label"><?=$label_google?></span>
                     </a>
                 </div>
+
+                <!-- ProviderID Link - Wide display -->
+                <a href="<?= htmlspecialchars($provider_link) ?>" class="sso-long-btn">
+                    <img src="images/providerid.png" alt="Provider ID Logo" onerror="this.src='https://moph.id.th/favicon.ico';">
+                    <span><?=$label_providerid?></span>
+                </a>
 
                 <!-- Footer copyright -->
                 <div class="form-footer">
