@@ -24,14 +24,14 @@ load_env(__DIR__ . '/.env');
 session_start();
 
 // Page Text Configurations
-$title_browser = "เข้าสู่ระบบ - ERP Management System";
-$sidebar_logo_title = "ERP";
-$sidebar_logo_subtitle = "Enterprise Resource Planning";
-$sidebar_main_title = "ระบบบริหารจัดการองค์กร<br>สำนักงานสาธารณสุขจังหวัดกำแพงเพชร";
-$sidebar_desc = "ศูนย์กลางการบริหารงานและข้อมูลขององค์กร เพื่อการดำเนินงานที่มีประสิทธิภาพ";
+$title_browser = ""; //"เข้าสู่ระบบ - ERP Management System";
+$sidebar_logo_title = "System";
+$sidebar_logo_subtitle = "Autheticator";
+$sidebar_main_title = "สำนักงานสาธารณสุขจังหวัดกำแพงเพชร";
+$sidebar_desc = "ระบบจัดการการยืนยันตัวตน";
 
-$form_title = "เข้าสู่ระบบ";
-$form_subtitle = "ERP Management System";
+$form_title = "ยินดีต้อนรับเข้าสู่ระบบ";
+$form_subtitle = "System Authenticator";
 $label_username = "Username";
 $placeholder_username = "กรอก Username";
 $label_password = "Password";
@@ -293,10 +293,11 @@ $provider_link = "{$moph_id_url}/oauth/redirect?client_id={$moph_id_client_id}&r
             transform: scale(1.02);
             transition: transform 0.5s ease;
             mix-blend-mode: screen;
-            -webkit-mask-image: radial-gradient(circle, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 88%);
-            mask-image: radial-gradient(circle, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 88%);
+            -webkit-mask-image: radial-gradient(circle, rgba(0,0,0,1) 30%, rgba(0,0,0,0) 70%);
+            mask-image: radial-gradient(circle, rgba(0,0,0,1) 30%, rgba(0,0,0,0) 70%);
             transform-style: preserve-3d;
             backface-visibility: hidden;
+            filter: contrast(1.2) brightness(0.85) saturate(1.1);
         }
 
         /* ===== Right Pane (Form Area) ===== */
