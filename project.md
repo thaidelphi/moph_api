@@ -56,3 +56,29 @@
     *   **ไฟล์ที่ใช้งาน**:
         *   [`login.php`](file:///var/www/api/login.php): ใช้กำหนดค่า `redirect_uri` ใน SSO Link
         *   [`providerid_api.php`](file:///var/www/api/providerid_api.php): ใช้ส่งเป็นพารามิเตอร์ตรวจสอบตอนแลก Token
+
+---
+
+## 3. การตั้งค่าระบบ Google Login API
+
+ตัวแปรในส่วนนี้ใช้สำหรับการพิสูจน์และยืนยันตัวตนผ่านบริการ **Google OAuth 2.0**
+
+*   **`GOOGLE_CLIENT_ID`**
+    *   **คำอธิบาย**: Client ID ที่ลงทะเบียนไว้กับทาง Google Developers Console
+    *   **ไฟล์ที่ใช้งาน**: [`index.php`](file:///var/www/api/index.php) และ [`google_api.php`](file:///var/www/api/google_api.php)
+*   **`GOOGLE_CLIENT_SECRET`**
+    *   **คำอธิบาย**: Client Secret ที่ได้จาก Google Developers Console เพื่อตรวจสอบสิทธิ์ตอนแลก Token
+    *   **ไฟล์ที่ใช้งาน**: [`google_api.php`](file:///var/www/api/google_api.php)
+*   **`GOOGLE_REDIRECT_URI`**
+    *   **คำอธิบาย**: URL ปลายทางที่ระบุเป็นหน้า callback ในระบบของคุณ (`https://api1.kpo.go.th/google_api.php`)
+    *   **ไฟล์ที่ใช้งาน**: [`index.php`](file:///var/www/api/index.php) และ [`google_api.php`](file:///var/www/api/google_api.php)
+*   **`GOOGLE_URL_AUTH`**
+    *   **คำอธิบาย**: Endpoint หน้าต่างล็อกอินของ Google (`https://accounts.google.com/o/oauth2/v2/auth`)
+    *   **ไฟล์ที่ใช้งาน**: [`index.php`](file:///var/www/api/index.php) และ [`google_api.php`](file:///var/www/api/google_api.php)
+*   **`GOOGLE_URL_TOKEN`**
+    *   **คำอธิบาย**: API Endpoint เพื่อนำ authorization code ไปแลกเปลี่ยนเป็น Access Token (`https://oauth2.googleapis.com/token`)
+    *   **ไฟล์ที่ใช้งาน**: [`google_api.php`](file:///var/www/api/google_api.php)
+*   **`GOOGLE_URL_USERINFO`**
+    *   **คำอธิบาย**: API Endpoint เพื่อดึงโปรไฟล์ผู้ใช้งานพื้นฐานจาก Google (`https://www.googleapis.com/oauth2/v3/userinfo`)
+    *   **ไฟล์ที่ใช้งาน**: [`google_api.php`](file:///var/www/api/google_api.php)
+

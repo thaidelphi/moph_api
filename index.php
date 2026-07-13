@@ -53,7 +53,20 @@ $moph_id_url = getenv('MOPH_ID_URL') ?: ($_ENV['MOPH_ID_URL'] ?? 'https://moph.i
 $moph_id_Client_ID = getenv('MOPH_ID_CLIENT_ID') ?: ($_ENV['MOPH_ID_CLIENT_ID'] ?? '');
 $provider_redirect_uri = getenv('PROVIDER_ID_REDIRECT_URI') ?: ($_ENV['PROVIDER_ID_REDIRECT_URI'] ?? '');
 $provider_link = "{$moph_id_url}/oauth/redirect?client_id={$moph_id_Client_ID}&redirect_uri=" . urlencode($provider_redirect_uri) . "&response_type=code";
+
+// กำหนดการเชื่อมต่อและดึงลิงก์สำหรับการเข้าสู่ระบบด้วย Google
+$google_client_id = getenv('GOOGLE_CLIENT_ID') ?: ($_ENV['GOOGLE_CLIENT_ID'] ?? '');
+$google_redirect_uri = getenv('GOOGLE_REDIRECT_URI') ?: ($_ENV['GOOGLE_REDIRECT_URI'] ?? '');
+$google_url_auth = getenv('GOOGLE_URL_AUTH') ?: ($_ENV['GOOGLE_URL_AUTH'] ?? 'https://accounts.google.com/o/oauth2/v2/auth');
+$google_scope = 'openid email profile';
+// สร้าง URL สำหรับการยืนยันตัวตนผ่านระบบ Google OAuth 2.0
+$google_link = $google_url_auth . '?response_type=code' .
+               '&client_id=' . urlencode($google_client_id) .
+               '&redirect_uri=' . urlencode($google_redirect_uri) .
+               '&scope=' . urlencode($google_scope) .
+               '&state=google_auth';
 ?>
+
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -143,6 +156,14 @@ $provider_link = "{$moph_id_url}/oauth/redirect?client_id={$moph_id_Client_ID}&r
             <a href="<?= htmlspecialchars($provider_link) ?>" class="login-btn">
                 <img src="./images/providerid.png" alt="Login with ProviderID" onerror="this.src='https://moph.id.th/favicon.ico';">
             </a>
+
+            <div class="divider">หรือ</div>
+
+            <!-- Google Login Option (ทางเลือกการเข้าสู่ระบบผ่าน Google) -->
+            <a href="<?= htmlspecialchars($google_link) ?>" class="login-btn">
+                <img src="./images/google.png" alt="Login with Google" onerror="this.src='https://www.google.com/favicon.ico';">
+            </a>
+
         </div>
     </div>
 </body>
