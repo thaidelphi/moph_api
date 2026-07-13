@@ -1,6 +1,6 @@
 <?php
-// เริ่มต้นใช้งาน Session เพื่อส่งต่อข้อมูลและเปิดสิทธิ์อินเทอร์เน็ต
-session_start();
+// โหลด Security Configuration และเริ่มต้น Session
+require_once __DIR__ . '/security_config.php';
 
 // โหลดค่าตัวแปรสภาพแวดล้อมจากไฟล์ .env
 function load_env($filePath) {
@@ -130,6 +130,9 @@ if (($code_google == "") or ($state_google == "")) {
         $email = $user_info['email'] ?? '';
         $picture = $user_info['picture'] ?? '';
         $raw_json = $user_info_response;
+
+        // ป้องกัน Session Fixation
+        session_regenerate_id(true);
 
         // บันทึกข้อมูลที่ดึงได้ลง Session เพื่อใช้ในการทำ Handshake กับ FortiGate
         $_SESSION['user_sso_email'] = $email;

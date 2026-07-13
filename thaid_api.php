@@ -1,6 +1,6 @@
 <?php
-// เริ่มต้นใช้งาน Session
-session_start();
+// โหลด Security Configuration และเริ่มต้น Session
+require_once __DIR__ . '/security_config.php';
 
 // Load Environment Variables from .env file
 function load_env($filePath) {
@@ -124,6 +124,9 @@ if (($code_thaid == "") or ($state_thaid == "")) {
     $data = json_decode($thaid_data, true);
     $address = $data['address']['formatted'] ?? '';
     $raw_json = $thaid_data;
+
+    // ป้องกัน Session Fixation
+    session_regenerate_id(true);
 
     // บันทึกข้อมูลที่ได้รับลง Session
     $_SESSION['user_sso_email'] = $cid; // ใช้ เลขบัตรประชาชน เป็นชื่อผู้ใช้ฝั่ง SSO

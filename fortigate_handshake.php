@@ -1,6 +1,6 @@
 <?php
-// เริ่มต้นใช้งาน Session เพื่อดึงค่าที่จัดเก็บไว้ก่อนหน้านี้
-session_start();
+// โหลด Security Configuration และเริ่มต้น Session
+require_once __DIR__ . '/security_config.php';
 
 // โหลดค่าตัวแปรสภาพแวดล้อมจากไฟล์ .env
 function load_env($filePath) {

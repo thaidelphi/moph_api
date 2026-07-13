@@ -1,6 +1,6 @@
 <?php
-// เริ่มต้นใช้งาน Session
-session_start();
+// โหลด Security Configuration และเริ่มต้น Session
+require_once __DIR__ . '/security_config.php';
 
 // Load Environment Variables from .env file
 function load_env($filePath) {
@@ -169,6 +169,10 @@ if ($code === '') {
             
             if (isset($data['data'])) {
                 $profile = $data['data'];
+                
+                // ป้องกัน Session Fixation
+                session_regenerate_id(true);
+                
                 $fullname = IFNULL($profile['name_th'], '');
                 $provider_id = IFNULL($profile['provider_id'], '');
                 $email = IFNULL($profile['email'], '');

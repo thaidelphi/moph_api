@@ -21,7 +21,7 @@ function load_env($filePath) {
 }
 load_env(__DIR__ . '/.env');
 
-session_start();
+require_once __DIR__ . '/security_config.php';
 
 // Page Text Configurations
 $title_browser = ""; //"เข้าสู่ระบบ - ERP Management System";
@@ -98,6 +98,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
             
             if ($authenticated) {
+                // ป้องกัน Session Fixation โดยสร้าง Session ID ใหม่หลังการยืนยันตัวตนสำเร็จ
+                session_regenerate_id(true);
                 $_SESSION['username'] = $username;
                 $success_msg = "เข้าสู่ระบบสำเร็จ! กำลังนำคุณเข้าสู่ระบบ...";
                 

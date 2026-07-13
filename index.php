@@ -1,6 +1,6 @@
 <?php
-// เริ่มต้นใช้งาน Session สำหรับจัดเก็บค่าจาก FortiGate
-session_start();
+// โหลด Security Configuration และเริ่มต้น Session
+require_once __DIR__ . '/security_config.php';
 
 // บันทึกค่า magic และ redirurl ลงใน Session เมื่อมีการส่งต่อมาจาก FortiGate
 if (isset($_GET['magic'])) {
