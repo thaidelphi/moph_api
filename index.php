@@ -55,13 +55,19 @@ $has_name = in_array('name', $active_scopes);
 $has_address = in_array('address', $active_scopes);
 
 $link = $url_auth . '?response_type=code&client_id=' . urlencode($client_id) . '&redirect_uri=' . urlencode($redirect_uri) . '&scope=' . urlencode($default_scope) . '&state=authen';
+
+// ProviderID Configuration
+$moph_id_url = $_ENV['MOPH_ID_URL'] ?? 'https://moph.id.th';
+$moph_id_Client_ID = $_ENV['MOPH_ID_CLIENT_ID'] ?? '';
+$provider_redirect_uri = $_ENV['PROVIDER_ID_REDIRECT_URI'] ?? '';
+$provider_link = "{$moph_id_url}/oauth/redirect?client_id={$moph_id_Client_ID}&redirect_uri=" . urlencode($provider_redirect_uri) . "&response_type=code";
 ?>
 <!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scan ThaID</title>
+    <title>เลือกช่องทางเข้าสู่ระบบ - MOPH API</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -79,7 +85,7 @@ $link = $url_auth . '?response_type=code&client_id=' . urlencode($client_id) . '
             padding: 40px;
             border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            max-width: 400px;
+            max-width: 420px;
             width: 100%;
         }
         .scope-selector {
@@ -104,19 +110,40 @@ $link = $url_auth . '?response_type=code&client_id=' . urlencode($client_id) . '
             cursor: pointer;
             color: #4a5568;
         }
-        .thaid-link {
+        .login-section {
+            margin-top: 20px;
+        }
+        .login-btn {
             display: inline-block;
             transition: transform 0.2s ease;
-            margin-top: 10px;
+            margin: 10px 0;
         }
-        .thaid-link:hover {
-            transform: scale(1.05);
+        .login-btn:hover {
+            transform: scale(1.04);
         }
         img {
-            width: 150px;
+            max-width: 180px;
             height: auto;
             cursor: pointer;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
+        .divider {
+            margin: 15px 0;
+            font-size: 14px;
+            color: #aaa;
+            position: relative;
+        }
+        .divider::before, .divider::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            width: 40%;
+            height: 1px;
+            background: #e2e8f0;
+        }
+        .divider::before { left: 0; }
+        .divider::after { right: 0; }
         h2 {
             color: #333;
             margin-bottom: 10px;
@@ -125,17 +152,17 @@ $link = $url_auth . '?response_type=code&client_id=' . urlencode($client_id) . '
         p {
             color: #666;
             font-size: 14px;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>ลงทะเบียนเข้าใช้งานอินเตอร์เน็ต</h2>
-        <p>คลิกรูปภาพด้านล่างเพื่อยืนยันตัวตนด้วย ThaID</p>
+        <p>กรุณาเลือกช่องทางยืนยันตัวตนเพื่อเข้าใช้งาน</p>
         
         <div class="scope-selector">
-            <span class="scope-title">เลือกขอบเขตข้อมูล (Scope):</span>
+            <span class="scope-title">เลือกขอบเขตข้อมูลสำหรับ ThaID:</span>
             <label class="scope-label">
                 <input type="checkbox" id="scope-pid" value="pid" <?= $has_pid ? 'checked' : '' ?> disabled style="margin-right: 8px;"> pid (เลขบัตรประชาชน)
             </label>
@@ -147,9 +174,19 @@ $link = $url_auth . '?response_type=code&client_id=' . urlencode($client_id) . '
             </label>
         </div>
 
-        <a href="<?= htmlspecialchars($link) ?>" id="thaid-btn-link" class="thaid-link">
-            <img src="./images/thaid.png" alt="Scan with ThaID" onerror="this.src='https://imauthsbx.bora.dopa.go.th/api/v2/oauth2/auth/favicon.ico';">
-        </a>
+        <div class="login-section">
+            <!-- ThaID Login Option -->
+            <a href="<?= htmlspecialchars($link) ?>" id="thaid-btn-link" class="login-btn">
+                <img src="./images/thaid.png" alt="Login with ThaID" onerror="this.src='https://imauthsbx.bora.dopa.go.th/api/v2/oauth2/auth/favicon.ico';">
+            </a>
+
+            <div class="divider">หรือ</div>
+
+            <!-- ProviderID Login Option -->
+            <a href="<?= htmlspecialchars($provider_link) ?>" class="login-btn">
+                <img src="./images/providerid.webp" alt="Login with ProviderID" onerror="this.src='https://moph.id.th/favicon.ico';">
+            </a>
+        </div>
     </div>
 
     <script>
