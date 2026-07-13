@@ -2,7 +2,7 @@
 Options -Indexes
 
 # Block access to sensitive files
-<FilesMatch "^\.env|^\.git|^\.htaccess|\.sql$|\.md$">
+<FilesMatch "^\.env|^\.git|^\.htaccess|\.sql$|\.md$|\.log$">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>
