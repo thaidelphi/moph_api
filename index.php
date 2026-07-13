@@ -184,7 +184,7 @@ $provider_link = "{$moph_id_url}/oauth/redirect?client_id={$moph_id_Client_ID}&r
 
             <!-- ProviderID Login Option -->
             <a href="<?= htmlspecialchars($provider_link) ?>" class="login-btn">
-                <img src="./images/providerid.webp" alt="Login with ProviderID" onerror="this.src='https://moph.id.th/favicon.ico';">
+                <img src="./images/providerid.png" alt="Login with ProviderID" onerror="this.src='https://moph.id.th/favicon.ico';">
             </a>
         </div>
     </div>

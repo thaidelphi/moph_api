@@ -153,7 +153,7 @@ $raw_json = "";
 if ($code === '') {
     // Generate Auth Link
     $link = "{$moph_id_url}/oauth/redirect?client_id={$moph_id_Client_ID}&redirect_uri=" . urlencode($redirect_uri) . "&response_type=code";
-    echo "<a href='$link'><img src='./images/providerid.webp' width='200' height='100' alt='Login with ProviderID'></a>";
+    echo "<a href='$link'><img src='./images/providerid.png' width='200' height='100' alt='Login with ProviderID'></a>";
     exit;
 } else {
     $access_token = getMophIDToken($code);

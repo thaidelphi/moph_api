@@ -247,7 +247,7 @@ if ( $referer == '/systemapi/internet_authen_by_providerid.php' ) {
     $tmp = str_replace('{client_id}', $moph_id_Client_ID, $tmp);  // แทนที่ {client_id} ด้วย Client ID ของ MOPH ID
     $tmp = str_replace('{redirect_uri}', urlencode($redirect_uri), $tmp);   // แทนที่ {redirect_uri} ด้วย URL ที่กำหนดไว้
     $link =  $tmp;
-    echo "<a href='$link'><img src='./images/providerid.webp' width='200' height='100'></a>";	// แสดง Logo ของ Provider ID	
+    echo "<a href='$link'><img src='./images/providerid.png' width='200' height='100'></a>";	// แสดง Logo ของ Provider ID	
     exit;  // ออกจากสคริปต์ถ้า referer เป็นหน้า Logo ของ Provider ID
 } else { // ถ้า referer ไม่ใช่หน้า Logo ของ Provider ID
     $parsedUrl = parse_url($referer); // แยก URL เพื่อดึง query string
