@@ -7,3 +7,5 @@
   - **Input Sanitization and Validation**: Sanitize all incoming user data (GET/POST/COOKIE parameters). Prevent SQL Injection by using prepared statements (PDO/MySQLi with parameter binding) and XSS by escaping output with `htmlspecialchars` or equivalent.
   - **Secure Error Handling**: Disable display of raw errors to end users in production. Logs errors securely to the server error log instead of displaying system paths, database schemas, or raw stack traces.
   - **Secure Session Management**: Ensure session IDs are handled securely (e.g., cookie HTTP-only, secure flags where appropriate, and regenerating session IDs upon login to prevent session fixation).
+
+- **Code Commenting in Thai**: ทุกครั้งที่มีการเขียนหรือแก้ไขโค้ด จะต้องเขียน Comment เพื่ออธิบายการทำงานของ Source code ตัวแปร และ Logic ทุกครั้งเป็นภาษาไทย (Always write code comments in Thai to explain the source code, variables, and logic).
