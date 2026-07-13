@@ -1,0 +1,798 @@
+<?php
+// Load Environment Variables from .env file
+function load_env($filePath) {
+    if (!file_exists($filePath)) {
+        return;
+    }
+    $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos(trim($line), '#') === 0) {
+            continue;
+        }
+        $parts = explode('=', $line, 2);
+        if (count($parts) === 2) {
+            $name = trim($parts[0]);
+            $value = trim($parts[1]);
+            if (!array_key_exists($name, $_SERVER) && !array_key_exists($name, $_ENV)) {
+                putenv("{$name}={$value}");
+                $_ENV[$name] = $value;
+                $_SERVER[$name] = $value;
+            }
+        }
+    }
+}
+load_env(__DIR__ . '/.env');
+
+session_start();
+
+$error_msg = "";
+$success_msg = "";
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $username = trim($_POST['username'] ?? '');
+    $password = trim($_POST['password'] ?? '');
+    
+    if ($username !== '' && $password !== '') {
+        try {
+            $db_host = $_ENV['DB_HOST'] ?? '168.148.62.15';
+            $db_user = $_ENV['DB_USER'] ?? 'root';
+            $db_pass = $_ENV['DB_PASS'] ?? 'ssjkp#62@62';
+            $db_name = $_ENV['DB_NAME'] ?? 'radius';
+            
+            $conn = @new mysqli($db_host, $db_user, $db_pass, $db_name);
+            if ($conn->connect_error) {
+                throw new Exception("เชื่อมต่อฐานข้อมูล Radius ล้มเหลว");
+            }
+            $conn->set_charset("utf8");
+            
+            // 1. Check in radcheck_mirror
+            $stmt = $conn->prepare("SELECT tmp_passwd FROM radcheck_mirror WHERE username = ? LIMIT 1");
+            $stmt->bind_param("s", $username);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $authenticated = false;
+            
+            if ($result && $result->num_rows > 0) {
+                $row = $result->fetch_assoc();
+                if ($row['tmp_passwd'] === $password) {
+                    $authenticated = true;
+                }
+            }
+            
+            // 2. Check in radcheck if mirror check didn't pass
+            if (!$authenticated) {
+                $stmt2 = $conn->prepare("SELECT value FROM radcheck WHERE username = ? AND attribute = 'MD5-Password' LIMIT 1");
+                $stmt2->bind_param("s", $username);
+                $stmt2->execute();
+                $result2 = $stmt2->get_result();
+                if ($result2 && $result2->num_rows > 0) {
+                    $row2 = $result2->fetch_assoc();
+                    $db_val = $row2['value'];
+                    $hashed_input = md5($password);
+                    if ($db_val === $hashed_input || strpos($db_val, "'".$password."'") !== false) {
+                        $authenticated = true;
+                    }
+                }
+            }
+            
+            if ($authenticated) {
+                $_SESSION['username'] = $username;
+                $success_msg = "เข้าสู่ระบบสำเร็จ! กำลังนำคุณเข้าสู่ระบบ...";
+                echo "<script>setTimeout(function(){ window.location.href = 'index.php'; }, 1500);</script>";
+            } else {
+                $error_msg = "ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง";
+            }
+            $conn->close();
+        } catch (Exception $e) {
+            $error_msg = "เกิดข้อผิดพลาดในการตรวจสอบสิทธิ์: " . $e->getMessage();
+        }
+    } else {
+        $error_msg = "กรุณากรอก Username และ Password";
+    }
+}
+
+// Generate SSO authorization links
+$thaid_client_id = $_ENV['THAID_CLIENT_ID'] ?? '';
+$thaid_redirect_uri = $_ENV['THAID_REDIRECT_URI'] ?? '';
+$thaid_url_auth = $_ENV['THAID_URL_AUTH'] ?? '';
+$thaid_scope = $_ENV['THAID_SCOPE'] ?? 'pid name address';
+$thaid_link = $thaid_url_auth . '?response_type=code&client_id=' . urlencode($thaid_client_id) . '&redirect_uri=' . urlencode($thaid_redirect_uri) . '&scope=' . urlencode($thaid_scope) . '&state=authen';
+
+$moph_id_url = $_ENV['MOPH_ID_URL'] ?? 'https://moph.id.th';
+$moph_id_client_id = $_ENV['MOPH_ID_CLIENT_ID'] ?? '';
+$provider_redirect_uri = $_ENV['PROVIDER_ID_REDIRECT_URI'] ?? '';
+$provider_link = "{$moph_id_url}/oauth/redirect?client_id={$moph_id_client_id}&redirect_uri=" . urlencode($provider_redirect_uri) . "&response_type=code";
+?>
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เข้าสู่ระบบ - ERP Management System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary:       #2563eb;
+            --primary-hover: #1d4ed8;
+            --text-main:     #0f172a;
+            --text-muted:    #64748b;
+            --border-color:  #cbd5e1;
+            --transition:    250ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        *, *::before, *::after {
+            margin: 0; padding: 0; box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background: radial-gradient(circle at 50% 50%, rgba(37, 99, 235, 0.15) 0%, transparent 70%), linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            color: var(--text-main);
+        }
+
+        /* ===== Main Container Card ===== */
+        .login-box {
+            display: flex;
+            width: 100%;
+            max-width: 1060px;
+            height: 700px;
+            max-height: calc(100vh - 3rem);
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.15), 0 0 40px -10px rgba(37, 99, 235, 0.05);
+            overflow: hidden;
+            position: relative;
+            animation: cardEntrance 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        @keyframes cardEntrance {
+            from { opacity: 0; transform: translateY(30px) scale(0.98); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* ===== Left Pane (Branding Sidebar) ===== */
+        .login-sidebar {
+            width: 46%;
+            background: linear-gradient(135deg, #08245c 0%, #000d2d 100%);
+            position: relative;
+            padding: 2.75rem 2.5rem 0rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden;
+            color: #ffffff;
+        }
+
+        .login-sidebar::before {
+            content: '';
+            position: absolute;
+            top: -20%; left: -20%;
+            width: 80%; height: 80%;
+            background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 65%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        #sidebar-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            margin-bottom: 2.5rem;
+            z-index: 2;
+        }
+
+        .logo-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            background: #ffffff;
+            border-radius: 11px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            flex-shrink: 0;
+            padding: 3px;
+        }
+
+        .logo-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .logo-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .logo-title {
+            font-size: 1.7rem;
+            font-weight: 800;
+            color: #ffffff;
+            line-height: 1.1;
+            letter-spacing: 0.03em;
+        }
+
+        .logo-subtitle {
+            font-size: 0.72rem;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.85);
+            letter-spacing: 0.01em;
+        }
+
+        .sidebar-content {
+            z-index: 2;
+            margin-top: 0.5rem;
+        }
+
+        .sidebar-title {
+            font-size: 1.9rem;
+            font-weight: 700;
+            color: #ffffff;
+            line-height: 1.4;
+            margin-bottom: 0.85rem;
+        }
+
+        .sidebar-desc {
+            font-size: 0.82rem;
+            color: rgba(255, 255, 255, 0.82);
+            line-height: 1.6;
+            font-weight: 400;
+        }
+
+        .sidebar-graphic {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            margin-top: auto;
+            z-index: 2;
+            perspective: 800px;
+        }
+
+        .sidebar-graphic img {
+            max-width: 88%;
+            height: auto;
+            object-fit: contain;
+            transform: scale(1.02);
+            transition: transform 0.5s ease;
+            mix-blend-mode: screen;
+            -webkit-mask-image: radial-gradient(circle, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 88%);
+            mask-image: radial-gradient(circle, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 88%);
+            transform-style: preserve-3d;
+            backface-visibility: hidden;
+        }
+
+        /* ===== Right Pane (Form Area) ===== */
+        .login-form-pane {
+            width: 54%;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            padding: 3rem 3.5rem 2.25rem;
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        .form-wrapper {
+            margin-top: auto;
+            margin-bottom: auto;
+            width: 100%;
+            max-width: 410px;
+            align-self: center;
+        }
+
+        .form-header {
+            margin-bottom: 1.75rem;
+            text-align: left;
+        }
+
+        .form-title {
+            font-size: 2.1rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 0.35rem;
+        }
+
+        .form-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .form-group {
+            margin-bottom: 0.95rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 0.45rem;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .form-input {
+            width: 100%;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: #1e293b;
+            border-radius: 10px;
+            padding: 0.8rem 1rem 0.8rem 2.6rem;
+            font-size: 0.92rem;
+            font-family: 'Sarabun', sans-serif;
+            font-weight: 500;
+            outline: none;
+            transition: all var(--transition);
+        }
+
+        .form-input::placeholder {
+            color: #94a3b8;
+        }
+
+        .form-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
+
+        .input-icon-left {
+            position: absolute;
+            left: 0.95rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 0.88rem;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+        }
+
+        .form-group:focus-within .input-icon-left {
+            color: var(--primary);
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 0.85rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none; border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            padding: 0.25rem;
+            font-size: 0.88rem;
+            transition: color var(--transition);
+            z-index: 2;
+        }
+
+        .password-toggle:hover { color: var(--primary); }
+
+        .forgot-link-row {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 0.45rem;
+        }
+
+        .forgot-link {
+            font-size: 0.78rem; font-weight: 600;
+            color: var(--primary); text-decoration: none;
+            transition: color var(--transition);
+        }
+
+        .forgot-link:hover {
+            color: var(--primary-hover);
+            text-decoration: underline;
+        }
+
+        .btn-signin {
+            width: 100%;
+            background: var(--primary);
+            color: #ffffff;
+            padding: 0.85rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.98rem;
+            font-weight: 700;
+            font-family: 'Sarabun', sans-serif;
+            cursor: pointer;
+            margin-top: 1.5rem;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+            transition: all var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-signin:hover {
+            background: var(--primary-hover);
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .btn-signin:active { transform: translateY(0); }
+
+        /* ===== Divider ===== */
+        .divider {
+            display: flex; align-items: center; gap: 0.75rem;
+            margin: 1.5rem 0 1rem;
+        }
+
+        .divider-line {
+            flex: 1; height: 1px;
+            background: #e2e8f0;
+        }
+
+        .divider-text {
+            font-size: 0.75rem; color: var(--text-muted);
+            font-weight: 500; white-space: nowrap;
+        }
+
+        /* ===== SSO Alternative Flat Links ===== */
+        .sso-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+        }
+
+        .sso-flat-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            width: 100%;
+            padding: 0.65rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            color: #334155;
+            font-size: 0.88rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all var(--transition);
+            font-family: 'Sarabun', sans-serif;
+            cursor: pointer;
+            background: #ffffff;
+        }
+
+        .sso-flat-link:hover {
+            background: #f8fafc;
+            border-color: #94a3b8;
+            transform: translateY(-1px);
+        }
+
+        .sso-flat-link img {
+            width: 20px;
+            height: 20px;
+            object-fit: contain;
+        }
+
+        .sso-flat-link span {
+            display: inline-block;
+        }
+
+        .sso-flat-link:active {
+            transform: scale(0.98);
+        }
+
+        /* ===== Alerts ===== */
+        .alert {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            margin-bottom: 1.25rem;
+            font-size: 0.8rem;
+            border: 1px solid;
+            animation: alertSlide 0.4s ease both;
+        }
+
+        @keyframes alertSlide {
+            from { opacity: 0; transform: translateY(-8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .alert-error {
+            background: rgba(220, 60, 50, 0.06);
+            border-color: rgba(220, 60, 50, 0.2);
+            color: #c53030;
+        }
+
+        .alert-success {
+            background: rgba(34, 197, 94, 0.06);
+            border-color: rgba(34, 197, 94, 0.2);
+            color: #15803d;
+        }
+
+        .alert-icon {
+            margin-right: 0.75rem;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+        }
+
+        /* ===== Footer ===== */
+        .form-footer {
+            text-align: center;
+            margin-top: auto;
+            padding-top: 1.5rem;
+        }
+
+        .form-footer p {
+            font-size: 0.72rem; color: var(--text-muted); font-weight: 400;
+            line-height: 1.5;
+        }
+
+        /* ===== Responsive Adjustments ===== */
+        @media (max-width: 992px) {
+            body {
+                padding: 1rem;
+            }
+            .login-box {
+                height: auto;
+                max-width: 480px;
+                flex-direction: column;
+            }
+            .login-sidebar {
+                display: none;
+            }
+            .login-form-pane {
+                width: 100%;
+                padding: 2.75rem 2rem 2.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-box">
+
+        <!-- Left Sidebar (Branding Info & Isometric Illustration) -->
+        <div class="login-sidebar">
+            <canvas id="sidebar-canvas"></canvas>
+            <div class="sidebar-header">
+                <div class="logo-box">
+                    <img src="images/logo_moph.png" alt="MOPH Logo">
+                </div>
+                <div class="logo-text">
+                    <span class="logo-title">ERP</span>
+                    <span class="logo-subtitle">Enterprise Resource Planning</span>
+                </div>
+            </div>
+            <div class="sidebar-content">
+                <h1 class="sidebar-title">ระบบบริหารจัดการองค์กร<br>สำนักงานสาธารณสุขจังหวัดกำแพงเพชร</h1>
+                <p class="sidebar-desc">
+                    ศูนย์กลางการบริหารงานและข้อมูลขององค์กร เพื่อการดำเนินงานที่มีประสิทธิภาพ
+                </p>
+            </div>
+            <div class="sidebar-graphic">
+                <img src="images/erp_dashboard.png" alt="ERP Dashboard">
+            </div>
+        </div>
+
+        <!-- Right Sidebar (Login Form) -->
+        <div class="login-form-pane">
+            <div class="form-wrapper">
+                <div class="form-header">
+                    <h2 class="form-title">เข้าสู่ระบบ</h2>
+                    <span class="form-subtitle">ERP Management System</span>
+                </div>
+
+                <?php if ($error_msg !== ''): ?>
+                <div class="alert alert-error">
+                    <div class="alert-icon"><i class="fas fa-exclamation-circle"></i></div>
+                    <div><?=$error_msg?></div>
+                </div>
+                <?php endif; ?>
+
+                <?php if ($success_msg !== ''): ?>
+                <div class="alert alert-success">
+                    <div class="alert-icon"><i class="fas fa-check-circle"></i></div>
+                    <div><?=$success_msg?></div>
+                </div>
+                <?php endif; ?>
+
+                <form id="loginForm" method="POST" action="">
+                    <div class="form-group">
+                        <label for="username" class="form-label">Username</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon-left"><i class="far fa-user"></i></span>
+                            <input type="text" name="username" id="username" class="form-input" placeholder="กรอก Username" required autocomplete="username">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password" class="form-label">Password</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon-left"><i class="fas fa-lock"></i></span>
+                            <input type="password" name="password" id="password" class="form-input" placeholder="กรอก Password" required autocomplete="current-password" style="padding-right: 2.5rem;">
+                            <button type="button" class="password-toggle" onclick="togglePasswordVisibility()" aria-label="Toggle password visibility">
+                                <i class="far fa-eye" id="password-eye-icon"></i>
+                            </button>
+                        </div>
+                        <div class="forgot-link-row">
+                            <a href="#" class="forgot-link">ลืมรหัสผ่าน?</a>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-signin" id="btnSignIn">
+                        <span class="btn-text">เข้าสู่ระบบ</span>
+                    </button>
+                </form>
+
+                <!-- Divider -->
+                <div class="divider">
+                    <div class="divider-line"></div>
+                    <span class="divider-text">หรือเข้าสู่ระบบด้วย</span>
+                    <div class="divider-line"></div>
+                </div>
+
+                <!-- SSO Alternative Logins -->
+                <div class="sso-container">
+                    <!-- ThaID Link -->
+                    <a href="<?= htmlspecialchars($thaid_link) ?>" class="sso-flat-link">
+                        <img src="images/thaid.png" alt="ThaID Logo">
+                        <span>ลงชื่อเข้าใช้งานด้วย ThaID</span>
+                    </a>
+
+                    <!-- ProviderID Link -->
+                    <a href="<?= htmlspecialchars($provider_link) ?>" class="sso-flat-link">
+                        <img src="images/providerid.png" alt="Provider ID Logo" onerror="this.src='https://moph.id.th/favicon.ico';">
+                        <span>ลงชื่อเข้าใช้งานด้วย Provider ID</span>
+                    </a>
+
+                    <!-- Google Authentication Option (Mock link) -->
+                    <a href="#" class="sso-flat-link" onclick="alert('ระบบล็อกอิน Google อยู่ระหว่างการพัฒนา'); return false;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="flex-shrink: 0; margin-right: 2px;">
+                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22c-.66-.61-1.12-1.37-1.35-2.63z" fill="#FBBC05"/>
+                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
+                        </svg>
+                        <span>ลงชื่อเข้าใช้งานด้วย Google</span>
+                    </a>
+                </div>
+
+                <!-- Footer copyright -->
+                <div class="form-footer">
+                    <p>© 2026 กลุ่มงานสุขภาพดิจิทัล สำนักงานสาธารณสุขจังหวัดกำแพงเพชร</p>
+                    <p style="margin-top: 0.25rem;">Version 1.69.7.07 (Build 20260707)</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Background dots script and interactive tilt script -->
+    <script>
+        function togglePasswordVisibility() {
+            const pw = document.getElementById('password');
+            const eye = document.getElementById('password-eye-icon');
+            if (pw.type === 'password') {
+                pw.type = 'text';
+                eye.classList.replace('far', 'fas');
+                eye.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                pw.type = 'password';
+                eye.classList.replace('fas', 'far');
+                eye.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        }
+
+        // Particle Canvas Animation
+        (function() {
+            const canvas = document.getElementById('sidebar-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            
+            let width, height;
+            let particles = [];
+            const particleCount = 45;
+            
+            function resize() {
+                width = canvas.width = canvas.offsetWidth;
+                height = canvas.height = canvas.offsetHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+            
+            class Particle {
+                constructor() {
+                    this.x = Math.random() * width;
+                    this.y = Math.random() * height;
+                    this.vx = (Math.random() - 0.5) * 0.4;
+                    this.vy = (Math.random() - 0.5) * 0.4;
+                    this.radius = Math.random() * 2 + 1;
+                }
+                update() {
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    if (this.x < 0 || this.x > width) this.vx *= -1;
+                    if (this.y < 0 || this.y > height) this.vy *= -1;
+                }
+                draw() {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+                    ctx.fill();
+                }
+            }
+            
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new Particle());
+            }
+            
+            function animate() {
+                ctx.clearRect(0, 0, width, height);
+                
+                // Draw lines
+                for (let i = 0; i < particles.length; i++) {
+                    for (let j = i + 1; j < particles.length; j++) {
+                        const dist = Math.hypot(particles[i].x - particles[j].x, particles[i].y - particles[j].y);
+                        if (dist < 100) {
+                            ctx.beginPath();
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.strokeStyle = `rgba(255, 255, 255, ${0.08 * (1 - dist / 100)})`;
+                            ctx.lineWidth = 0.5;
+                            ctx.stroke();
+                        }
+                    }
+                }
+                
+                particles.forEach(p => {
+                    p.update();
+                    p.draw();
+                });
+                
+                requestAnimationFrame(animate);
+            }
+            animate();
+        })();
+
+        // 3D Parallax Graphic Tilt
+        (function() {
+            const sidebar = document.querySelector('.login-sidebar');
+            const graphic = sidebar.querySelector('.sidebar-graphic img');
+            
+            sidebar.addEventListener('mousemove', (e) => {
+                const rect = sidebar.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                if (graphic) {
+                    const w = rect.width;
+                    const h = rect.height;
+                    const rotateY = ((x / w) - 0.5) * 12; 
+                    const rotateX = -((y / h) - 0.5) * 12;
+                    graphic.style.transform = `scale(1.05) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+                    graphic.style.transition = 'transform 0.08s ease';
+                }
+            });
+
+            sidebar.addEventListener('mouseleave', () => {
+                if (graphic) {
+                    graphic.style.transform = 'scale(1.02) rotateX(0deg) rotateY(0deg)';
+                    graphic.style.transition = 'transform 0.6s cubic-bezier(0.25, 1, 0.5, 1)';
+                }
+            });
+        })();
+    </script>
+</body>
+</html>
