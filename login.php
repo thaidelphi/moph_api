@@ -23,6 +23,30 @@ load_env(__DIR__ . '/.env');
 
 session_start();
 
+// Page Text Configurations
+$title_browser = "เข้าสู่ระบบ - ERP Management System";
+$sidebar_logo_title = "ERP";
+$sidebar_logo_subtitle = "Enterprise Resource Planning";
+$sidebar_main_title = "ระบบบริหารจัดการองค์กร<br>สำนักงานสาธารณสุขจังหวัดกำแพงเพชร";
+$sidebar_desc = "ศูนย์กลางการบริหารงานและข้อมูลขององค์กร เพื่อการดำเนินงานที่มีประสิทธิภาพ";
+
+$form_title = "เข้าสู่ระบบ";
+$form_subtitle = "ERP Management System";
+$label_username = "Username";
+$placeholder_username = "กรอก Username";
+$label_password = "Password";
+$placeholder_password = "กรอก Password";
+$forgot_password_text = "ลืมรหัสผ่าน?";
+$btn_signin_text = "เข้าสู่ระบบ";
+$divider_text = "หรือเข้าสู่ระบบด้วย";
+
+$label_thaid = "ThaID";
+$label_providerid = "Provider ID";
+$label_google = "Google";
+
+$footer_text_1 = "© 2026 กลุ่มงานสุขภาพดิจิทัล สำนักงานสาธารณสุขจังหวัดกำแพงเพชร";
+$footer_text_2 = "Version 1.69.7.07 (Build 20260707)";
+
 $error_msg = "";
 $success_msg = "";
 
@@ -32,7 +56,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
     if ($username !== '' && $password !== '') {
         try {
-            $db_host = getenv('DB_HOST') ?: ($_ENV['DB_HOST'] ?? 'localhost');
+            $db_host = getenv('DB_HOST') ?: ($_ENV['DB_HOST'] ?? '168.148.62.15');
             $db_user = getenv('DB_USER') ?: ($_ENV['DB_USER'] ?? 'root');
             $db_pass = getenv('DB_PASS') ?: ($_ENV['DB_PASS'] ?? '');
             $db_name = getenv('DB_NAME') ?: ($_ENV['DB_NAME'] ?? 'radius');
@@ -90,15 +114,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 }
 
 // Generate SSO authorization links
-$thaid_client_id = $_ENV['THAID_CLIENT_ID'] ?? '';
-$thaid_redirect_uri = $_ENV['THAID_REDIRECT_URI'] ?? '';
-$thaid_url_auth = $_ENV['THAID_URL_AUTH'] ?? '';
-$thaid_scope = $_ENV['THAID_SCOPE'] ?? 'pid name address';
+$thaid_client_id = getenv('THAID_CLIENT_ID') ?: ($_ENV['THAID_CLIENT_ID'] ?? '');
+$thaid_redirect_uri = getenv('THAID_REDIRECT_URI') ?: ($_ENV['THAID_REDIRECT_URI'] ?? '');
+$thaid_url_auth = getenv('THAID_URL_AUTH') ?: ($_ENV['THAID_URL_AUTH'] ?? '');
+$thaid_scope = getenv('THAID_SCOPE') ?: ($_ENV['THAID_SCOPE'] ?? 'pid name address');
 $thaid_link = $thaid_url_auth . '?response_type=code&client_id=' . urlencode($thaid_client_id) . '&redirect_uri=' . urlencode($thaid_redirect_uri) . '&scope=' . urlencode($thaid_scope) . '&state=authen';
 
-$moph_id_url = $_ENV['MOPH_ID_URL'] ?? 'https://moph.id.th';
-$moph_id_client_id = $_ENV['MOPH_ID_CLIENT_ID'] ?? '';
-$provider_redirect_uri = $_ENV['PROVIDER_ID_REDIRECT_URI'] ?? '';
+$moph_id_url = getenv('MOPH_ID_URL') ?: ($_ENV['MOPH_ID_URL'] ?? 'https://moph.id.th');
+$moph_id_client_id = getenv('MOPH_ID_CLIENT_ID') ?: ($_ENV['MOPH_ID_CLIENT_ID'] ?? '');
+$provider_redirect_uri = getenv('PROVIDER_ID_REDIRECT_URI') ?: ($_ENV['PROVIDER_ID_REDIRECT_URI'] ?? '');
 $provider_link = "{$moph_id_url}/oauth/redirect?client_id={$moph_id_client_id}&redirect_uri=" . urlencode($provider_redirect_uri) . "&response_type=code";
 ?>
 <!DOCTYPE html>
@@ -106,7 +130,7 @@ $provider_link = "{$moph_id_url}/oauth/redirect?client_id={$moph_id_client_id}&r
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>เข้าสู่ระบบ - ERP Management System</title>
+    <title><?=$title_browser?></title>
     <link href="assets/css/fonts.css" rel="stylesheet">
     <link href="assets/fontawesome/css/all.min.css" rel="stylesheet">
     <style>
@@ -605,14 +629,14 @@ $provider_link = "{$moph_id_url}/oauth/redirect?client_id={$moph_id_client_id}&r
                     <img src="images/logo_moph.png" alt="MOPH Logo">
                 </div>
                 <div class="logo-text">
-                    <span class="logo-title">ERP</span>
-                    <span class="logo-subtitle">Enterprise Resource Planning</span>
+                    <span class="logo-title"><?=$sidebar_logo_title?></span>
+                    <span class="logo-subtitle"><?=$sidebar_logo_subtitle?></span>
                 </div>
             </div>
             <div class="sidebar-content">
-                <h1 class="sidebar-title">ระบบบริหารจัดการองค์กร<br>สำนักงานสาธารณสุขจังหวัดกำแพงเพชร</h1>
+                <h1 class="sidebar-title"><?=$sidebar_main_title?></h1>
                 <p class="sidebar-desc">
-                    ศูนย์กลางการบริหารงานและข้อมูลขององค์กร เพื่อการดำเนินงานที่มีประสิทธิภาพ
+                    <?=$sidebar_desc?>
                 </p>
             </div>
             <div class="sidebar-graphic">
@@ -624,8 +648,8 @@ $provider_link = "{$moph_id_url}/oauth/redirect?client_id={$moph_id_client_id}&r
         <div class="login-form-pane">
             <div class="form-wrapper">
                 <div class="form-header">
-                    <h2 class="form-title">เข้าสู่ระบบ</h2>
-                    <span class="form-subtitle">ERP Management System</span>
+                    <h2 class="form-title"><?=$form_title?></h2>
+                    <span class="form-subtitle"><?=$form_subtitle?></span>
                 </div>
 
                 <?php if ($error_msg !== ''): ?>
@@ -644,36 +668,36 @@ $provider_link = "{$moph_id_url}/oauth/redirect?client_id={$moph_id_client_id}&r
 
                 <form id="loginForm" method="POST" action="">
                     <div class="form-group">
-                        <label for="username" class="form-label">Username</label>
+                        <label for="username" class="form-label"><?=$label_username?></label>
                         <div class="input-wrapper">
                             <span class="input-icon-left"><i class="far fa-user"></i></span>
-                            <input type="text" name="username" id="username" class="form-input" placeholder="กรอก Username" required autocomplete="username">
+                            <input type="text" name="username" id="username" class="form-input" placeholder="<?=$placeholder_username?>" required autocomplete="username">
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label for="password" class="form-label">Password</label>
+                        <label for="password" class="form-label"><?=$label_password?></label>
                         <div class="input-wrapper">
                             <span class="input-icon-left"><i class="fas fa-lock"></i></span>
-                            <input type="password" name="password" id="password" class="form-input" placeholder="กรอก Password" required autocomplete="current-password" style="padding-right: 2.5rem;">
+                            <input type="password" name="password" id="password" class="form-input" placeholder="<?=$placeholder_password?>" required autocomplete="current-password" style="padding-right: 2.5rem;">
                             <button type="button" class="password-toggle" onclick="togglePasswordVisibility()" aria-label="Toggle password visibility">
                                 <i class="far fa-eye" id="password-eye-icon"></i>
                             </button>
                         </div>
                         <div class="forgot-link-row">
-                            <a href="#" class="forgot-link">ลืมรหัสผ่าน?</a>
+                            <a href="#" class="forgot-link"><?=$forgot_password_text?></a>
                         </div>
                     </div>
 
                     <button type="submit" class="btn-signin" id="btnSignIn">
-                        <span class="btn-text">เข้าสู่ระบบ</span>
+                        <span class="btn-text"><?=$btn_signin_text?></span>
                     </button>
                 </form>
 
                 <!-- Divider -->
                 <div class="divider">
                     <div class="divider-line"></div>
-                    <span class="divider-text">หรือเข้าสู่ระบบด้วย</span>
+                    <span class="divider-text"><?=$divider_text?></span>
                     <div class="divider-line"></div>
                 </div>
 
@@ -684,7 +708,7 @@ $provider_link = "{$moph_id_url}/oauth/redirect?client_id={$moph_id_client_id}&r
                         <div class="sso-icon-box thaid-bg">
                             <img src="images/thaid.png" alt="ThaID Logo">
                         </div>
-                        <span class="sso-label">ThaID</span>
+                        <span class="sso-label"><?=$label_thaid?></span>
                     </a>
 
                     <!-- ProviderID Link -->
@@ -692,7 +716,7 @@ $provider_link = "{$moph_id_url}/oauth/redirect?client_id={$moph_id_client_id}&r
                         <div class="sso-icon-box providerid-bg">
                             <img src="images/providerid.png" alt="Provider ID Logo" onerror="this.src='https://moph.id.th/favicon.ico';">
                         </div>
-                        <span class="sso-label">Provider ID</span>
+                        <span class="sso-label"><?=$label_providerid?></span>
                     </a>
 
                     <!-- Google Authentication Option (Mock link) -->
@@ -705,14 +729,14 @@ $provider_link = "{$moph_id_url}/oauth/redirect?client_id={$moph_id_client_id}&r
                                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
                             </svg>
                         </div>
-                        <span class="sso-label">Google</span>
+                        <span class="sso-label"><?=$label_google?></span>
                     </a>
                 </div>
 
                 <!-- Footer copyright -->
                 <div class="form-footer">
-                    <p>© 2026 กลุ่มงานสุขภาพดิจิทัล สำนักงานสาธารณสุขจังหวัดกำแพงเพชร</p>
-                    <p style="margin-top: 0.25rem;">Version 1.69.7.07 (Build 20260707)</p>
+                    <p><?=$footer_text_1?></p>
+                    <p style="margin-top: 0.25rem;"><?=$footer_text_2?></p>
                 </div>
             </div>
         </div>
