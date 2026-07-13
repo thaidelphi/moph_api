@@ -92,8 +92,9 @@ $url_auth = $_ENV['THAID_URL_AUTH'] ?? '';
 $code_thaid = _PARAM("code", "");
 $state_thaid = _PARAM("state", "");
 
+$scope = $_ENV['THAID_SCOPE'] ?? 'pid name address';
 if (($code_thaid == "") or ($state_thaid == "")) {
-    $link = $url_auth.'?response_type=code&client_id='.$client_id.'&redirect_uri='.$redirect_uri.'&scope=pid name address&state=authen';  
+    $link = $url_auth.'?response_type=code&client_id='.$client_id.'&redirect_uri='.$redirect_uri.'&scope='.urlencode($scope).'&state=authen';  
     echo "<a href='$link'><img src='./images/thaid.png' width='100' height='100'></a>";
     exit;
 } elseif ($state_thaid == "authen") {
