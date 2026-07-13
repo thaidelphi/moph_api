@@ -65,7 +65,7 @@ function ThaID_GETDATA($code, $client_id, $secret_id, $redirect_uri) {
         'code' => $code,
         'redirect_uri'=> $redirect_uri,
     ];
-    $apiKey = $_ENV['API_KEY'] ?? null;
+    $apiKey = $_ENV['THAID_API_KEY'] ?? null;
     return HTTP_POST($url_token, $token, $data, $apiKey);
 }
 
