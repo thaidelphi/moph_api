@@ -1,4 +1,17 @@
 <?php
+// เริ่มต้นใช้งาน Session สำหรับจัดเก็บค่าจาก FortiGate
+session_start();
+
+// บันทึกค่า magic และ redirurl ลงใน Session เมื่อมีการส่งต่อมาจาก FortiGate
+if (isset($_GET['magic'])) {
+    $_SESSION['fortigate_magic'] = $_GET['magic'];
+}
+if (isset($_GET['redirurl'])) {
+    $_SESSION['fortigate_redirurl'] = $_GET['redirurl'];
+} elseif (isset($_GET['redir'])) {
+    $_SESSION['fortigate_redirurl'] = $_GET['redir'];
+}
+
 // Load environment variables
 function load_env($filePath) {
     if (!file_exists($filePath)) {

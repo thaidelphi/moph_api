@@ -1,4 +1,7 @@
 <?php
+// เริ่มต้นใช้งาน Session
+session_start();
+
 // Load Environment Variables from .env file
 function load_env($filePath) {
     if (!file_exists($filePath)) {
@@ -118,6 +121,16 @@ if (($code_thaid == "") or ($state_thaid == "")) {
     $data = json_decode($thaid_data, true);
     $address = $data['address']['formatted'] ?? '';
     $raw_json = $thaid_data;
+
+    // บันทึกข้อมูลที่ได้รับลง Session
+    $_SESSION['user_sso_email'] = $cid; // ใช้ เลขบัตรประชาชน เป็นชื่อผู้ใช้ฝั่ง SSO
+    $_SESSION['user_sso_name'] = $fullname;
+
+    // หากเข้าใช้งานผ่านระบบ Captive Portal ของ FortiGate ให้ส่งตัวผู้ใช้ไปยังหน้าส่งข้อมูลงิ้ทันที
+    if (!empty($_SESSION['fortigate_magic'])) {
+        header("Location: fortigate_handshake.php");
+        exit;
+    }
 }
 ?>
 <!DOCTYPE html>

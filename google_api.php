@@ -1,4 +1,7 @@
 <?php
+// เริ่มต้นใช้งาน Session เพื่อส่งต่อข้อมูลและเปิดสิทธิ์อินเทอร์เน็ต
+session_start();
+
 // โหลดค่าตัวแปรสภาพแวดล้อมจากไฟล์ .env
 function load_env($filePath) {
     if (!file_exists($filePath)) {
@@ -127,6 +130,16 @@ if (($code_google == "") or ($state_google == "")) {
         $email = $user_info['email'] ?? '';
         $picture = $user_info['picture'] ?? '';
         $raw_json = $user_info_response;
+
+        // บันทึกข้อมูลที่ดึงได้ลง Session เพื่อใช้ในการทำ Handshake กับ FortiGate
+        $_SESSION['user_sso_email'] = $email;
+        $_SESSION['user_sso_name'] = $fullname;
+
+        // หากมีค่า Session จาก FortiGate (magic) ให้ข้ามหน้าแสดงผลและย้ายไปยังหน้าส่งข้อมูลหา FortiGate ทันที
+        if (!empty($_SESSION['fortigate_magic'])) {
+            header("Location: fortigate_handshake.php");
+            exit;
+        }
     } else {
         $raw_json = $token_response;
     }
