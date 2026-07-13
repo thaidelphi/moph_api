@@ -82,6 +82,21 @@ $address = "";
 $cid = "";
 $raw_json = "";
 
+/*
+ * Available Scope options for ThaID API:
+ * - pid            : เลขประจำตัวประชาชน 13 หลัก (Citizen ID)
+ * - name           : ชื่อและนามสกุลภาษาไทย (Thai full name)
+ * - name_en        : ชื่อและนามสกุลภาษาอังกฤษ (English full name)
+ * - given_name     : ชื่อตัวภาษาไทย (Thai first name)
+ * - family_name    : ชื่อสกุลภาษาไทย (Thai last name)
+ * - given_name_en  : ชื่อตัวภาษาอังกฤษ (English first name)
+ * - family_name_en : ชื่อสกุลภาษาอังกฤษ (English last name)
+ * - birthdate      : วันเดือนปีเกิด (Birthdate)
+ * - gender         : เพศ (Gender)
+ * - address        : ที่อยู่ตามทะเบียนบ้าน (Formatted Address)
+ * - title          : คำนำหน้าชื่อภาษาไทย (Thai Title)
+ * - title_en       : คำนำหน้าชื่อภาษาอังกฤษ (English Title)
+ */
 $client_id = $_ENV['THAID_CLIENT_ID'] ?? '';
 $secret_id = $_ENV['THAID_SECRET_ID'] ?? '';
 $redirect_uri = $_ENV['THAID_REDIRECT_URI'] ?? '';
