@@ -13,11 +13,9 @@ function load_env($filePath) {
         if (count($parts) === 2) {
             $name = trim($parts[0]);
             $value = trim($parts[1]);
-            if (!array_key_exists($name, $_SERVER) && !array_key_exists($name, $_ENV)) {
-                putenv("{$name}={$value}");
-                $_ENV[$name] = $value;
-                $_SERVER[$name] = $value;
-            }
+            putenv("{$name}={$value}");
+            $_ENV[$name] = $value;
+            $_SERVER[$name] = $value;
         }
     }
 }
@@ -131,13 +129,13 @@ function getProviderProfile($access_token) {
 }
 
 // Variables for configuration
-$moph_id_url = $_ENV['MOPH_ID_URL'] ?? 'https://moph.id.th';
-$provider_id_url = $_ENV['PROVIDER_ID_URL'] ?? 'https://provider.id.th';
-$moph_id_Client_ID = $_ENV['MOPH_ID_CLIENT_ID'] ?? '';
-$moph_id_Secret_Key = $_ENV['MOPH_ID_SECRET_KEY'] ?? '';
-$providerID_Client_ID = $_ENV['PROVIDER_ID_CLIENT_ID'] ?? '';
-$providerID_Secret_Key = $_ENV['PROVIDER_ID_SECRET_KEY'] ?? '';
-$redirect_uri = $_ENV['PROVIDER_ID_REDIRECT_URI'] ?? '';
+$moph_id_url = getenv('MOPH_ID_URL') ?: ($_ENV['MOPH_ID_URL'] ?? 'https://moph.id.th');
+$provider_id_url = getenv('PROVIDER_ID_URL') ?: ($_ENV['PROVIDER_ID_URL'] ?? 'https://provider.id.th');
+$moph_id_Client_ID = getenv('MOPH_ID_CLIENT_ID') ?: ($_ENV['MOPH_ID_CLIENT_ID'] ?? '');
+$moph_id_Secret_Key = getenv('MOPH_ID_SECRET_KEY') ?: ($_ENV['MOPH_ID_SECRET_KEY'] ?? '');
+$providerID_Client_ID = getenv('PROVIDER_ID_CLIENT_ID') ?: ($_ENV['PROVIDER_ID_CLIENT_ID'] ?? '');
+$providerID_Secret_Key = getenv('PROVIDER_ID_SECRET_KEY') ?: ($_ENV['PROVIDER_ID_SECRET_KEY'] ?? '');
+$redirect_uri = getenv('PROVIDER_ID_REDIRECT_URI') ?: ($_ENV['PROVIDER_ID_REDIRECT_URI'] ?? '');
 
 // Check for callback parameters
 $code = $_GET['code'] ?? '';

@@ -13,11 +13,9 @@ function load_env($filePath) {
         if (count($parts) === 2) {
             $name = trim($parts[0]);
             $value = trim($parts[1]);
-            if (!array_key_exists($name, $_SERVER) && !array_key_exists($name, $_ENV)) {
-                putenv("{$name}={$value}");
-                $_ENV[$name] = $value;
-                $_SERVER[$name] = $value;
-            }
+            putenv("{$name}={$value}");
+            $_ENV[$name] = $value;
+            $_SERVER[$name] = $value;
         }
     }
 }
@@ -34,10 +32,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
     if ($username !== '' && $password !== '') {
         try {
-            $db_host = $_ENV['DB_HOST'] ?? '168.148.62.15';
-            $db_user = $_ENV['DB_USER'] ?? 'root';
-            $db_pass = $_ENV['DB_PASS'] ?? 'ssjkp#62@62';
-            $db_name = $_ENV['DB_NAME'] ?? 'radius';
+            $db_host = getenv('DB_HOST') ?: ($_ENV['DB_HOST'] ?? 'localhost');
+            $db_user = getenv('DB_USER') ?: ($_ENV['DB_USER'] ?? 'root');
+            $db_pass = getenv('DB_PASS') ?: ($_ENV['DB_PASS'] ?? '');
+            $db_name = getenv('DB_NAME') ?: ($_ENV['DB_NAME'] ?? 'radius');
             
             $conn = @new mysqli($db_host, $db_user, $db_pass, $db_name);
             if ($conn->connect_error) {

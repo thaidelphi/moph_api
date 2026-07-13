@@ -13,11 +13,9 @@ function load_env($filePath) {
         if (count($parts) === 2) {
             $name = trim($parts[0]);
             $value = trim($parts[1]);
-            if (!array_key_exists($name, $_SERVER) && !array_key_exists($name, $_ENV)) {
-                putenv("{$name}={$value}");
-                $_ENV[$name] = $value;
-                $_SERVER[$name] = $value;
-            }
+            putenv("{$name}={$value}");
+            $_ENV[$name] = $value;
+            $_SERVER[$name] = $value;
         }
     }
 }
@@ -43,17 +41,17 @@ function remove_non_text($text) {
  * - title          : คำนำหน้าชื่อภาษาไทย (Thai Title)
  * - title_en       : คำนำหน้าชื่อภาษาอังกฤษ (English Title)
  */
-$client_id = $_ENV['THAID_CLIENT_ID'] ?? '';
-$redirect_uri = $_ENV['THAID_REDIRECT_URI'] ?? '';
-$url_auth = $_ENV['THAID_URL_AUTH'] ?? '';
-$default_scope = $_ENV['THAID_SCOPE'] ?? 'pid name address';
+$client_id = getenv('THAID_CLIENT_ID') ?: ($_ENV['THAID_CLIENT_ID'] ?? '');
+$redirect_uri = getenv('THAID_REDIRECT_URI') ?: ($_ENV['THAID_REDIRECT_URI'] ?? '');
+$url_auth = getenv('THAID_URL_AUTH') ?: ($_ENV['THAID_URL_AUTH'] ?? '');
+$default_scope = getenv('THAID_SCOPE') ?: ($_ENV['THAID_SCOPE'] ?? 'pid name address');
 
 $link = $url_auth . '?response_type=code&client_id=' . urlencode($client_id) . '&redirect_uri=' . urlencode($redirect_uri) . '&scope=' . urlencode($default_scope) . '&state=authen';
 
 // ProviderID Configuration
-$moph_id_url = $_ENV['MOPH_ID_URL'] ?? 'https://moph.id.th';
-$moph_id_Client_ID = $_ENV['MOPH_ID_CLIENT_ID'] ?? '';
-$provider_redirect_uri = $_ENV['PROVIDER_ID_REDIRECT_URI'] ?? '';
+$moph_id_url = getenv('MOPH_ID_URL') ?: ($_ENV['MOPH_ID_URL'] ?? 'https://moph.id.th');
+$moph_id_Client_ID = getenv('MOPH_ID_CLIENT_ID') ?: ($_ENV['MOPH_ID_CLIENT_ID'] ?? '');
+$provider_redirect_uri = getenv('PROVIDER_ID_REDIRECT_URI') ?: ($_ENV['PROVIDER_ID_REDIRECT_URI'] ?? '');
 $provider_link = "{$moph_id_url}/oauth/redirect?client_id={$moph_id_Client_ID}&redirect_uri=" . urlencode($provider_redirect_uri) . "&response_type=code";
 ?>
 <!DOCTYPE html>
