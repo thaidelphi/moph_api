@@ -125,7 +125,20 @@ $moph_id_client_id = getenv('MOPH_ID_CLIENT_ID') ?: ($_ENV['MOPH_ID_CLIENT_ID'] 
 $provider_redirect_uri = getenv('PROVIDER_ID_REDIRECT_URI') ?: ($_ENV['PROVIDER_ID_REDIRECT_URI'] ?? '');
 $provider_redirect_uri_old = str_replace('providerid_api.php', 'provider.php', $provider_redirect_uri);
 $provider_link = "{$moph_id_url}/oauth/redirect?client_id={$moph_id_client_id}&redirect_uri=" . urlencode($provider_redirect_uri_old) . "&response_type=code";
+
+// กำหนดการเชื่อมต่อและสร้างลิงก์สำหรับการล็อกอินด้วยบัญชี Google
+$google_client_id = getenv('GOOGLE_CLIENT_ID') ?: ($_ENV['GOOGLE_CLIENT_ID'] ?? '');
+$google_redirect_uri = getenv('GOOGLE_REDIRECT_URI') ?: ($_ENV['GOOGLE_REDIRECT_URI'] ?? '');
+$google_url_auth = getenv('GOOGLE_URL_AUTH') ?: ($_ENV['GOOGLE_URL_AUTH'] ?? 'https://accounts.google.com/o/oauth2/v2/auth');
+$google_scope = 'openid email profile';
+// ลิงก์สำหรับเปลี่ยนหน้าไปยังจุดยืนยันตัวตนของ Google OAuth
+$google_link = $google_url_auth . '?response_type=code' .
+               '&client_id=' . urlencode($google_client_id) .
+               '&redirect_uri=' . urlencode($google_redirect_uri) .
+               '&scope=' . urlencode($google_scope) .
+               '&state=google_auth';
 ?>
+
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -752,8 +765,8 @@ $provider_link = "{$moph_id_url}/oauth/redirect?client_id={$moph_id_client_id}&r
                         <span class="sso-label"><?=$label_thaid?></span>
                     </a>
 
-                    <!-- Google Authentication Option (Mock link) -->
-                    <a href="#" class="sso-grid-item" onclick="alert('ระบบล็อกอิน Google อยู่ระหว่างการพัฒนา'); return false;">
+                    <!-- Google Authentication Option (ลิงก์เข้าสู่ระบบผ่าน Google จริง) -->
+                    <a href="<?= htmlspecialchars($google_link) ?>" class="sso-grid-item">
                         <div class="sso-icon-box google-bg">
                             <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="flex-shrink: 0;">
                                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -764,6 +777,7 @@ $provider_link = "{$moph_id_url}/oauth/redirect?client_id={$moph_id_client_id}&r
                         </div>
                         <span class="sso-label"><?=$label_google?></span>
                     </a>
+
                 </div>
 
                 <!-- ProviderID Link - Wide display -->
