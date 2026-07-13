@@ -983,6 +983,7 @@ CREATE TABLE `radcheck_mirror` (
   `date_register` datetime DEFAULT NULL,
   `date_expire` datetime DEFAULT NULL,
   `fullname` varchar(255) DEFAULT NULL,
+  `email` varchar(255) DEFAULT NULL,
   `note` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE,
   KEY `username` (`username`(32)) USING BTREE

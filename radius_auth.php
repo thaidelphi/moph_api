@@ -11,9 +11,11 @@ function randomTextSP($length = 8) {
  * ดึงรหัสผ่าน Plaintext จาก Radius หรือสร้างใหม่หากไม่มี
  * 
  * @param string $username ชื่อผู้ใช้งาน (เช่น cid, provider_id)
+ * @param string|null $email อีเมลผู้ใช้งาน (เช่น บัญชี Gmail)
+ * @param string|null $fullname ชื่อ-นามสกุลจริงผู้ใช้งาน
  * @return string รหัสผ่าน Plaintext สำหรับใช้ล็อกอินเข้า FortiGate
  */
-function sso_radius_auth($username) {
+function sso_radius_auth($username, $email = null, $fullname = null) {
     $db_host = getenv('DB_HOST') ?: ($_ENV['DB_HOST'] ?? '168.148.62.15');
     $db_user = getenv('DB_USER') ?: ($_ENV['DB_USER'] ?? 'root');
     $db_pass = getenv('DB_PASS') ?: ($_ENV['DB_PASS'] ?? '');
@@ -35,6 +37,11 @@ function sso_radius_auth($username) {
     if ($result && $result->num_rows > 0) {
         $row = $result->fetch_assoc();
         if (!empty($row['tmp_passwd'])) {
+            // ทำการอัปเดตข้อมูล email และ fullname ของผู้ใช้เก่าหากมีการเปลี่ยนแปลง
+            $stmt_update_profile = $conn->prepare("UPDATE radcheck_mirror SET email = ?, fullname = ? WHERE username = ?");
+            $stmt_update_profile->bind_param("sss", $email, $fullname, $username);
+            $stmt_update_profile->execute();
+            
             $conn->close();
             return $row['tmp_passwd'];
         }
@@ -75,13 +82,14 @@ function sso_radius_auth($username) {
     $row_mirror_check = $result_mirror_check->fetch_assoc();
     
     if ($row_mirror_check['count'] > 0) {
-        $stmt_mirror_update = $conn->prepare("UPDATE radcheck_mirror SET tmp_passwd = ?, attribute = ?, op = ?, value = ? WHERE username = ?");
-        $stmt_mirror_update->bind_param("sssss", $new_password, $attribute, $op, $md5_password, $username);
+        // อัปเดตข้อมูลรวมถึงอีเมลและชื่อจริง
+        $stmt_mirror_update = $conn->prepare("UPDATE radcheck_mirror SET tmp_passwd = ?, attribute = ?, op = ?, value = ?, email = ?, fullname = ? WHERE username = ?");
+        $stmt_mirror_update->bind_param("sssssss", $new_password, $attribute, $op, $md5_password, $email, $fullname, $username);
         $stmt_mirror_update->execute();
     } else {
-        // สำหรับบาง field ที่อนุญาตให้เป็น NULL (address ฯลฯ) ไม่ได้ระบุ
-        $stmt_mirror_insert = $conn->prepare("INSERT INTO radcheck_mirror (username, attribute, op, value, tmp_passwd, date_register, date_expire, note, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt_mirror_insert->bind_param("sssssssss", $username, $attribute, $op, $md5_password, $new_password, $date_register, $date_expire, $note, $active);
+        // เพิ่มข้อมูลผู้ใช้รายใหม่พร้อมอีเมลและชื่อจริง
+        $stmt_mirror_insert = $conn->prepare("INSERT INTO radcheck_mirror (username, attribute, op, value, tmp_passwd, date_register, date_expire, note, active, email, fullname) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt_mirror_insert->bind_param("sssssssssss", $username, $attribute, $op, $md5_password, $new_password, $date_register, $date_expire, $note, $active, $email, $fullname);
         $stmt_mirror_insert->execute();
     }
     

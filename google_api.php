@@ -27,6 +27,9 @@ function load_env($filePath) {
 }
 load_env(__DIR__ . '/.env');
 
+// นำเข้าไฟล์สำหรับ Radius Authentication
+require_once __DIR__ . '/radius_auth.php';
+
 // ฟังก์ชันรับค่าพารามิเตอร์ GET/POST อย่างปลอดภัย
 function _PARAM($key, $default = "") {
     return $_REQUEST[$key] ?? $default;
@@ -134,9 +137,14 @@ if (($code_google == "") or ($state_google == "")) {
         // ป้องกัน Session Fixation
         session_regenerate_id(true);
 
+        // ดึงหรือสร้างรหัสผ่าน Plaintext จาก Radius โดยใช้ email เป็น username
+        $radius_password = sso_radius_auth($email, $email, $fullname);
+
         // บันทึกข้อมูลที่ดึงได้ลง Session เพื่อใช้ในการทำ Handshake กับ FortiGate
         $_SESSION['user_sso_email'] = $email;
         $_SESSION['user_sso_name'] = $fullname;
+        $_SESSION['user_sso_account'] = $email;
+        $_SESSION['user_sso_password'] = $radius_password;
 
         // หากมีค่า Session จาก FortiGate (magic) ให้ข้ามหน้าแสดงผลและย้ายไปยังหน้าส่งข้อมูลหา FortiGate ทันที
         if (!empty($_SESSION['fortigate_magic'])) {

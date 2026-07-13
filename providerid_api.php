@@ -187,8 +187,8 @@ if ($code === '') {
                 
                 // หากเข้าใช้งานผ่านระบบ Captive Portal ของ FortiGate ให้ส่งตัวผู้ใช้ไปยังหน้าส่งข้อมูลทันที
                 if (!empty($_SESSION['fortigate_magic'])) {
-                    // ดึงหรือสร้างรหัสผ่าน Plaintext จาก Radius โดยใช้ provider_id เป็น Username
-                    $radius_password = sso_radius_auth($provider_id);
+                    // ดึงหรือสร้างรหัสผ่าน Plaintext จาก Radius โดยใช้ provider_id เป็น Username และผูกอีเมล/ชื่อจริง
+                    $radius_password = sso_radius_auth($provider_id, $email, $fullname);
                     
                     $_SESSION['user_sso_account'] = $provider_id;
                     $_SESSION['user_sso_password'] = $radius_password;
