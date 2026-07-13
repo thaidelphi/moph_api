@@ -81,6 +81,8 @@ $url_auth = getenv('GOOGLE_URL_AUTH') ?: ($_ENV['GOOGLE_URL_AUTH'] ?? 'https://a
 $url_token = getenv('GOOGLE_URL_TOKEN') ?: ($_ENV['GOOGLE_URL_TOKEN'] ?? 'https://oauth2.googleapis.com/token');
 $url_userinfo = getenv('GOOGLE_URL_USERINFO') ?: ($_ENV['GOOGLE_URL_USERINFO'] ?? 'https://www.googleapis.com/oauth2/v3/userinfo');
 
+$error_msg = "";
+
 // ดึงรหัส code และ state หลังจาก redirect กลับมาจาก Google
 $code_google = _PARAM("code", "");
 $state_google = _PARAM("state", "");
@@ -137,19 +139,75 @@ if (($code_google == "") or ($state_google == "")) {
         // ป้องกัน Session Fixation
         session_regenerate_id(true);
 
-        // ดึงหรือสร้างรหัสผ่าน Plaintext จาก Radius โดยใช้ email เป็น username
-        $radius_password = sso_radius_auth($email, $email, $fullname);
-
-        // บันทึกข้อมูลที่ดึงได้ลง Session เพื่อใช้ในการทำ Handshake กับ FortiGate
-        $_SESSION['user_sso_email'] = $email;
-        $_SESSION['user_sso_name'] = $fullname;
-        $_SESSION['user_sso_account'] = $email;
-        $_SESSION['user_sso_password'] = $radius_password;
-
-        // หากมีค่า Session จาก FortiGate (magic) ให้ข้ามหน้าแสดงผลและย้ายไปยังหน้าส่งข้อมูลหา FortiGate ทันที
-        if (!empty($_SESSION['fortigate_magic'])) {
-            header("Location: fortigate_handshake.php");
-            exit;
+        // 1. เชื่อมต่อฐานข้อมูลเพื่อตรวจสอบความสัมพันธ์ของ Gmail กับบัญชีในระบบ
+        $db_host = getenv('DB_HOST') ?: ($_ENV['DB_HOST'] ?? '168.148.62.15');
+        $db_user = getenv('DB_USER') ?: ($_ENV['DB_USER'] ?? 'root');
+        $db_pass = getenv('DB_PASS') ?: ($_ENV['DB_PASS'] ?? '');
+        $db_name = getenv('DB_NAME') ?: ($_ENV['DB_NAME'] ?? 'radius');
+        
+        $conn = @new mysqli($db_host, $db_user, $db_pass, $db_name);
+        if ($conn->connect_error) {
+            error_log("Database connection failed: " . $conn->connect_error);
+            $error_msg = "ระบบเชื่อมต่อฐานข้อมูลล้มเหลว กรุณาติดต่อผู้ดูแลระบบ";
+        } else {
+            $conn->set_charset("utf8");
+            
+            // 2. ค้นหาบัญชีผู้ใช้เดิมที่ผูกกับ Gmail นี้ไว้
+            $stmt = $conn->prepare("SELECT username, tmp_passwd, active FROM radcheck_mirror WHERE email = ? LIMIT 1");
+            $stmt->bind_param("s", $email);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($result && $result->num_rows > 0) {
+                $row = $result->fetch_assoc();
+                
+                // ตรวจสอบว่าบัญชีถูกบล็อกหรือปิดการใช้งานหรือไม่
+                if ($row['active'] === 'N') {
+                    $error_msg = "บัญชีของท่านถูกระงับการใช้งานชั่วคราว กรุณาติดต่อผู้ดูแลระบบ";
+                } else {
+                    $username_found = $row['username'];
+                    $password_found = $row['tmp_passwd'];
+                    
+                    // หากยังไม่มีรหัสผ่าน ให้สร้างใหม่
+                    if (empty($password_found)) {
+                        $password_found = sso_radius_auth($username_found, $email, $fullname);
+                    }
+                    
+                    // บันทึกข้อมูลเข้าระบบ Session
+                    $_SESSION['user_sso_email'] = $email;
+                    $_SESSION['user_sso_name'] = $fullname;
+                    $_SESSION['user_sso_account'] = $username_found;
+                    $_SESSION['user_sso_password'] = $password_found;
+                    
+                    // หากมาด้วย FortiGate magic ให้นำทางเข้าเชื่อมต่อเน็ตทันที
+                    if (!empty($_SESSION['fortigate_magic'])) {
+                        $conn->close();
+                        header("Location: fortigate_handshake.php");
+                        exit;
+                    }
+                }
+            } else {
+                // 3. กรณีไม่มี Gmail นี้ในระบบ: ให้บันทึกข้อมูลแต่กำหนด active = 'N' (ไม่สร้างบัญชีใน radcheck)
+                $stmt_check = $conn->prepare("SELECT COUNT(*) as count FROM radcheck_mirror WHERE username = ?");
+                $username_temp = $email;
+                $stmt_check->bind_param("s", $username_temp);
+                $stmt_check->execute();
+                $result_check = $stmt_check->get_result();
+                $row_check = $result_check->fetch_assoc();
+                
+                if ($row_check['count'] == 0) {
+                    $date_register = date('Y-m-d H:i:s');
+                    $note = "ลงทะเบียนผ่าน Google (ยังไม่อนุมัติ)";
+                    $active = "N";
+                    
+                    $stmt_insert = $conn->prepare("INSERT INTO radcheck_mirror (username, email, fullname, date_register, active, note) VALUES (?, ?, ?, ?, ?, ?)");
+                    $stmt_insert->bind_param("ssssss", $username_temp, $email, $fullname, $date_register, $active, $note);
+                    $stmt_insert->execute();
+                }
+                
+                $error_msg = "อีเมลนี้ยังไม่มีสิทธิ์เข้าใช้งานระบบ แต่อุปกรณ์ได้บันทึกข้อมูลของท่านเรียบร้อยแล้ว กรุณาติดต่อผู้ดูแลระบบเพื่อเปิดสิทธิ์การใช้งาน";
+            }
+            $conn->close();
         }
     } else {
         $raw_json = $token_response;
@@ -242,35 +300,53 @@ if (($code_google == "") or ($state_google == "")) {
 </head>
 <body>
 
-    <div class="container">
-        <h2>ข้อมูลที่ได้รับจากระบบ Google</h2>
-        
-        <?php if (!empty($picture)): ?>
-        <div class="profile-box">
-            <img src="<?=htmlspecialchars($picture)?>" alt="Google Profile" class="profile-img">
+    <?php if (!empty($error_msg)): ?>
+        <!-- แสดงกล่องแจ้งเตือนเมื่อเกิดข้อผิดพลาดในการตรวจสอบสิทธิ์การใช้งาน (เช่น อีเมลไม่มีในระบบ หรือโดนแบน) -->
+        <div class="container" style="border-top: 4px solid #ef4444; text-align: center;">
+            <h2 style="color: #ef4444;">ไม่สามารถเข้าใช้งานระบบได้</h2>
+            <div style="margin: 30px 0; color: #4a5568; line-height: 1.6;">
+                <!-- ไอคอนแสดงข้อผิดพลาดขนาดใหญ่เพื่อให้ผู้ใช้สังเกตเห็นได้ง่าย -->
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto 20px auto; display: block;">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                </svg>
+                <p style="font-size: 16px; margin: 0; padding: 0 10px;"><?= htmlspecialchars($error_msg) ?></p>
+            </div>
+            <a href="index.php" class="back-btn" style="background-color: #718096; max-width: 150px; margin: 20px auto 0 auto;">กลับหน้าหลัก</a>
         </div>
-        <?php endif; ?>
-        
-        <div class="data-row">
-            <div class="data-label">Google ID (sub):</div>
-            <div class="data-value"><?=htmlspecialchars($google_id)?></div>
+    <?php else: ?>
+        <!-- แสดงกล่องข้อมูลโปรไฟล์ของผู้ใช้งานเมื่อยืนยันตัวตนสำเร็จ -->
+        <div class="container">
+            <h2>ข้อมูลที่ได้รับจากระบบ Google</h2>
+            
+            <?php if (!empty($picture)): ?>
+            <div class="profile-box">
+                <img src="<?=htmlspecialchars($picture)?>" alt="Google Profile" class="profile-img">
+            </div>
+            <?php endif; ?>
+            
+            <div class="data-row">
+                <div class="data-label">Google ID (sub):</div>
+                <div class="data-value"><?=htmlspecialchars($google_id)?></div>
+            </div>
+            
+            <div class="data-row">
+                <div class="data-label">ชื่อ-นามสกุล:</div>
+                <div class="data-value"><?=htmlspecialchars($fullname)?></div>
+            </div>
+            
+            <div class="data-row">
+                <div class="data-label">อีเมล (Email):</div>
+                <div class="data-value"><?=htmlspecialchars($email)?></div>
+            </div>
+            
+            <h3 style="margin-top: 25px; font-size: 16px; color: #333;">ข้อมูลดิบจาก Google (Raw JSON):</h3>
+            <pre><?=htmlspecialchars(json_encode(json_decode($raw_json, true), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE))?></pre>
+            
+            <a href="index.php" class="back-btn">กลับหน้าหลัก</a>
         </div>
-        
-        <div class="data-row">
-            <div class="data-label">ชื่อ-นามสกุล:</div>
-            <div class="data-value"><?=htmlspecialchars($fullname)?></div>
-        </div>
-        
-        <div class="data-row">
-            <div class="data-label">อีเมล (Email):</div>
-            <div class="data-value"><?=htmlspecialchars($email)?></div>
-        </div>
-        
-        <h3 style="margin-top: 25px; font-size: 16px; color: #333;">ข้อมูลดิบจาก Google (Raw JSON):</h3>
-        <pre><?=htmlspecialchars(json_encode(json_decode($raw_json, true), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE))?></pre>
-        
-        <a href="index.php" class="back-btn">กลับหน้าหลัก</a>
-    </div>
+    <?php endif; ?>
 
 </body>
 </html>
