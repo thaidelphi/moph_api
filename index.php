@@ -28,7 +28,7 @@ function remove_non_text($text) {
     return base64_decode($text);
 }
 
-$client_id = remove_non_text($_ENV['THAID_CLIENT_ID'] ?? '');
+$client_id = $_ENV['THAID_CLIENT_ID'] ?? '';
 $redirect_uri = $_ENV['THAID_REDIRECT_URI'] ?? '';
 $url_auth = $_ENV['THAID_URL_AUTH'] ?? '';
 

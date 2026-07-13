@@ -28,17 +28,23 @@ function remove_non_text($text) {
     return base64_decode($text);
 }
 
-function HTTP_POST($url, $token, $data) {
+function HTTP_POST($url, $token, $data, $apiKey = null) {
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    
+    $headers = [
         'Authorization: ' . $token,
         'Content-Type: application/x-www-form-urlencoded'
-    ]);
+    ];
+    if ($apiKey) {
+        $headers[] = 'x-api-key: ' . $apiKey;
+    }
+    
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
     $response = curl_exec($ch);
     curl_close($ch);
     return $response;
@@ -61,7 +67,8 @@ function ThaID_GETDATA($code, $client_id, $secret_id, $redirect_uri) {
         'code' => $code,
         'redirect_uri'=> $redirect_uri,
     ];
-    return HTTP_POST($url_token, $token, $data);
+    $apiKey = $_ENV['API_KEY'] ?? null;
+    return HTTP_POST($url_token, $token, $data, $apiKey);
 }
 
 function _PARAM($key, $default = "") {
@@ -134,8 +141,8 @@ $database = $_ENV['DB_NAME'] ?? 'moph_db';
 // Connect to Database
 $db = new mysql_connect($server, $database, $username, $password, 3306);
 
-$client_id = remove_non_text($_ENV['THAID_CLIENT_ID'] ?? '');
-$secret_id = remove_non_text($_ENV['THAID_SECRET_ID'] ?? '');
+$client_id = $_ENV['THAID_CLIENT_ID'] ?? '';
+$secret_id = $_ENV['THAID_SECRET_ID'] ?? '';
 $redirect_uri = $_ENV['THAID_REDIRECT_URI'] ?? '';
 $url_token = $_ENV['THAID_URL_TOKEN'] ?? '';
 $url_auth = $_ENV['THAID_URL_AUTH'] ?? '';
