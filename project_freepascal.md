@@ -167,11 +167,174 @@ CheckUserPassword → ถ้าตรง → GetOrCreateRadiusUser → สร้
 - สร้าง Systemd Service (`fpsso.service`) ให้รันอัตโนมัติเมื่อเปิดเครื่อง
 - ตั้งค่า Apache Reverse Proxy ให้ Forward Traffic ไปยัง FreePascal Server (Port 8080)
 
-```apache
-# ตัวอย่าง Apache Reverse Proxy Config
-ProxyPass /fpsso/ http://localhost:8080/
-ProxyPassReverse /fpsso/ http://localhost:8080/
+---
+
+## การตั้งค่า Apache Reverse Proxy (Apache Proxy Configuration)
+
+ระบบนี้ใช้ Apache 2.4.58 บน Ubuntu และมี Virtual Host สำหรับ `api1.kpo.go.th` อยู่แล้วที่ไฟล์:
+`/etc/apache2/sites-available/api1-kpo.conf`
+
+### โครงสร้างการทำงานที่ต้องการ
+
 ```
+                   ┌───────────────────────────────────────┐
+ Browser           │           Apache 2.4 (Port 443 HTTPS) │
+ ──────────────►   │   ServerName: api1.kpo.go.th          │
+                   │   SSL: /var/www/ssl-cert/ssl.cer       │
+                   └──────────────────┬────────────────────┘
+                                      │
+                        ┌─────────────┴──────────────┐
+                        │                            │
+                        ▼                            ▼
+             Path: /sso/*                  Path: /php/* (เดิม)
+          ┌──────────────────┐          ┌──────────────────┐
+          │  FreePascal App  │          │  /var/www/api/   │
+          │  localhost:8080  │          │  (PHP Files)     │
+          └──────────────────┘          └──────────────────┘
+```
+
+### ขั้นตอนการตั้งค่า
+
+#### ขั้นตอนที่ 1: เปิดใช้งาน Apache Modules ที่จำเป็น
+
+```bash
+# เปิด Proxy modules
+sudo a2enmod proxy
+sudo a2enmod proxy_http
+sudo a2enmod proxy_wstunnel  # สำหรับ WebSocket (ถ้าจำเป็น)
+sudo a2enmod headers          # สำหรับ Forward Headers
+
+# Restart Apache
+sudo systemctl restart apache2
+```
+
+#### ขั้นตอนที่ 2: แก้ไขไฟล์ Apache VirtualHost
+
+แก้ไขไฟล์ `/etc/apache2/sites-available/api1-kpo.conf` โดยเพิ่มส่วน Proxy ใน VirtualHost port 443 (HTTPS):
+
+```apache
+<VirtualHost *:80>
+    ServerName api1.kpo.go.th
+    ServerAdmin webmaster@localhost
+    DocumentRoot /var/www/api
+
+    # Redirect HTTP to HTTPS
+    RewriteEngine On
+    RewriteCond %{HTTPS} off
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+    <Directory /var/www/api>
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    ErrorLog ${APACHE_LOG_DIR}/api1-kpo_error.log
+    CustomLog ${APACHE_LOG_DIR}/api1-kpo_access.log combined
+</VirtualHost>
+
+<VirtualHost *:443>
+    ServerName api1.kpo.go.th
+    ServerAdmin webmaster@localhost
+    DocumentRoot /var/www/api
+
+    <Directory /var/www/api>
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    # === Reverse Proxy สำหรับ FreePascal SSO Server ===
+    # Forward ทุก Request ที่เริ่มต้นด้วย /sso/ ไปยัง FreePascal (Port 8080)
+    ProxyPreserveHost On
+
+    # Forward Headers จริงของผู้ใช้ไปให้ FreePascal ด้วย
+    RequestHeader set X-Forwarded-Proto "https"
+    RequestHeader set X-Forwarded-Host "api1.kpo.go.th"
+
+    # Route: /sso/* → FreePascal HTTP Server
+    ProxyPass        /sso/  http://127.0.0.1:8080/  timeout=60
+    ProxyPassReverse /sso/  http://127.0.0.1:8080/
+
+    # ไม่ให้ส่ง Request ที่เป็น PHP ไปยัง FreePascal
+    ProxyPassMatch ^/(?!sso/) !
+
+    # SSL Configuration
+    SSLEngine on
+    SSLCertificateFile      /var/www/ssl-cert/ssl.cer
+    SSLCertificateKeyFile   /var/www/ssl-cert/ssl.key
+    SSLCertificateChainFile /var/www/ssl-cert/ssl.ca
+
+    ErrorLog  ${APACHE_LOG_DIR}/api1-kpo_error.log
+    CustomLog ${APACHE_LOG_DIR}/api1-kpo_access.log combined
+</VirtualHost>
+```
+
+#### ขั้นตอนที่ 3: สร้าง Systemd Service สำหรับ FreePascal
+
+สร้างไฟล์ `/etc/systemd/system/fpsso.service`:
+
+```ini
+[Unit]
+Description=FreePascal SSO HTTP Server
+After=network.target mysql.service
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/www/fpsso
+ExecStart=/var/www/fpsso/fpsso
+Restart=on-failure
+RestartSec=5s
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+```
+
+คำสั่งเปิดใช้งาน Service:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable fpsso
+sudo systemctl start fpsso
+sudo systemctl status fpsso
+```
+
+#### ขั้นตอนที่ 4: ทดสอบและ Reload Apache
+
+```bash
+# ตรวจสอบ Config ว่าถูกต้อง
+sudo apache2ctl configtest
+
+# Reload Apache (ไม่ต้อง Restart)
+sudo systemctl reload apache2
+```
+
+---
+
+### URL Mapping หลังจาก Deploy
+
+| URL (HTTPS) | ปลายทาง | หมายเหตุ |
+|---|---|---|
+| `https://api1.kpo.go.th/sso/` | FreePascal Port 8080 | หน้า Login ใหม่ |
+| `https://api1.kpo.go.th/sso/auth/login` | FreePascal Port 8080 | POST Login |
+| `https://api1.kpo.go.th/sso/auth/thaid` | FreePascal Port 8080 | ThaID OAuth |
+| `https://api1.kpo.go.th/sso/auth/thaid/callback` | FreePascal Port 8080 | ThaID Callback |
+| `https://api1.kpo.go.th/sso/auth/providerid` | FreePascal Port 8080 | ProviderID OAuth |
+| `https://api1.kpo.go.th/sso/fortigate/handshake` | FreePascal Port 8080 | FortiGate Submit |
+| `https://api1.kpo.go.th/login.php` | PHP `/var/www/api/` | ระบบเดิม (ยังใช้ได้) |
+
+---
+
+### ข้อดีของการใช้ Apache เป็น Reverse Proxy
+
+| ด้าน | รายละเอียด |
+|---|---|
+| **SSL จัดการที่ Apache** | FreePascal ไม่ต้องจัดการ HTTPS เอง ทำงานได้บน HTTP ธรรมดา (localhost) |
+| **ใช้ Certificate เดิมได้เลย** | ไฟล์ ssl.cer / ssl.key / ssl.ca ที่มีอยู่แล้วยังใช้ได้ทันที |
+| **ระบบเดิม PHP ยังทำงานได้** | PHP Files ใน `/var/www/api/` ยังเข้าถึงได้ตามปกติ ไม่ถูกรบกวน |
+| **Session Cookie Secure** | Apache ส่งผ่าน HTTPS ทำให้ Session Cookie ของ FreePascal มี Secure Flag อัตโนมัติ |
+| **Log รวมที่เดียว** | Apache Access Log บันทึก Request ทั้ง PHP และ FreePascal ไว้ที่ไฟล์เดียวกัน |
 
 ---
 
@@ -193,9 +356,11 @@ ProxyPassReverse /fpsso/ http://localhost:8080/
 
 ## ข้อควรพิจารณา
 
-> **HTTPS**: FreePascal HTTP Server ต้องการการตั้งค่า SSL Certificate เอง การใช้ Apache เป็น Reverse Proxy เพื่อจัดการ TLS ด้านหน้าจะง่ายและปลอดภัยกว่า
+> **HTTPS**: FreePascal HTTP Server ไม่ต้องจัดการ SSL เอง เพราะ Apache รับ HTTPS ด้านหน้าแล้วส่งต่อเป็น HTTP ธรรมดาไปยัง FreePascal บน localhost:8080
 
 > **Session Management**: PHP มี Session ในตัว ส่วน Pascal ต้องเขียน Custom Session Store (แนะนำใช้ In-Memory Dictionary + Cookie Token)
+
+> **OAuth Redirect URI**: ตัวแปร `THAID_REDIRECT_URI`, `PROVIDER_ID_REDIRECT_URI` ใน `.env` จะต้องเปลี่ยนเป็น URL ที่ชี้ไปยัง FreePascal Endpoint เช่น `https://api1.kpo.go.th/sso/auth/thaid/callback`
 
 > **OAuth State Parameter**: ต้องจัดการ CSRF State Token สำหรับทุก OAuth Flow เพื่อป้องกัน CSRF Attack
 
@@ -210,5 +375,5 @@ Phase 1  →  Core (HttpServer + Router + Config + Session)
 Phase 2  →  Database (RadiusDB + AuthLocal)
 Phase 3  →  OAuth Modules (ThaID → ProviderID)
 Phase 4  →  FortiGate Integration
-Phase 5  →  Testing + Deploy
+Phase 5  →  Testing + Deploy (a2enmod proxy + แก้ api1-kpo.conf + Systemd)
 ```
