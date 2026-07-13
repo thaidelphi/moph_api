@@ -29,16 +29,13 @@ $fortigate_auth_url = getenv('FORTIGATE_AUTH_URL') ?: ($_ENV['FORTIGATE_AUTH_URL
 $magic = $_SESSION['fortigate_magic'] ?? '';
 $redirurl = $_SESSION['fortigate_redirurl'] ?? 'https://www.google.com';
 
-// รับค่า Username และ Password ที่ส่งมาจากหน้าประมวลผลการเข้าสู่ระบบ
-$username = $_REQUEST['username'] ?? '';
-$password = $_REQUEST['password'] ?? '';
+// ดึงค่า Username และ Password จาก Session (ที่ได้ผ่านการยืนยันตัวตนแล้ว)
+$username = $_SESSION['user_sso_account'] ?? $_REQUEST['username'] ?? '';
+$password = $_SESSION['user_sso_password'] ?? $_REQUEST['password'] ?? '';
 
-// กรณีทดสอบ หากไม่มีชื่อผู้ใช้ให้ดึงข้อมูลจำลอง
+// หากไม่มีชื่อผู้ใช้เลย ให้ใช้ตัวแปรสำรอง (เผื่อกรณีผิดพลาด)
 if (empty($username)) {
     $username = $_SESSION['user_sso_email'] ?? $_SESSION['user_sso_name'] ?? 'sso_user';
-}
-if (empty($password)) {
-    $password = 'sso_dummy_password';
 }
 ?>
 <!DOCTYPE html>

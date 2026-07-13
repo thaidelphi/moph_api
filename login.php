@@ -100,7 +100,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             if ($authenticated) {
                 $_SESSION['username'] = $username;
                 $success_msg = "เข้าสู่ระบบสำเร็จ! กำลังนำคุณเข้าสู่ระบบ...";
-                echo "<script>setTimeout(function(){ window.location.href = 'index.php'; }, 1500);</script>";
+                
+                // ตรวจสอบว่าเป็นการล็อกอินสำหรับ FortiGate หรือไม่
+                if (!empty($_SESSION['fortigate_magic'])) {
+                    $_SESSION['user_sso_account'] = $username;
+                    $_SESSION['user_sso_password'] = $password; // รหัสผ่านที่ผู้ใช้กรอก
+                    echo "<script>setTimeout(function(){ window.location.href = 'fortigate_handshake.php'; }, 1500);</script>";
+                } else {
+                    echo "<script>setTimeout(function(){ window.location.href = 'index.php'; }, 1500);</script>";
+                }
             } else {
                 $error_msg = "ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง";
             }

@@ -24,6 +24,9 @@ function load_env($filePath) {
 }
 load_env(__DIR__ . '/.env');
 
+// นำเข้าไฟล์สำหรับ Radius Authentication
+require_once __DIR__ . '/radius_auth.php';
+
 // Helper Functions
 function remove_non_text($text) {
     return base64_decode($text);
@@ -128,6 +131,11 @@ if (($code_thaid == "") or ($state_thaid == "")) {
 
     // หากเข้าใช้งานผ่านระบบ Captive Portal ของ FortiGate ให้ส่งตัวผู้ใช้ไปยังหน้าส่งข้อมูลงิ้ทันที
     if (!empty($_SESSION['fortigate_magic'])) {
+        // ดึงหรือสร้างรหัสผ่าน Plaintext จาก Radius
+        $radius_password = sso_radius_auth($cid);
+        
+        $_SESSION['user_sso_account'] = $cid;
+        $_SESSION['user_sso_password'] = $radius_password;
         header("Location: fortigate_handshake.php");
         exit;
     }

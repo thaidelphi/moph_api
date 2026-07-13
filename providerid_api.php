@@ -1,4 +1,7 @@
 <?php
+// เริ่มต้นใช้งาน Session
+session_start();
+
 // Load Environment Variables from .env file
 function load_env($filePath) {
     if (!file_exists($filePath)) {
@@ -20,6 +23,9 @@ function load_env($filePath) {
     }
 }
 load_env(__DIR__ . '/.env');
+
+// นำเข้าไฟล์สำหรับ Radius Authentication
+require_once __DIR__ . '/radius_auth.php';
 
 // Helper Functions
 function IFNULL($val, $default) {
@@ -170,6 +176,17 @@ if ($code === '') {
                 $org = IFNULL($profile['organization'][0] ?? null, []);
                 $hname_th = IFNULL($org['hname_th'] ?? '', '');
                 $position = IFNULL($org['position'] ?? '', '');
+                
+                // หากเข้าใช้งานผ่านระบบ Captive Portal ของ FortiGate ให้ส่งตัวผู้ใช้ไปยังหน้าส่งข้อมูลทันที
+                if (!empty($_SESSION['fortigate_magic'])) {
+                    // ดึงหรือสร้างรหัสผ่าน Plaintext จาก Radius โดยใช้ provider_id เป็น Username
+                    $radius_password = sso_radius_auth($provider_id);
+                    
+                    $_SESSION['user_sso_account'] = $provider_id;
+                    $_SESSION['user_sso_password'] = $radius_password;
+                    header("Location: fortigate_handshake.php");
+                    exit;
+                }
             }
         } else {
             $title = "เกิดข้อผิดพลาดในการดึง Token ของ Provider ID";
