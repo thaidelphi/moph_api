@@ -14,6 +14,7 @@ var
   I      : Integer;
   IsInitDB: Boolean = False;
   IsInstallSvc: Boolean = False;
+  IsUninstallSvc: Boolean = False;
 
 procedure InitDatabase(const ACfg: TRadiusConfig);
 var
@@ -118,6 +119,26 @@ begin
   WriteLn('SUCCESS: fpradius service installed and started successfully!');
 end;
 
+procedure UninstallService;
+begin
+  WriteLn('Stopping fpradius service...');
+  fpSystem('sudo systemctl stop fpradius.service');
+  
+  WriteLn('Disabling fpradius service...');
+  fpSystem('sudo systemctl disable fpradius.service');
+  
+  WriteLn('Removing service file from /etc/systemd/system/fpradius.service ...');
+  if fpSystem('sudo rm -f /etc/systemd/system/fpradius.service') <> 0 then
+  begin
+    WriteLn('ERROR: Failed to remove service file. Make sure you have sudo privileges.');
+  end;
+  
+  WriteLn('Reloading systemd daemon...');
+  fpSystem('sudo systemctl daemon-reload');
+  
+  WriteLn('SUCCESS: fpradius service uninstalled successfully!');
+end;
+
 begin
   // ตรวจสอบ Parameter --help หรือ -h
   if (ParamCount > 0) and ((ParamStr(1) = '--help') or (ParamStr(1) = '-h')) then
@@ -170,7 +191,11 @@ begin
     WriteLn('    To install and start fp-radius as a background service:');
     WriteLn('      sudo ./fpradius --installservice');
     WriteLn('');
-    WriteLn(' 7. Run with PM2 (Alternative Process Manager)');
+    WriteLn(' 7. Uninstall Systemd Service (--uninstallservice)');
+    WriteLn('    To stop and remove the fp-radius background service:');
+    WriteLn('      sudo ./fpradius --uninstallservice');
+    WriteLn('');
+    WriteLn(' 8. Run with PM2 (Alternative Process Manager)');
     WriteLn('    If you prefer using PM2 instead of Systemd, you can run:');
     WriteLn('      pm2 start ./fpradius --name "fpradius"');
     WriteLn('      pm2 save');
@@ -187,6 +212,8 @@ begin
       IsInitDB := True
     else if ParamStr(I) = '--installservice' then
       IsInstallSvc := True
+    else if ParamStr(I) = '--uninstallservice' then
+      IsUninstallSvc := True
     else if not ((ParamStr(I) = '--help') or (ParamStr(I) = '-h')) then
       EnvPath := ParamStr(I); // สมมติว่า parameter อื่นๆ คือ Path ของ .env
   end;
@@ -217,6 +244,13 @@ begin
   if IsInstallSvc then
   begin
     InstallService(EnvPath);
+    Halt(0);
+  end;
+  
+  // ถ้าต้องการลบ Service ให้ทำตรงนี้แล้วออกเลย
+  if IsUninstallSvc then
+  begin
+    UninstallService;
     Halt(0);
   end;
 
