@@ -1,9 +1,64 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
+
+<!-- ========================================== -->
+<!-- ตั้งค่าข้อความต่างๆ ของหน้าเว็บได้ที่นี่ (Variables) -->
+<!-- ========================================== -->
+<script>
+    const PAGE_CONFIG = {
+        title_browser: "เข้าสู่ระบบ - ERP Management System",
+        sidebar_logo_title: "System",
+        sidebar_logo_subtitle: "Authenticator",
+        sidebar_main_title: "สำนักงานสาธารณสุขจังหวัดกำแพงเพชร",
+        sidebar_desc: "<span id="txt-sidebar_desc"></span>",
+        
+        form_title: "ยินดีต้อนรับเข้าสู่ระบบ",
+        form_subtitle: "System Authenticator",
+        
+        label_username: "Username",
+        placeholder_username: "กรอก Username",
+        
+        label_password: "Password",
+        placeholder_password: "กรอก Password",
+        
+        forgot_password_text: "ลืมรหัสผ่าน?",
+        btn_signin_text: "เข้าสู่ระบบ",
+        divider_text: "หรือเข้าสู่ระบบด้วย",
+        
+        label_thaid: "ThaID",
+        label_google: "Google",
+        label_providerid: "Provider ID",
+        
+        footer_text_1: "© 2026 กลุ่มงานสุขภาพดิจิทัล สำนักงานสาธารณสุขจังหวัดกำแพงเพชร",
+        footer_text_2: "Version 1.69.7.07 (Build 20260707)"
+    };
+
+    // ฟังก์ชันนำค่าไปใส่ใน HTML เมื่อโหลดหน้าเว็บเสร็จ
+    window.addEventListener("DOMContentLoaded", function() {
+        document.title = PAGE_CONFIG.title_browser;
+        
+        const ids = Object.keys(PAGE_CONFIG);
+        for (let i = 0; i < ids.length; i++) {
+            const el = document.getElementById("txt-" + ids[i]);
+            if (el) {
+                el.innerText = PAGE_CONFIG[ids[i]];
+            }
+        }
+        
+        // สำหรับ placeholder ของ input (username / password)
+        const userInp = document.getElementById('username');
+        if (userInp) userInp.placeholder = PAGE_CONFIG.placeholder_username;
+        
+        const passInp = document.getElementById('password');
+        if (passInp) passInp.placeholder = PAGE_CONFIG.placeholder_password;
+    });
+</script>
+<!-- ========================================== -->
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>เข้าสู่ระบบ - ERP Management System</title>
+    <title></title>
     <link href="/assets/css/fonts.css" rel="stylesheet">
     <link href="/assets/fontawesome/css/all.min.css" rel="stylesheet">
     <style>
@@ -542,14 +597,14 @@
                     <img src="/images/logo_moph.png" alt="MOPH Logo">
                 </div>
                 <div class="logo-text">
-                    <span class="logo-title">System</span>
-                    <span class="logo-subtitle">Authenticator</span>
+                    <span class="logo-title" id="txt-sidebar_logo_title"></span>
+                    <span class="logo-subtitle" id="txt-sidebar_logo_subtitle"></span>
                 </div>
             </div>
             <div class="sidebar-content">
-                <h1 class="sidebar-title">สำนักงานสาธารณสุขจังหวัดกำแพงเพชร</h1>
+                <h1 class="sidebar-title" id="txt-sidebar_main_title"></h1>
                 <p class="sidebar-desc">
-                    ระบบจัดการการยืนยันตัวตน
+                    <span id="txt-sidebar_desc"></span>
                 </p>
             </div>
             <div class="sidebar-graphic">
@@ -561,8 +616,8 @@
         <div class="login-form-pane">
             <div class="form-wrapper">
                 <div class="form-header">
-                    <h2 class="form-title">ยินดีต้อนรับเข้าสู่ระบบ</h2>
-                    <span class="form-subtitle">System Authenticator</span>
+                    <h2 class="form-title" id="txt-form_title"></h2>
+                    <span class="form-subtitle" id="txt-form_subtitle"></span>
                 </div>
 
                 
@@ -579,36 +634,36 @@
                 
                 <form id="loginForm" method="POST" action="/sso/auth/login">
                     <div class="form-group">
-                        <label for="username" class="form-label">Username</label>
+                        <label for="username" class="form-label" id="txt-label_username"></label>
                         <div class="input-wrapper">
                             <span class="input-icon-left"><i class="far fa-user"></i></span>
-                            <input type="text" name="username" id="username" class="form-input" placeholder="กรอก Username" required autocomplete="username">
+                            <input type="text" name="username" id="username" class="form-input" placeholder="" required autocomplete="username">
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label for="password" class="form-label">Password</label>
+                        <label for="password" class="form-label" id="txt-label_password"></label>
                         <div class="input-wrapper">
                             <span class="input-icon-left"><i class="fas fa-lock"></i></span>
-                            <input type="password" name="password" id="password" class="form-input" placeholder="กรอก Password" required autocomplete="current-password" style="padding-right: 2.5rem;">
+                            <input type="password" name="password" id="password" class="form-input" placeholder="" required autocomplete="current-password" style="padding-right: 2.5rem;">
                             <button type="button" class="password-toggle" onclick="togglePasswordVisibility()" aria-label="Toggle password visibility">
                                 <i class="far fa-eye" id="password-eye-icon"></i>
                             </button>
                         </div>
                         <div class="forgot-link-row">
-                            <a href="#" class="forgot-link">ลืมรหัสผ่าน?</a>
+                            <a href="#" class="forgot-link" id="txt-forgot_password_text"></a>
                         </div>
                     </div>
 
                     <button type="submit" class="btn-signin" id="btnSignIn">
-                        <span class="btn-text">เข้าสู่ระบบ</span>
+                        <span class="btn-text" id="txt-btn_signin_text"></span>
                     </button>
                 </form>
 
                 <!-- Divider -->
                 <div class="divider">
                     <div class="divider-line"></div>
-                    <span class="divider-text">หรือเข้าสู่ระบบด้วย</span>
+                    <span class="divider-text" id="txt-divider_text"></span>
                     <div class="divider-line"></div>
                 </div>
 
@@ -619,7 +674,7 @@
                         <div class="sso-icon-box thaid-bg">
                             <img src="/images/thaid.png" alt="ThaID Logo">
                         </div>
-                        <span class="sso-label">ThaID</span>
+                        <span class="sso-label" id="txt-label_thaid"></span>
                     </a>
 
                     <!-- Google Authentication Option (ลิงก์เข้าสู่ระบบผ่าน Google จริง) -->
@@ -632,7 +687,7 @@
                                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
                             </svg>
                         </div>
-                        <span class="sso-label">Google</span>
+                        <span class="sso-label" id="txt-label_google"></span>
                     </a>
 
                 </div>
@@ -640,13 +695,13 @@
                 <!-- ProviderID Link - Wide display -->
                 <a href="/sso/auth/providerid" class="sso-long-btn">
                     <img src="/images/providerid.png" alt="Provider ID Logo" onerror="this.src='https://moph.id.th/favicon.ico';">
-                    <span>Provider ID</span>
+                    <span id="txt-label_providerid"></span>
                 </a>
 
                 <!-- Footer copyright -->
                 <div class="form-footer">
-                    <p>© 2026 กลุ่มงานสุขภาพดิจิทัล สำนักงานสาธารณสุขจังหวัดกำแพงเพชร</p>
-                    <p style="margin-top: 0.25rem;">Version 1.69.7.07 (Build 20260707)</p>
+                    <p id="txt-footer_text_1"></p>
+                    <p style="margin-top: 0.25rem;" id="txt-footer_text_2"></p>
                 </div>
             </div>
         </div>
