@@ -1,0 +1,16 @@
+[Unit]
+Description=FreePascal SSO HTTP Server
+After=network.target mysql.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/var/www/api/freepascal/fpsso
+ExecStart=/var/www/api/freepascal/fpsso/fpsso
+Restart=on-failure
+RestartSec=5s
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
