@@ -15,6 +15,9 @@ procedure LogAccounting(Conn: TMySQL80Connection; const SessionID, Username, Nas
 
 implementation
 
+var
+  DBInitialized: Boolean = False;
+
 function DBConnect(const Cfg: TRadiusConfig; out Conn: TMySQL80Connection): Boolean;
 var
   Trans: TSQLTransaction;
@@ -35,20 +38,25 @@ begin
     Conn.Connected := True;
     
     // Auto-create necessary missing log tables if they don't exist
-    try
-      Conn.ExecuteDirect('CREATE TABLE IF NOT EXISTS radius_access_log (id BIGINT AUTO_INCREMENT PRIMARY KEY, username VARCHAR(255), nas_ip VARCHAR(50), accepted TINYINT(1), login_time DATETIME) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci');
-      Conn.ExecuteDirect('CREATE TABLE IF NOT EXISTS radius_acct_log (id BIGINT AUTO_INCREMENT PRIMARY KEY, session_id VARCHAR(255), username VARCHAR(255), nas_ip VARCHAR(50), status_type INT, session_time INT, log_time DATETIME) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci');
-      
-      // Auto-insert default test user if it doesn't exist
-      Conn.ExecuteDirect('INSERT INTO radcheck (username, attribute, op, value) SELECT ''test'', ''Cleartext-Password'', ''=='', ''test01'' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM radcheck WHERE username = ''test'') LIMIT 1');
-      Conn.ExecuteDirect('INSERT INTO userinfo (username, firstname, lastname, creationdate) SELECT ''test'', ''Test'', ''User'', NOW() FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM userinfo WHERE username = ''test'') LIMIT 1');
-      
-      Trans.Commit;
-    except
-      on E: Exception do
-      begin
-        LogMsg(0, 'Failed to initialize log tables: ' + E.Message);
-        Trans.Rollback;
+    // This will only run once during the main thread's initial connection test
+    if not DBInitialized then
+    begin
+      DBInitialized := True;
+      try
+        Conn.ExecuteDirect('CREATE TABLE IF NOT EXISTS radius_access_log (id BIGINT AUTO_INCREMENT PRIMARY KEY, username VARCHAR(255), nas_ip VARCHAR(50), accepted TINYINT(1), login_time DATETIME) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci');
+        Conn.ExecuteDirect('CREATE TABLE IF NOT EXISTS radius_acct_log (id BIGINT AUTO_INCREMENT PRIMARY KEY, session_id VARCHAR(255), username VARCHAR(255), nas_ip VARCHAR(50), status_type INT, session_time INT, log_time DATETIME) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci');
+        
+        // Auto-insert default test user if it doesn't exist
+        Conn.ExecuteDirect('INSERT INTO radcheck (username, attribute, op, value) SELECT ''test'', ''Cleartext-Password'', ''=='', ''test01'' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM radcheck WHERE username = ''test'') LIMIT 1');
+        Conn.ExecuteDirect('INSERT INTO userinfo (username, firstname, lastname, creationdate) SELECT ''test'', ''Test'', ''User'', NOW() FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM userinfo WHERE username = ''test'') LIMIT 1');
+        
+        Trans.Commit;
+      except
+        on E: Exception do
+        begin
+          LogMsg(0, 'Failed to initialize log tables: ' + E.Message);
+          Trans.Rollback;
+        end;
       end;
     end;
 
