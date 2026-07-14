@@ -159,7 +159,8 @@ begin
     WriteLn(' 4. Loading Environment Variables (.env)');
     WriteLn('    You can specify the path to your .env file as an argument:');
     WriteLn('      ./fpradius /opt/radius/.env');
-    WriteLn('    * If not provided, it will default to: /var/www/api/.env');
+    WriteLn('    * If not provided, it will look for .env in the current directory,');
+    WriteLn('      then default to: /var/www/api/.env');
     WriteLn('');
     WriteLn(' 5. Database Initialization (--init-database)');
     WriteLn('    To automatically create the database and setup tables based on .env credentials, run:');
@@ -173,7 +174,7 @@ begin
   end;
 
   // รับ Path ของ .env จาก Command Line หรือใช้ค่า Default
-  EnvPath := '/var/www/api/.env'; // ค่าเริ่มต้น
+  EnvPath := ''; 
   for I := 1 to ParamCount do
   begin
     if ParamStr(I) = '--init-database' then
@@ -182,6 +183,16 @@ begin
       IsInstallSvc := True
     else if not ((ParamStr(I) = '--help') or (ParamStr(I) = '-h')) then
       EnvPath := ParamStr(I); // สมมติว่า parameter อื่นๆ คือ Path ของ .env
+  end;
+
+  if EnvPath = '' then
+  begin
+    if FileExists('.env') then
+      EnvPath := '.env'
+    else if FileExists(ExtractFilePath(ParamStr(0)) + '.env') then
+      EnvPath := ExtractFilePath(ParamStr(0)) + '.env'
+    else
+      EnvPath := '/var/www/api/.env';
   end;
 
   WriteLn('fp-radius: Loading config from ', EnvPath);
