@@ -119,11 +119,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RADIUS User Management</title>
     <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <style>
         :root {
             --bg-color: #0f172a;
@@ -146,7 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
         }
 
         body {
-            font-family: 'Sarabun', 'Outfit', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: var(--bg-color);
             background-image: 
                 radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
@@ -175,7 +170,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
         }
 
         .header h1 {
-            font-family: 'Outfit', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             font-size: 2rem;
             font-weight: 700;
             background: linear-gradient(to right, #60a5fa, #a78bfa);
@@ -187,7 +182,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
             padding: 0.6rem 1.2rem;
             border: none;
             border-radius: 8px;
-            font-family: 'Sarabun', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -230,7 +225,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
             border: 1px solid var(--border);
             border-radius: 8px;
             color: white;
-            font-family: 'Sarabun', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             font-size: 1rem;
             outline: none;
             transition: border-color 0.2s;
@@ -251,7 +246,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
         }
 
         th {
-            font-family: 'Outfit', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             font-weight: 600;
             color: var(--text-muted);
             text-transform: uppercase;
@@ -364,8 +359,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
 
     <div class="container">
         <div class="header">
-            <h1><i class="fa-solid fa-users-gear"></i> RADIUS Users</h1>
-            <button class="btn btn-primary" onclick="openAddModal()"><i class="fa-solid fa-plus"></i> เพิ่มผู้ใช้ใหม่</button>
+            <h1><svg fill="currentColor" viewBox="0 0 20 20" width="1.5em" height="1.5em" style="vertical-align: middle; margin-right: 8px;"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/></svg> RADIUS Users</h1>
+            <button class="btn btn-primary" onclick="openAddModal()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="1.2em" height="1.2em" style="vertical-align: middle; margin-right: 4px;" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg> เพิ่มผู้ใช้ใหม่</button>
         </div>
 
         <div class="panel">
@@ -442,11 +437,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
                     <td style="font-family: monospace; color: #94a3b8;">${escapeHtml(user.value)}</td>
                     <td>${statusHtml}</td>
                     <td class="actions">
-                        <button class="btn btn-sm btn-primary" onclick="openEditModal(${user.id}, '${escapeHtml(user.value)}')"><i class="fa-solid fa-pen"></i></button>
+                        <button class="btn btn-sm btn-primary" onclick="openEditModal(${user.id}, '${escapeHtml(user.value)}')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="1.2em" height="1.2em" style="vertical-align: middle;" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></button>
                         <button class="btn btn-sm btn-warning" onclick="toggleSuspend(${user.id}, '${user.attribute}')">
-                            <i class="fa-solid ${isActive ? 'fa-ban' : 'fa-check'}"></i>
+                            ${isActive ? '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="1.2em" height="1.2em" style="vertical-align: middle;" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>' : '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="1.2em" height="1.2em" style="vertical-align: middle;" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>'}
                         </button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteUser(${user.id})"><i class="fa-solid fa-trash"></i></button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteUser(${user.id})"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="1.2em" height="1.2em" style="vertical-align: middle;" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
                     </td>
                 `;
                 tbody.appendChild(tr);
