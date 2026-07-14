@@ -392,7 +392,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
                             <th>Username</th>
                             <th>Name</th>
                             <th>Department</th>
-                            <th>Password</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
@@ -416,7 +415,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
             </div>
             <div class="form-group">
                 <label>Password</label>
-                <input type="text" id="password" placeholder="กรอกรหัสผ่าน">
+                <input type="password" id="password" placeholder="เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยน">
             </div>
             <div style="display: flex; gap: 1rem;">
                 <div class="form-group" style="flex: 1;">
@@ -470,7 +469,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
                     <td style="font-weight: 500;">${escapeHtml(user.username)}</td>
                     <td>${escapeHtml(user.firstname || "-")} ${escapeHtml(user.lastname || "")}</td>
                     <td>${escapeHtml(user.department || "-")}</td>
-                    <td style="font-family: monospace; color: #94a3b8;">${escapeHtml(user.value)}</td>
                     <td>${statusHtml}</td>
                     <td class="actions">
                         <button class="btn btn-sm btn-primary" onclick="openEditModal(${user.id}, '${escapeHtml(user.value)}')"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="1.2em" height="1.2em" style="vertical-align: middle;" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></button>
