@@ -28,6 +28,7 @@ type
     MophIDURL: string;
     
     FortiGateAuthURL: string;
+    FortiGateLogoutURL: string;
     
     LoginTemplatePath: string;
   end;
@@ -90,9 +91,14 @@ begin
         else if (Key = 'MOPH_ID_URL') then AppCfg.MophIDURL := Value
         
         else if (Key = 'FORTIGATE_AUTH_URL') then AppCfg.FortiGateAuthURL := Value
+        else if (Key = 'FORTIGATE_LOGOUT_URL') then AppCfg.FortiGateLogoutURL := Value
         else if (Key = 'LOGIN_TEMPLATE_PATH') then AppCfg.LoginTemplatePath := Value;
       end;
     end;
+    
+    if AppCfg.FortiGateLogoutURL = '' then
+      AppCfg.FortiGateLogoutURL := StringReplace(AppCfg.FortiGateAuthURL, 'fgtauth', 'logout', [rfIgnoreCase]);
+      
     Result := True;
   finally
     Lines.Free;

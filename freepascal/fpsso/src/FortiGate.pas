@@ -65,7 +65,28 @@ begin
   Res.SendContent;
 end;
 
+procedure HandleFortiGateLogout(Req: TRequest; Res: TResponse);
+var
+  SessionID: string;
+begin
+  SessionID := Req.CookieFields.Values['SSOSESSID'];
+  if SessionID <> '' then
+  begin
+    SessionManager.DeleteSession(SessionID);
+    with Res.Cookies.Add do
+    begin
+      Name := 'SSOSESSID';
+      Value := '';
+      Path := '/';
+      Expires := Now - 1; // Expire cookie
+    end;
+  end;
+  
+  Redirect(Res, AppCfg.FortiGateLogoutURL);
+end;
+
 initialization
   RegisterRoute('GET', '/fortigate/handshake', @HandleFortiGateHandshake);
+  RegisterRoute('GET', '/auth/logout', @HandleFortiGateLogout);
 
 end.
