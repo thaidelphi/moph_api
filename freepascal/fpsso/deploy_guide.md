@@ -52,6 +52,9 @@ PROVIDER_ID_REDIRECT_URI=https://yourdomain.com/sso/auth/providerid/callback
 PROVIDER_ID_URL=https://provider.id.th
 
 FORTIGATE_AUTH_URL=http://192.168.1.1:1000/fgtauth
+
+# (Optional) กำหนด Path ของไฟล์ login.html หากต้องการปรับแต่งหน้าเว็บเอง
+LOGIN_TEMPLATE_PATH=/var/www/api/freepascal/fpsso/templates/login.html
 ```
 
 ## 3. การคอมไพล์โปรแกรม (Compile)

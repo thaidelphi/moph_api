@@ -14,11 +14,11 @@ procedure HandleRoot(Req: TRequest; Res: TResponse);
 var
   HtmlContent: string;
 begin
-  if FileExists('/var/www/api/freepascal/fpsso/templates/login.html') then
+  if FileExists(AppCfg.LoginTemplatePath) then
   begin
     with TStringList.Create do
     try
-      LoadFromFile('/var/www/api/freepascal/fpsso/templates/login.html');
+      LoadFromFile(AppCfg.LoginTemplatePath);
       HtmlContent := Text;
     finally
       Free;
@@ -29,7 +29,7 @@ begin
     Res.SendContent;
   end
   else
-    SendJSONError(Res, 404, 'login.html not found');
+    SendJSONError(Res, 404, 'Login template not found at: ' + AppCfg.LoginTemplatePath);
 end;
 
 begin
