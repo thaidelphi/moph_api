@@ -109,7 +109,11 @@ begin
   AuthAddr.sin_family := AF_INET;
   AuthAddr.sin_port   := htons(FCfg.RadiusPort);
   AuthAddr.sin_addr.s_addr := INADDR_ANY;
-  fpBind(FAuthSocket, @AuthAddr, SizeOf(AuthAddr));
+  if fpBind(FAuthSocket, @AuthAddr, SizeOf(AuthAddr)) < 0 then
+  begin
+    LogMsg(0, 'ERROR: Cannot bind to Auth Port ' + IntToStr(FCfg.RadiusPort) + '. Is another instance running?');
+    Halt(1);
+  end;
 
   // สร้าง Socket สำหรับ Accounting (Port 1813)
   FAcctSocket := fpSocket(AF_INET, SOCK_DGRAM, 0);
@@ -119,7 +123,11 @@ begin
   AcctAddr.sin_family := AF_INET;
   AcctAddr.sin_port   := htons(FCfg.AcctPort);
   AcctAddr.sin_addr.s_addr := INADDR_ANY;
-  fpBind(FAcctSocket, @AcctAddr, SizeOf(AcctAddr));
+  if fpBind(FAcctSocket, @AcctAddr, SizeOf(AcctAddr)) < 0 then
+  begin
+    LogMsg(0, 'ERROR: Cannot bind to Acct Port ' + IntToStr(FCfg.AcctPort) + '. Is another instance running?');
+    Halt(1);
+  end;
 
   LogMsg(1, 'fp-radius started on UDP :'
             + IntToStr(FCfg.RadiusPort)
