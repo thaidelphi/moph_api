@@ -13,12 +13,19 @@ uses
 procedure HandleRoot(Req: TRequest; Res: TResponse);
 var
   HtmlContent: string;
+  TemplatePath: string;
 begin
-  if FileExists(AppCfg.LoginTemplatePath) then
+  // ตรวจสอบ login.html ในโฟลเดอร์เดียวกับโปรแกรมก่อนเป็นหลัก
+  TemplatePath := ExtractFilePath(ParamStr(0)) + 'login.html';
+  
+  if not FileExists(TemplatePath) then
+    TemplatePath := AppCfg.LoginTemplatePath;
+
+  if FileExists(TemplatePath) then
   begin
     with TStringList.Create do
     try
-      LoadFromFile(AppCfg.LoginTemplatePath);
+      LoadFromFile(TemplatePath);
       HtmlContent := Text;
     finally
       Free;
@@ -29,7 +36,7 @@ begin
     Res.SendContent;
   end
   else
-    SendJSONError(Res, 404, 'Login template not found at: ' + AppCfg.LoginTemplatePath);
+    SendJSONError(Res, 404, 'Login template not found at: ' + TemplatePath);
 end;
 
 begin
