@@ -390,6 +390,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
                         <tr>
                             <th>ID</th>
                             <th>Username</th>
+                            <th>Name</th>
+                            <th>Department</th>
                             <th>Password</th>
                             <th>Status</th>
                             <th>Actions</th>
@@ -415,6 +417,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
             <div class="form-group">
                 <label>Password</label>
                 <input type="text" id="password" placeholder="กรอกรหัสผ่าน">
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <div class="form-group" style="flex: 1;">
+                    <label>First Name</label>
+                    <input type="text" id="firstname" placeholder="ชื่อจริง">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label>Last Name</label>
+                    <input type="text" id="lastname" placeholder="นามสกุล">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Department</label>
+                <input type="text" id="department" placeholder="แผนก">
             </div>
             <div class="modal-actions">
                 <button class="btn btn-cancel" onclick="closeModal()">ยกเลิก</button>
@@ -452,6 +468,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
                 tr.innerHTML = `
                     <td>${user.id}</td>
                     <td style="font-weight: 500;">${escapeHtml(user.username)}</td>
+                    <td>${escapeHtml(user.firstname || "-")} ${escapeHtml(user.lastname || "")}</td>
+                    <td>${escapeHtml(user.department || "-")}</td>
                     <td style="font-family: monospace; color: #94a3b8;">${escapeHtml(user.value)}</td>
                     <td>${statusHtml}</td>
                     <td class="actions">
@@ -489,16 +507,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
             mUser.value = "";
             mUser.disabled = false;
             mPass.value = "";
+            document.getElementById('firstname').value = "";
+            document.getElementById('lastname').value = "";
+            document.getElementById('department').value = "";
             modal.classList.add('active');
         }
 
         function openEditModal(id, currentPass) {
-            mTitle.innerText = "แก้ไขรหัสผ่าน";
+            mTitle.innerText = "แก้ไขข้อมูลผู้ใช้งาน";
             mId.value = id;
             const user = allUsers.find(u => parseInt(u.id) === parseInt(id));
             mUser.value = user ? user.username : "";
             mUser.disabled = true;
             mPass.value = currentPass;
+            document.getElementById('firstname').value = user ? (user.firstname || "") : "";
+            document.getElementById('lastname').value = user ? (user.lastname || "") : "";
+            document.getElementById('department').value = user ? (user.department || "") : "";
             modal.classList.add('active');
         }
 
@@ -514,6 +538,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
             if(mId.value) formData.append('id', mId.value);
             formData.append('username', mUser.value);
             formData.append('password', mPass.value);
+            formData.append('firstname', document.getElementById('firstname').value);
+            formData.append('lastname', document.getElementById('lastname').value);
+            formData.append('department', document.getElementById('department').value);
 
             if(!mPass.value || (!mUser.value && !mId.value)) {
                 alert("กรุณากรอกข้อมูลให้ครบถ้วน"); return;

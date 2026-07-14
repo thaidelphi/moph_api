@@ -141,7 +141,7 @@ var
   JArr: TJSONArray;
   JUser: TJSONObject;
   
-  Action, Username, Password, Attr, IDStr: string;
+  Action, Username, Password, Attr, IDStr, FirstName, LastName, Department: string;
 begin
   if not CheckBasicAuth(Req, Res) then Exit;
 
@@ -157,7 +157,9 @@ begin
     // === GET (LIST USERS) ===
     if Req.Method = 'GET' then
     begin
-      Query.SQL.Text := 'SELECT id, username, value, attribute FROM radcheck WHERE attribute IN (''Cleartext-Password'', ''Suspended-Password'') ORDER BY id DESC';
+      Query.SQL.Text := 'SELECT r.id, r.username, r.value, r.attribute, u.firstname, u.lastname, u.department ' +
+                        'FROM radcheck r LEFT JOIN userinfo u ON r.username = u.username ' +
+                        'WHERE r.attribute IN (''Cleartext-Password'', ''Suspended-Password'') ORDER BY r.id DESC';
       Query.Open;
       
       JArr := TJSONArray.Create;
@@ -168,6 +170,9 @@ begin
         JUser.Add('username', Query.FieldByName('username').AsString);
         JUser.Add('value', Query.FieldByName('value').AsString);
         JUser.Add('attribute', Query.FieldByName('attribute').AsString);
+        JUser.Add('firstname', Query.FieldByName('firstname').AsString);
+        JUser.Add('lastname', Query.FieldByName('lastname').AsString);
+        JUser.Add('department', Query.FieldByName('department').AsString);
         JArr.Add(JUser);
         Query.Next;
       end;
@@ -189,6 +194,9 @@ begin
       Username := Trim(Req.ContentFields.Values['username']);
       Password := Trim(Req.ContentFields.Values['password']);
       Attr := Req.ContentFields.Values['attribute'];
+      FirstName := Trim(Req.ContentFields.Values['firstname']);
+      LastName := Trim(Req.ContentFields.Values['lastname']);
+      Department := Trim(Req.ContentFields.Values['department']);
       
       if Action = 'add' then
       begin
@@ -212,6 +220,10 @@ begin
         // Insert
         Conn.ExecuteDirect('INSERT INTO radcheck (username, attribute, op, value) VALUES (' +
           QuotedStr(Username) + ', ''Cleartext-Password'', ''=='', ' + QuotedStr(Password) + ')');
+        
+        Conn.ExecuteDirect('INSERT INTO userinfo (username, firstname, lastname, department, creationdate) VALUES (' +
+          QuotedStr(Username) + ', ' + QuotedStr(FirstName) + ', ' + QuotedStr(LastName) + ', ' + QuotedStr(Department) + ', NOW())');
+        
         Trans.Commit;
         SendJSONSuccess(Res);
         Exit;
@@ -226,6 +238,18 @@ begin
         end;
         
         Conn.ExecuteDirect('UPDATE radcheck SET value = ' + QuotedStr(Password) + ' WHERE id = ' + IDStr);
+        
+        Query.SQL.Text := 'SELECT id FROM userinfo WHERE username = :u';
+        Query.ParamByName('u').AsString := Username;
+        Query.Open;
+        if Query.EOF then
+          Conn.ExecuteDirect('INSERT INTO userinfo (username, firstname, lastname, department, creationdate) VALUES (' +
+            QuotedStr(Username) + ', ' + QuotedStr(FirstName) + ', ' + QuotedStr(LastName) + ', ' + QuotedStr(Department) + ', NOW())')
+        else
+          Conn.ExecuteDirect('UPDATE userinfo SET firstname = ' + QuotedStr(FirstName) + ', lastname = ' + QuotedStr(LastName) + 
+            ', department = ' + QuotedStr(Department) + ', updatedate = NOW() WHERE username = ' + QuotedStr(Username));
+        Query.Close;
+        
         Trans.Commit;
         SendJSONSuccess(Res);
         Exit;
@@ -238,6 +262,15 @@ begin
           SendJSONErrorMsg(Res, 'Missing data');
           Exit;
         end;
+        
+        Query.SQL.Text := 'SELECT username FROM radcheck WHERE id = ' + IDStr;
+        Query.Open;
+        if not Query.EOF then
+        begin
+          Username := Query.FieldByName('username').AsString;
+          Conn.ExecuteDirect('DELETE FROM userinfo WHERE username = ' + QuotedStr(Username));
+        end;
+        Query.Close;
         
         Conn.ExecuteDirect('DELETE FROM radcheck WHERE id = ' + IDStr);
         Trans.Commit;
