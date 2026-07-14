@@ -26,18 +26,22 @@ begin
   end;
   
   // Basic template replacement
-  HtmlContent := '<!DOCTYPE html>' + LineEnding +
-    '<html lang="th">' + LineEnding +
-    '<head>' + LineEnding +
-    '    <meta charset="UTF-8">' + LineEnding +
+  HtmlContent := '<!DOCTYPE html><html lang="th"><head><meta charset="utf-8">' + LineEnding +
+    '    <link rel="stylesheet" href="/assets/css/fonts.css">' + LineEnding +
     '    <title>กำลังเชื่อมต่อระบบเครือข่าย...</title>' + LineEnding +
     '    <style>' + LineEnding +
-    '        body { font-family: sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; }' + LineEnding +
-    '        .loading-box { text-align: center; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }' + LineEnding +
+    '        body { font-family: "Sarabun", sans-serif; background-color: #f4f7f6; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }' + LineEnding +
+    '        .loading-box { text-align: center; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); max-width: 400px; width: 100%; }' + LineEnding +
+    '        .loading-box img { width: 80px; margin-bottom: 20px; }' + LineEnding +
+    '        .spinner { border: 4px solid rgba(0, 0, 0, 0.1); width: 50px; height: 50px; border-radius: 50%; border-left-color: #007bff; animation: spin 1s linear infinite; margin: 0 auto 20px auto; }' + LineEnding +
+    '        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }' + LineEnding +
+    '        h2 { color: #333; margin-bottom: 10px; font-size: 18px; }' + LineEnding +
+    '        p { color: #666; font-size: 14px; }' + LineEnding +
     '    </style>' + LineEnding +
-    '</head>' + LineEnding +
-    '<body>' + LineEnding +
+    '</head><body>' + LineEnding +
     '    <div class="loading-box">' + LineEnding +
+    '        <img src="/images/logo_moph.png" alt="Logo">' + LineEnding +
+    '        <div class="spinner"></div>' + LineEnding +
     '        <h2>กำลังอนุญาตสิทธิ์เข้าใช้งานอินเทอร์เน็ต</h2>' + LineEnding +
     '        <p>กรุณารอสักครู่ ระบบกำลังลงทะเบียนอุปกรณ์ของท่านกับทาง FortiGate...</p>' + LineEnding +
     '    </div>' + LineEnding +

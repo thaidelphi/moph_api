@@ -43,8 +43,8 @@ if (empty($username)) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- นำเข้าฟอนต์เพื่อใช้แต่งหน้าจอ Loading ที่เป็นระบบภาษาไทย -->
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- นำเข้าฟอนต์ Offline จากระบบ -->
+    <link rel="stylesheet" href="/assets/css/fonts.css">
     <title>กำลังเชื่อมต่อระบบเครือข่าย...</title>
     <style>
         body {
@@ -64,6 +64,10 @@ if (empty($username)) {
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
             max-width: 400px;
             width: 100%;
+        }
+        .loading-box img {
+            width: 80px;
+            margin-bottom: 20px;
         }
         .spinner {
             border: 4px solid rgba(0, 0, 0, 0.1);
@@ -92,6 +96,7 @@ if (empty($username)) {
 <body>
 
     <div class="loading-box">
+        <img src="/images/logo_moph.png" alt="Logo">
         <div class="spinner"></div>
         <h2>กำลังอนุญาตสิทธิ์เข้าใช้งานอินเทอร์เน็ต</h2>
         <p>กรุณารอสักครู่ ระบบกำลังลงทะเบียนอุปกรณ์ของท่านกับทาง FortiGate...</p>
