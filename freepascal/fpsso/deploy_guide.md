@@ -165,7 +165,14 @@ sudo systemctl reload apache2
 
 **ขั้นตอนการทำ:**
 
-1. **สร้าง Address Object แบบ FQDN** ของโดเมน SSO ที่ใช้งาน (เช่น `api1.kpo.go.th`, `sso.moph.go.th`, `imauth.bora.dopa.go.th` ฯลฯ) เตรียมเอาไว้
+1. **สร้าง Address Object แบบ FQDN** สำหรับโดเมนที่เกี่ยวข้องกับระบบ SSO และ OAuth ทั้งหมด โดยให้สร้างแยกเป็นแต่ละ Object ดังนี้:
+   - `accounts.google.com` (สำหรับ Google SSO)
+   - `oauth2.googleapis.com` (สำหรับ Google SSO)
+   - `www.googleapis.com` (สำหรับ Google SSO)
+   - `imauth.bora.dopa.go.th` (สำหรับ ThaID SSO)
+   - `moph.id.th` (โดเมนหลักของระบบ MOPH)
+   - `provider.id.th` (สำหรับ MOPH Provider ID)
+   - `api1.kpo.go.th` (โดเมนของระบบ fpsso ที่เราติดตั้ง)
 
 2. **สร้าง Address Group** (รวมกลุ่มเพื่อความสะดวก)
    - ไปที่ **Policy & Objects > Addresses**
