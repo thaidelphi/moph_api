@@ -3,7 +3,7 @@ program fpradius;
 {$mode objfpc}{$H+}
 
 uses
-  {$IFDEF UNIX}cthreads,{$ENDIF}
+  {$IFDEF UNIX}cthreads, Unix,{$ENDIF}
   SysUtils, RadiusConfig, RadiusDB, RadiusServer, mysql80conn;
 
 var
@@ -11,6 +11,40 @@ var
   Server : TRadiusServer;
   EnvPath: string;
   TestConn: TMySQL80Connection;
+  I      : Integer;
+  IsInitDB: Boolean = False;
+
+procedure InitDatabase(const ACfg: TRadiusConfig);
+var
+  CmdCreate, CmdImport: string;
+  Res: Integer;
+begin
+  WriteLn('fp-radius: Initializing Database ', ACfg.DBName, ' at ', ACfg.DBHost, '...');
+  
+  // 1. Create database
+  CmdCreate := 'mysql -h ' + ACfg.DBHost + ' -u ' + ACfg.DBUser + ' -p' + ACfg.DBPass + 
+               ' -e "CREATE DATABASE IF NOT EXISTS ' + ACfg.DBName + ' CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"';
+  WriteLn('Executing: CREATE DATABASE IF NOT EXISTS ', ACfg.DBName);
+  Res := fpSystem(CmdCreate);
+  if Res <> 0 then
+  begin
+    WriteLn('ERROR: Failed to create database. mysql client might not be installed or credentials are wrong.');
+    Halt(1);
+  end;
+
+  // 2. Import schema
+  CmdImport := 'mysql -h ' + ACfg.DBHost + ' -u ' + ACfg.DBUser + ' -p' + ACfg.DBPass + 
+               ' ' + ACfg.DBName + ' < /var/www/api/radius_schema.sql';
+  WriteLn('Executing: Import /var/www/api/radius_schema.sql');
+  Res := fpSystem(CmdImport);
+  if Res <> 0 then
+  begin
+    WriteLn('ERROR: Failed to import schema from /var/www/api/radius_schema.sql');
+    Halt(1);
+  end;
+
+  WriteLn('SUCCESS: Database initialization completed successfully!');
+end;
 
 begin
   // ตรวจสอบ Parameter --help หรือ -h
@@ -52,20 +86,35 @@ begin
     WriteLn('    You can specify the path to your .env file as an argument:');
     WriteLn('      ./fpradius /opt/radius/.env');
     WriteLn('    * If not provided, it will default to: /var/www/api/.env');
+    WriteLn('');
+    WriteLn(' 5. Database Initialization (--init-database)');
+    WriteLn('    To automatically create the database and setup tables based on .env credentials, run:');
+    WriteLn('      ./fpradius .env --init-database');
     WriteLn('====================================================');
     Halt(0);
   end;
 
   // รับ Path ของ .env จาก Command Line หรือใช้ค่า Default
-  if ParamCount > 0 then
-    EnvPath := ParamStr(1)
-  else
-    EnvPath := '/var/www/api/.env';
+  EnvPath := '/var/www/api/.env'; // ค่าเริ่มต้น
+  for I := 1 to ParamCount do
+  begin
+    if ParamStr(I) = '--init-database' then
+      IsInitDB := True
+    else if not ((ParamStr(I) = '--help') or (ParamStr(I) = '-h')) then
+      EnvPath := ParamStr(I); // สมมติว่า parameter อื่นๆ คือ Path ของ .env
+  end;
 
   WriteLn('fp-radius: Loading config from ', EnvPath);
 
   // โหลด Config
   Cfg := LoadConfig(EnvPath);
+
+  // ถ้าต้องการสร้าง Database ให้ทำตรงนี้แล้วออกเลย
+  if IsInitDB then
+  begin
+    InitDatabase(Cfg);
+    Halt(0);
+  end;
 
   // ทดสอบเชื่อมต่อฐานข้อมูลเบื้องต้น
   if not DBConnect(Cfg, TestConn) then
