@@ -431,6 +431,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
                 <label>Department</label>
                 <input type="text" id="department" placeholder="แผนก">
             </div>
+            <div style="display: flex; gap: 1rem;">
+                <div class="form-group" style="flex: 1;">
+                    <label>Email</label>
+                    <input type="email" id="email" placeholder="อีเมล">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label>Phone</label>
+                    <input type="text" id="mobilephone" placeholder="เบอร์โทรศัพท์">
+                </div>
+            </div>
             <div class="modal-actions">
                 <button class="btn btn-cancel" onclick="closeModal()">ยกเลิก</button>
                 <button class="btn btn-primary" onclick="saveUser()">บันทึก</button>
@@ -508,6 +518,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
             document.getElementById('firstname').value = "";
             document.getElementById('lastname').value = "";
             document.getElementById('department').value = "";
+            document.getElementById('email').value = "";
+            document.getElementById('mobilephone').value = "";
             modal.classList.add('active');
         }
 
@@ -521,6 +533,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
             document.getElementById('firstname').value = user ? (user.firstname || "") : "";
             document.getElementById('lastname').value = user ? (user.lastname || "") : "";
             document.getElementById('department').value = user ? (user.department || "") : "";
+            document.getElementById('email').value = user ? (user.email || "") : "";
+            document.getElementById('mobilephone').value = user ? (user.mobilephone || "") : "";
             modal.classList.add('active');
         }
 
@@ -539,6 +553,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
             formData.append('firstname', document.getElementById('firstname').value);
             formData.append('lastname', document.getElementById('lastname').value);
             formData.append('department', document.getElementById('department').value);
+            formData.append('email', document.getElementById('email').value);
+            formData.append('mobilephone', document.getElementById('mobilephone').value);
 
             if(!mPass.value || (!mUser.value && !mId.value)) {
                 alert("กรุณากรอกข้อมูลให้ครบถ้วน"); return;

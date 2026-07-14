@@ -141,7 +141,7 @@ var
   JArr: TJSONArray;
   JUser: TJSONObject;
   
-  Action, Username, Password, Attr, IDStr, FirstName, LastName, Department: string;
+  Action, Username, Password, Attr, IDStr, FirstName, LastName, Department, Email, MobilePhone: string;
 begin
   if not CheckBasicAuth(Req, Res) then Exit;
 
@@ -157,7 +157,7 @@ begin
     // === GET (LIST USERS) ===
     if Req.Method = 'GET' then
     begin
-      Query.SQL.Text := 'SELECT r.id, r.username, r.value, r.attribute, u.firstname, u.lastname, u.department ' +
+      Query.SQL.Text := 'SELECT r.id, r.username, r.value, r.attribute, u.firstname, u.lastname, u.department, u.email, u.mobilephone ' +
                         'FROM radcheck r LEFT JOIN userinfo u ON r.username = u.username ' +
                         'WHERE r.attribute IN (''Cleartext-Password'', ''Suspended-Password'') ORDER BY r.id DESC';
       Query.Open;
@@ -173,6 +173,8 @@ begin
         JUser.Add('firstname', Query.FieldByName('firstname').AsString);
         JUser.Add('lastname', Query.FieldByName('lastname').AsString);
         JUser.Add('department', Query.FieldByName('department').AsString);
+        JUser.Add('email', Query.FieldByName('email').AsString);
+        JUser.Add('mobilephone', Query.FieldByName('mobilephone').AsString);
         JArr.Add(JUser);
         Query.Next;
       end;
@@ -197,6 +199,8 @@ begin
       FirstName := Trim(Req.ContentFields.Values['firstname']);
       LastName := Trim(Req.ContentFields.Values['lastname']);
       Department := Trim(Req.ContentFields.Values['department']);
+      Email := Trim(Req.ContentFields.Values['email']);
+      MobilePhone := Trim(Req.ContentFields.Values['mobilephone']);
       
       if Action = 'add' then
       begin
@@ -221,8 +225,8 @@ begin
         Conn.ExecuteDirect('INSERT INTO radcheck (username, attribute, op, value) VALUES (' +
           QuotedStr(Username) + ', ''Cleartext-Password'', ''=='', ' + QuotedStr(Password) + ')');
         
-        Conn.ExecuteDirect('INSERT INTO userinfo (username, firstname, lastname, department, creationdate) VALUES (' +
-          QuotedStr(Username) + ', ' + QuotedStr(FirstName) + ', ' + QuotedStr(LastName) + ', ' + QuotedStr(Department) + ', NOW())');
+        Conn.ExecuteDirect('INSERT INTO userinfo (username, firstname, lastname, department, email, mobilephone, creationdate) VALUES (' +
+          QuotedStr(Username) + ', ' + QuotedStr(FirstName) + ', ' + QuotedStr(LastName) + ', ' + QuotedStr(Department) + ', ' + QuotedStr(Email) + ', ' + QuotedStr(MobilePhone) + ', NOW())');
         
         Trans.Commit;
         SendJSONSuccess(Res);
@@ -243,11 +247,11 @@ begin
         Query.ParamByName('u').AsString := Username;
         Query.Open;
         if Query.EOF then
-          Conn.ExecuteDirect('INSERT INTO userinfo (username, firstname, lastname, department, creationdate) VALUES (' +
-            QuotedStr(Username) + ', ' + QuotedStr(FirstName) + ', ' + QuotedStr(LastName) + ', ' + QuotedStr(Department) + ', NOW())')
+          Conn.ExecuteDirect('INSERT INTO userinfo (username, firstname, lastname, department, email, mobilephone, creationdate) VALUES (' +
+            QuotedStr(Username) + ', ' + QuotedStr(FirstName) + ', ' + QuotedStr(LastName) + ', ' + QuotedStr(Department) + ', ' + QuotedStr(Email) + ', ' + QuotedStr(MobilePhone) + ', NOW())')
         else
           Conn.ExecuteDirect('UPDATE userinfo SET firstname = ' + QuotedStr(FirstName) + ', lastname = ' + QuotedStr(LastName) + 
-            ', department = ' + QuotedStr(Department) + ', updatedate = NOW() WHERE username = ' + QuotedStr(Username));
+            ', department = ' + QuotedStr(Department) + ', email = ' + QuotedStr(Email) + ', mobilephone = ' + QuotedStr(MobilePhone) + ', updatedate = NOW() WHERE username = ' + QuotedStr(Username));
         Query.Close;
         
         Trans.Commit;
