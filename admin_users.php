@@ -371,6 +371,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
         }
         .btn-cancel:hover { background: rgba(255,255,255,0.05); }
 
+    
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        .pagination button {
+            padding: 0.5rem 1rem;
+            border: 1px solid #cbd5e1;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            color: #1e293b;
+        }
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .pagination span {
+            color: #64748b;
+            font-size: 0.95rem;
+        }
     </style>
 </head>
 <body>
@@ -399,7 +424,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
                     <tbody id="usersBody">
                         <tr><td colspan="5" style="text-align: center;">Loading...</td></tr>
                     </tbody>
+                
                 </table>
+            </div>
+            
+            <div class="pagination" id="pagination">
+                <button id="prevPage" onclick="changePage(-1)">ก่อนหน้า</button>
+                <span id="pageInfo">หน้า 1 / 1</span>
+                <button id="nextPage" onclick="changePage(1)">ถัดไป</button>
             </div>
         </div>
     </div>
@@ -449,7 +481,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
     </div>
 
     <script>
+        
         let allUsers = [];
+        let currentFilteredUsers = [];
+        let currentPage = 1;
+        const rowsPerPage = 10;
+        
+        function changePage(direction) {
+            currentPage += direction;
+            renderTable(currentFilteredUsers);
+        }
+    
 
         async function loadUsers() {
             const res = await fetch('?action=list');
@@ -459,15 +501,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
         }
 
         function renderTable(users) {
+            currentFilteredUsers = users;
+            const totalPages = Math.ceil(users.length / rowsPerPage) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            document.getElementById('pageInfo').innerText = `หน้า ${currentPage} / ${totalPages}`;
+            document.getElementById('prevPage').disabled = currentPage === 1;
+            document.getElementById('nextPage').disabled = currentPage === totalPages;
+
+            const start = (currentPage - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+            const paginatedUsers = users.slice(start, end);
+
             const tbody = document.getElementById('usersBody');
             tbody.innerHTML = '';
             
-            if(users.length === 0) {
+            if(paginatedUsers.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #94a3b8;">ไม่พบผู้ใช้งาน</td></tr>';
                 return;
             }
 
-            users.forEach(user => {
+            paginatedUsers.forEach(user => {
                 const isActive = user.attribute === 'Cleartext-Password';
                 const statusHtml = isActive 
                     ? '<span class="status-badge status-active">Active</span>' 
@@ -494,6 +549,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
 
         function filterTable() {
             const query = document.getElementById('searchInput').value.toLowerCase();
+            currentPage = 1;
             const filtered = allUsers.filter(u => 
                 (u.username && u.username.toLowerCase().includes(query)) ||
                 (u.firstname && u.firstname.toLowerCase().includes(query)) ||
