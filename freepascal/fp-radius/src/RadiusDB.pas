@@ -33,6 +33,20 @@ begin
     Conn.Port := Cfg.DBPort;
     
     Conn.Connected := True;
+    
+    // Auto-create necessary missing log tables if they don't exist
+    try
+      Conn.ExecuteDirect('CREATE TABLE IF NOT EXISTS radius_access_log (id BIGINT AUTO_INCREMENT PRIMARY KEY, username VARCHAR(255), nas_ip VARCHAR(50), accepted TINYINT(1), login_time DATETIME) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci');
+      Conn.ExecuteDirect('CREATE TABLE IF NOT EXISTS radius_acct_log (id BIGINT AUTO_INCREMENT PRIMARY KEY, session_id VARCHAR(255), username VARCHAR(255), nas_ip VARCHAR(50), status_type INT, session_time INT, log_time DATETIME) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci');
+      Trans.Commit;
+    except
+      on E: Exception do
+      begin
+        LogMsg(0, 'Failed to initialize log tables: ' + E.Message);
+        Trans.Rollback;
+      end;
+    end;
+
     Result := True;
     LogMsg(1, 'Connected to database ' + Cfg.DBName + ' at ' + Cfg.DBHost);
   except
@@ -79,21 +93,7 @@ begin
   try
     Query.DataBase := Conn;
     
-    // Step 1: ตรวจสอบ radcheck_cleartext
-    Query.SQL.Text := 'SELECT value FROM radcheck_cleartext WHERE username = :u AND value = :p LIMIT 1';
-    Query.Params.ParamByName('u').AsString := Username;
-    Query.Params.ParamByName('p').AsString := Password;
-    Query.Open;
-    
-    if not Query.EOF then
-    begin
-      Result := True;
-      Query.Close;
-      Exit; 
-    end;
-    Query.Close;
-
-    // Step 2: ตรวจสอบ radcheck ปกติ
+    // ตรวจสอบจากตาราง radcheck ปกติ
     Query.SQL.Text := 'SELECT attribute, value FROM radcheck WHERE username = :u';
     Query.Params.ParamByName('u').AsString := Username;
     Query.Open;
