@@ -3,6 +3,7 @@ program fpradius;
 {$mode objfpc}{$H+}
 
 uses
+  {$IFDEF UNIX}cthreads,{$ENDIF}
   SysUtils, RadiusConfig, RadiusDB, RadiusServer, mysql80conn;
 
 var
