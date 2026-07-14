@@ -103,7 +103,16 @@ sudo systemctl start fpsso
 sudo systemctl status fpsso  # เช็คว่าขึ้น Active (running) หรือไม่
 ```
 
-## 5. การตั้งค่า Apache Reverse Proxy
+## 5. การตั้งค่าหน้าเว็บ Login และไฟล์ประกอบ (Static Assets)
+โปรแกรมจะมีหน้าตาเว็บ Login สวยงาม (มี Font Sarabun แบบ Offline และรูปภาพ) 
+หากคุณนำโปรแกรมไปติดตั้งที่เครื่องใหม่ ให้ทำตามขั้นตอนนี้ด้วยเพื่อให้หน้าเว็บแสดงผลได้สมบูรณ์:
+
+1. นำไฟล์ `login.html` ไปวางไว้ในโฟลเดอร์เดียวกับโปรแกรม `fpsso` (เช่น `/var/www/api/freepascal/fpsso/`)
+2. นำโฟลเดอร์ `assets` และ `images` (ที่มีไฟล์ CSS, Font และรูปภาพ) ไปวางไว้ที่ **Web Document Root** ของ Web Server (Apache/Nginx) ของคุณ
+   เช่น นำไปวางที่ `/var/www/html/assets` และ `/var/www/html/images`
+   เพื่อให้เบราว์เซอร์สามารถดาวน์โหลดไฟล์รูปภาพและ Font ผ่านทาง Root URL (`https://your-domain.com/images/...`) ได้โดยตรง
+
+## 6. การตั้งค่า Apache Reverse Proxy
 
 เปิดการใช้งาน Proxy Modules ของ Apache:
 ```bash

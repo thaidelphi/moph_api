@@ -1,0 +1,4 @@
+/* Tailwind CSS input file - สำหรับ build offline */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
