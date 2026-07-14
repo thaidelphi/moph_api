@@ -195,7 +195,11 @@ begin
     WriteLn('    To stop and remove the fp-radius background service:');
     WriteLn('      sudo ./fpradius --uninstallservice');
     WriteLn('');
-    WriteLn(' 8. Run with PM2 (Alternative Process Manager)');
+    WriteLn(' 8. Viewing Logs (Systemd)');
+    WriteLn('    To view real-time logs when running as a service:');
+    WriteLn('      sudo journalctl -u fpradius -f');
+    WriteLn('');
+    WriteLn(' 9. Run with PM2 (Alternative Process Manager)');
     WriteLn('    If you prefer using PM2 instead of Systemd, you can run:');
     WriteLn('      pm2 start ./fpradius --name "fpradius"');
     WriteLn('      pm2 save');
