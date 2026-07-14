@@ -164,11 +164,11 @@ begin
     WriteLn('');
     WriteLn(' 5. Database Initialization (--init-database)');
     WriteLn('    To automatically create the database and setup tables based on .env credentials, run:');
-    WriteLn('      ./fpradius .env --init-database');
+    WriteLn('      ./fpradius --init-database');
     WriteLn('');
     WriteLn(' 6. Install as Systemd Service (--installservice)');
     WriteLn('    To install and start fp-radius as a background service:');
-    WriteLn('      ./fpradius .env --installservice');
+    WriteLn('      ./fpradius --installservice');
     WriteLn('====================================================');
     Halt(0);
   end;
