@@ -31,6 +31,9 @@ type
     FortiGateLogoutURL: string;
     
     LoginTemplatePath: string;
+    
+    AdminUser: string;
+    AdminPass: string;
   end;
 
 var
@@ -92,7 +95,10 @@ begin
         
         else if (Key = 'FORTIGATE_AUTH_URL') then AppCfg.FortiGateAuthURL := Value
         else if (Key = 'FORTIGATE_LOGOUT_URL') then AppCfg.FortiGateLogoutURL := Value
-        else if (Key = 'LOGIN_TEMPLATE_PATH') then AppCfg.LoginTemplatePath := Value;
+        else if (Key = 'LOGIN_TEMPLATE_PATH') then AppCfg.LoginTemplatePath := Value
+        
+        else if (Key = 'ADMIN_USERNAME') then AppCfg.AdminUser := Value
+        else if (Key = 'ADMIN_PASSWORD') then AppCfg.AdminPass := Value;
       end;
     end;
     
@@ -112,5 +118,7 @@ initialization
   AppCfg.DBPass := '';
   AppCfg.DBName := 'radius';
   AppCfg.LoginTemplatePath := '/var/www/api/freepascal/fpsso/templates/login.html';
+  AppCfg.AdminUser := 'admin';
+  AppCfg.AdminPass := 'password';
   
 end.

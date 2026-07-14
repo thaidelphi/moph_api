@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RADIUS User Management</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: rgba(30, 41, 59, 0.7);
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --warning: #f59e0b;
+            --success: #10b981;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Sarabun', 'Outfit', sans-serif;
+            background: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Sarabun', sans-serif;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: white;
+        }
+
+        .btn-primary { background: var(--primary); }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
+        
+        .btn-danger { background: var(--danger); }
+        .btn-danger:hover { background: var(--danger-hover); }
+
+        .btn-warning { background: var(--warning); color: #000; }
+        .btn-warning:hover { filter: brightness(0.9); }
+
+        .btn-sm {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.9rem;
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .search-bar {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            margin-bottom: 1.5rem;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: white;
+            font-family: 'Sarabun', sans-serif;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .search-bar:focus {
+            border-color: var(--primary);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th, td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.05em;
+        }
+
+        tbody tr {
+            transition: background 0.2s;
+        }
+
+        tbody tr:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .status-badge {
+            padding: 0.3rem 0.6rem;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .status-active { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+        .status-suspended { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Modal Styles */
+        .modal-backdrop {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 1000;
+        }
+
+        .modal-backdrop.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal {
+            background: #1e293b;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 400px;
+            padding: 2rem;
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        .modal-backdrop.active .modal {
+            transform: translateY(0);
+        }
+
+        .modal h2 {
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.8rem;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: white;
+            font-family: inherit;
+            outline: none;
+        }
+        .form-group input:focus { border-color: var(--primary); }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        .btn-cancel {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+        }
+        .btn-cancel:hover { background: rgba(255,255,255,0.05); }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1><i class="fa-solid fa-users-gear"></i> RADIUS Users</h1>
+            <button class="btn btn-primary" onclick="openAddModal()"><i class="fa-solid fa-plus"></i> เพิ่มผู้ใช้ใหม่</button>
+        </div>
+
+        <div class="panel">
+            <input type="text" id="searchInput" class="search-bar" placeholder="ค้นหาผู้ใช้งาน (Username)..." onkeyup="filterTable()">
+            
+            <div style="overflow-x: auto;">
+                <table id="usersTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Password</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersBody">
+                        <tr><td colspan="5" style="text-align: center;">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Form -->
+    <div class="modal-backdrop" id="modalBackdrop">
+        <div class="modal">
+            <h2 id="modalTitle">เพิ่มผู้ใช้ใหม่</h2>
+            <input type="hidden" id="userId">
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="username" placeholder="กรอกชื่อผู้ใช้">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="text" id="password" placeholder="กรอกรหัสผ่าน">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-cancel" onclick="closeModal()">ยกเลิก</button>
+                <button class="btn btn-primary" onclick="saveUser()">บันทึก</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allUsers = [];
+
+        async function loadUsers() {
+            const res = await fetch('/sso/api/users?action=list');
+            const data = await res.json();
+            allUsers = data;
+            renderTable(data);
+        }
+
+        function renderTable(users) {
+            const tbody = document.getElementById('usersBody');
+            tbody.innerHTML = '';
+            
+            if(users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #94a3b8;">ไม่พบผู้ใช้งาน</td></tr>';
+                return;
+            }
+
+            users.forEach(user => {
+                const isActive = user.attribute === 'Cleartext-Password';
+                const statusHtml = isActive 
+                    ? '<span class="status-badge status-active">Active</span>' 
+                    : '<span class="status-badge status-suspended">Suspended</span>';
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${user.id}</td>
+                    <td style="font-weight: 500;">${escapeHtml(user.username)}</td>
+                    <td style="font-family: monospace; color: #94a3b8;">${escapeHtml(user.value)}</td>
+                    <td>${statusHtml}</td>
+                    <td class="actions">
+                        <button class="btn btn-sm btn-primary" onclick="openEditModal(${user.id}, '${escapeHtml(user.value)}')"><i class="fa-solid fa-pen"></i></button>
+                        <button class="btn btn-sm btn-warning" onclick="toggleSuspend(${user.id}, '${user.attribute}')">
+                            <i class="fa-solid ${isActive ? 'fa-ban' : 'fa-check'}"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteUser(${user.id})"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filterTable() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = allUsers.filter(u => u.username.toLowerCase().includes(query));
+            renderTable(filtered);
+        }
+
+        function escapeHtml(unsafe) {
+            return (unsafe||'').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        /* --- Modal Logic --- */
+        const modal = document.getElementById('modalBackdrop');
+        const mTitle = document.getElementById('modalTitle');
+        const mId = document.getElementById('userId');
+        const mUser = document.getElementById('username');
+        const mPass = document.getElementById('password');
+
+        function openAddModal() {
+            mTitle.innerText = "เพิ่มผู้ใช้ใหม่";
+            mId.value = "";
+            mUser.value = "";
+            mUser.disabled = false;
+            mPass.value = "";
+            modal.classList.add('active');
+        }
+
+        function openEditModal(id, currentPass) {
+            mTitle.innerText = "แก้ไขรหัสผ่าน";
+            mId.value = id;
+            const user = allUsers.find(u => parseInt(u.id) === parseInt(id));
+            mUser.value = user ? user.username : "";
+            mUser.disabled = true;
+            mPass.value = currentPass;
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            modal.classList.remove('active');
+        }
+
+        /* --- API Calls --- */
+        async function saveUser() {
+            const action = mId.value ? 'edit' : 'add';
+            const formData = new FormData();
+            formData.append('action', action);
+            if(mId.value) formData.append('id', mId.value);
+            formData.append('username', mUser.value);
+            formData.append('password', mPass.value);
+
+            if(!mPass.value || (!mUser.value && !mId.value)) {
+                alert("กรุณากรอกข้อมูลให้ครบถ้วน"); return;
+            }
+
+            const res = await fetch('/sso/api/users', { method: 'POST', body: formData });
+            const data = await res.json();
+            if(data.success) {
+                closeModal();
+                loadUsers();
+            } else {
+                alert("Error: " + data.error);
+            }
+        }
+
+        async function deleteUser(id) {
+            if(!confirm("ยืนยันการลบผู้ใช้งานนี้?")) return;
+            const formData = new FormData();
+            formData.append('action', 'delete');
+            formData.append('id', id);
+            
+            await fetch('/sso/api/users', { method: 'POST', body: formData });
+            loadUsers();
+        }
+
+        async function toggleSuspend(id, currentAttr) {
+            const actionText = currentAttr === 'Cleartext-Password' ? 'ระงับ' : 'เปิดใช้';
+            if(!confirm(`ยืนยันการ${actionText}ผู้ใช้งานนี้?`)) return;
+            
+            const formData = new FormData();
+            formData.append('action', 'toggle_suspend');
+            formData.append('id', id);
+            formData.append('attribute', currentAttr);
+            
+            await fetch('/sso/api/users', { method: 'POST', body: formData });
+            loadUsers();
+        }
+
+        // Init
+        loadUsers();
+
+    </script>
+</body>
+</html>

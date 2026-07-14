@@ -8,7 +8,7 @@ uses
   {$ENDIF}
   Classes, SysUtils,
   Config, SessionMgr, Router, HttpServer, HTTPDefs,
-  AuthLocal, AuthThaiD, AuthProviderID, AuthGoogle, FortiGate;
+  AuthLocal, AuthThaiD, AuthProviderID, AuthGoogle, FortiGate, AdminUsers;
 
 procedure HandleRoot(Req: TRequest; Res: TResponse);
 var
