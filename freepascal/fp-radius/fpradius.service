@@ -1,0 +1,26 @@
+[Unit]
+Description=FreePascal RADIUS Authentication Server (fp-radius)
+Documentation=https://tools.ietf.org/html/rfc2865
+After=network.target mysql.service mariadb.service
+Wants=mysql.service
+
+[Service]
+Type=simple
+# หากรันด้วยสิทธิ์ www-data แล้วติดปัญหาเรื่อง Permission ลองเปลี่ยนเป็น root ได้ครับ
+User=root
+Group=root
+
+# ชี้ไปที่ Binary และ Config
+ExecStart=/var/www/api/freepascal/fp-radius/fpradius /var/www/api/.env
+
+# Restart อัตโนมัติเมื่อ Process ล้มเหลว
+Restart=always
+RestartSec=5
+
+# Logging จะถูกส่งไปที่ journalctl
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=fp-radius
+
+[Install]
+WantedBy=multi-user.target
