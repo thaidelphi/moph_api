@@ -56,6 +56,10 @@ var
 begin
   Method := UpperCase(Req.Method);
   Path := Req.PathInfo;
+  if Path = '' then
+    Path := '/';
+  
+  Writeln('SSO Request: ', Method, ' ', Req.URI, ' (PathInfo: ', Path, ')');
   
   // Clean trailing slash if not root
   if (Length(Path) > 1) and (Path[Length(Path)] = '/') then
