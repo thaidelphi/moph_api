@@ -4,7 +4,7 @@ program fpradius;
 
 uses
   {$IFDEF UNIX}cthreads, Unix,{$ENDIF}
-  SysUtils, RadiusConfig, RadiusDB, RadiusServer, mysql80conn;
+  SysUtils, RadiusConfig, RadiusDB, RadiusServer, mysql80conn, RadiusSchemaData;
 
 var
   Cfg    : TRadiusConfig;
@@ -18,6 +18,8 @@ procedure InitDatabase(const ACfg: TRadiusConfig);
 var
   CmdCreate, CmdImport: string;
   Res: Integer;
+  SchemaPath: string;
+  F: file;
 begin
   WriteLn('fp-radius: Initializing Database ', ACfg.DBName, ' at ', ACfg.DBHost, '...');
   
@@ -33,15 +35,33 @@ begin
   end;
 
   // 2. Import schema
+  SchemaPath := '/var/www/api/radius_schema.sql';
+  if not FileExists(SchemaPath) then
+  begin
+    SchemaPath := ExtractFilePath(ParamStr(0)) + 'radius_schema.sql';
+    if not FileExists(SchemaPath) then
+    begin
+      WriteLn('Schema file not found. Extracting embedded schema...');
+      SchemaPath := '/tmp/fpradius_embedded_schema.sql';
+      AssignFile(F, SchemaPath);
+      Rewrite(F, 1);
+      BlockWrite(F, RadiusSchemaBytes[0], RadiusSchemaSize);
+      CloseFile(F);
+    end;
+  end;
+
   CmdImport := 'mysql -h ' + ACfg.DBHost + ' -u ' + ACfg.DBUser + ' -p' + ACfg.DBPass + 
-               ' ' + ACfg.DBName + ' < /var/www/api/radius_schema.sql';
-  WriteLn('Executing: Import /var/www/api/radius_schema.sql');
+               ' ' + ACfg.DBName + ' < ' + SchemaPath;
+  WriteLn('Executing: Import ', SchemaPath);
   Res := fpSystem(CmdImport);
   if Res <> 0 then
   begin
-    WriteLn('ERROR: Failed to import schema from /var/www/api/radius_schema.sql');
+    WriteLn('ERROR: Failed to import schema from ', SchemaPath);
+    if SchemaPath = '/tmp/fpradius_embedded_schema.sql' then DeleteFile(SchemaPath);
     Halt(1);
   end;
+
+  if SchemaPath = '/tmp/fpradius_embedded_schema.sql' then DeleteFile(SchemaPath);
 
   WriteLn('SUCCESS: Database initialization completed successfully!');
 end;
