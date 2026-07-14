@@ -40,8 +40,8 @@ begin
       Conn.ExecuteDirect('CREATE TABLE IF NOT EXISTS radius_acct_log (id BIGINT AUTO_INCREMENT PRIMARY KEY, session_id VARCHAR(255), username VARCHAR(255), nas_ip VARCHAR(50), status_type INT, session_time INT, log_time DATETIME) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci');
       
       // Auto-insert default test user if it doesn't exist
-      Conn.ExecuteDirect('INSERT INTO radcheck (username, attribute, op, value) SELECT * FROM (SELECT ''test'', ''Cleartext-Password'', ''=='', ''test01'') AS tmp WHERE NOT EXISTS (SELECT 1 FROM radcheck WHERE username = ''test'') LIMIT 1');
-      Conn.ExecuteDirect('INSERT INTO userinfo (username, firstname, lastname, creationdate) SELECT * FROM (SELECT ''test'', ''Test'', ''User'', NOW()) AS tmp WHERE NOT EXISTS (SELECT 1 FROM userinfo WHERE username = ''test'') LIMIT 1');
+      Conn.ExecuteDirect('INSERT INTO radcheck (username, attribute, op, value) SELECT ''test'', ''Cleartext-Password'', ''=='', ''test01'' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM radcheck WHERE username = ''test'') LIMIT 1');
+      Conn.ExecuteDirect('INSERT INTO userinfo (username, firstname, lastname, creationdate) SELECT ''test'', ''Test'', ''User'', NOW() FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM userinfo WHERE username = ''test'') LIMIT 1');
       
       Trans.Commit;
     except
