@@ -159,6 +159,37 @@ sudo systemctl reload apache2
 
 เมื่อตั้งค่าเสร็จสิ้น เวลามีคนมาต่อ Wi-Fi และเปิดเบราว์เซอร์ เครื่อง FortiGate จะทำการ Redirect ทราฟฟิกส่งมาที่หน้า `/sso/` พร้อมพ่วงค่าพารามิเตอร์ `?magic=...` มาด้วย ซึ่งระบบ `fpsso` ของเราจะจัดการต่อและปลดล็อกเน็ตให้โดยอัตโนมัติเมื่อล็อกอินผ่าน
 
+### การสร้าง Walled Garden ผ่าน Firewall Policy (วิธีที่แนะนำ)
+
+วิธีนี้ปลอดภัยและควบคุมพอร์ตได้ดีกว่าการใช้ Exempt Destination ธรรมดา เพราะเราสามารถจำกัดให้วิ่งไปหาเซิร์ฟเวอร์ SSO ได้เฉพาะพอร์ตที่จำเป็นจริงๆ (เช่น HTTP, HTTPS, DNS) และเป็นการทำ Walled Garden แบบมาตรฐานที่ใช้ได้กับ FortiOS ทุกเวอร์ชั่นครับ
+
+**ขั้นตอนการทำ:**
+
+1. **สร้าง Address Object แบบ FQDN** ของโดเมน SSO ที่ใช้งาน (เช่น `api1.kpo.go.th`, `sso.moph.go.th`, `imauth.bora.dopa.go.th` ฯลฯ) เตรียมเอาไว้
+
+2. **สร้าง Address Group** (รวมกลุ่มเพื่อความสะดวก)
+   - ไปที่ **Policy & Objects > Addresses**
+   - คลิก **Create New > Address Group**
+   - **Name:** ตั้งชื่อกลุ่ม เช่น `Walled_Garden_SSO`
+   - **Members:** คลิก `+` แล้วเลือก FQDN ทั้งหมดที่สร้างไว้ใส่เข้ามา แล้วกด **OK**
+
+3. **สร้าง Firewall Policy ชุดพิเศษ**
+   - ไปที่เมนู **Policy & Objects > Firewall Policy**
+   - คลิก **Create New**
+   - **Name:** ตั้งชื่อ เช่น `Walled_Garden_Permit`
+   - **Incoming Interface:** เลือกขาที่ทำ Captive Portal (เช่น LANSTAFF)
+   - **Outgoing Interface:** เลือกขาที่ออกอินเทอร์เน็ต (เช่น wan1)
+   - **Source:** เลือก **all** *(ห้ามใส่ User Group ใน Policy นี้เด็ดขาด)*
+   - **Destination:** เลือกกลุ่ม `Walled_Garden_SSO` ที่เราสร้างไว้ในข้อ 2
+   - **Service:** เลือกบริการที่จำเป็น ได้แก่ **DNS** *(สำคัญที่สุด เพราะถ้าเครื่อง Client resolve IP ของเว็บไม่ได้ จะเข้าหน้าล็อกอินไม่ได้เลย)*, **HTTP**, และ **HTTPS**
+   - **Action:** เลือก **ACCEPT**
+   - เปิดใช้งาน **NAT**
+   - กด **OK**
+
+4. **จัดลำดับ Policy (CRITICAL!)**
+   - เมื่อกดบันทึกแล้ว ให้ไปที่หน้า Firewall Policy
+   - ทำการลาก (Drag & Drop) ให้ Policy `Walled_Garden_Permit` นี้ ขึ้นไปอยู่ด้านบนสุด (หรืออย่างน้อยต้องอยู่สูงกว่า Policy หลักที่ใช้เล่นอินเทอร์เน็ตตัวที่มีการผูก User Group เอาไว้)
+
 ---
 
 ## 8. การตั้งค่า FortiGate ให้ส่งรายงานการใช้งาน (RADIUS Accounting / Traffic In-Out)
