@@ -15,8 +15,8 @@ var
   HtmlContent: string;
   TemplatePath: string;
 begin
-  // ตรวจสอบ login.html ในโฟลเดอร์เดียวกับโปรแกรมก่อนเป็นหลัก
-  TemplatePath := ExtractFilePath(ParamStr(0)) + 'login.html';
+  // ตรวจสอบ login.html ในโฟลเดอร์ templates/login_template ก่อน
+  TemplatePath := ExtractFilePath(ParamStr(0)) + 'templates/login_template/login.html';
   
   if not FileExists(TemplatePath) then
     TemplatePath := AppCfg.LoginTemplatePath;

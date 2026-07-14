@@ -107,8 +107,8 @@ sudo systemctl status fpsso  # เช็คว่าขึ้น Active (running
 โปรแกรมจะมีหน้าตาเว็บ Login สวยงาม (มี Font Sarabun แบบ Offline และรูปภาพ) 
 หากคุณนำโปรแกรมไปติดตั้งที่เครื่องใหม่ ให้ทำตามขั้นตอนนี้ด้วยเพื่อให้หน้าเว็บแสดงผลได้สมบูรณ์:
 
-1. นำไฟล์ `login.html` ไปวางไว้ในโฟลเดอร์เดียวกับโปรแกรม `fpsso` (เช่น `/var/www/api/freepascal/fpsso/`)
-2. นำโฟลเดอร์ `assets` และ `images` (ที่มีไฟล์ CSS, Font และรูปภาพ) ไปวางไว้ที่ **Web Document Root** ของ Web Server (Apache/Nginx) ของคุณ
+1. หน้าเว็บ `login.html` จะถูกเรียกใช้งานจากโฟลเดอร์ `templates/login_template/` ที่อยู่ภายในโฟลเดอร์โปรแกรม `fpsso` (เช่น `/var/www/api/freepascal/fpsso/templates/login_template/login.html`)
+2. โฟลเดอร์ย่อยข้างในอย่าง `assets` และ `images` (ที่มีไฟล์ CSS, Font และรูปภาพ) ให้นำไปวางไว้ที่ **Web Document Root** ของ Web Server (Apache/Nginx) ของคุณ
    เช่น นำไปวางที่ `/var/www/html/assets` และ `/var/www/html/images`
    เพื่อให้เบราว์เซอร์สามารถดาวน์โหลดไฟล์รูปภาพและ Font ผ่านทาง Root URL (`https://your-domain.com/images/...`) ได้โดยตรง
 
