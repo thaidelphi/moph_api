@@ -13,6 +13,7 @@ var
   TestConn: TMySQL80Connection;
   I      : Integer;
   IsInitDB: Boolean = False;
+  IsInstallSvc: Boolean = False;
 
 procedure InitDatabase(const ACfg: TRadiusConfig);
 var
@@ -66,6 +67,57 @@ begin
   WriteLn('SUCCESS: Database initialization completed successfully!');
 end;
 
+procedure InstallService(const AEnvPath: string);
+var
+  SvcPath, BinPath, Content: string;
+  F: TextFile;
+begin
+  BinPath := ExpandFileName(ParamStr(0));
+  SvcPath := '/tmp/fpradius.service';
+  
+  Content := '[Unit]' + sLineBreak +
+             'Description=fp-radius Server' + sLineBreak +
+             'After=network.target mysql.service mariadb.service' + sLineBreak +
+             sLineBreak +
+             '[Service]' + sLineBreak +
+             'Type=simple' + sLineBreak +
+             'ExecStart=' + BinPath + ' ' + ExpandFileName(AEnvPath) + sLineBreak +
+             'Restart=always' + sLineBreak +
+             'RestartSec=5' + sLineBreak +
+             'WorkingDirectory=' + ExtractFilePath(BinPath) + sLineBreak +
+             sLineBreak +
+             '[Install]' + sLineBreak +
+             'WantedBy=multi-user.target' + sLineBreak;
+             
+  AssignFile(F, SvcPath);
+  try
+    Rewrite(F);
+    Write(F, Content);
+    CloseFile(F);
+  except
+    WriteLn('ERROR: Cannot write to ', SvcPath);
+    Halt(1);
+  end;
+
+  WriteLn('Installing service to /etc/systemd/system/fpradius.service ...');
+  if fpSystem('sudo mv ' + SvcPath + ' /etc/systemd/system/fpradius.service') <> 0 then
+  begin
+    WriteLn('ERROR: Failed to move service file. Make sure you have sudo privileges.');
+    Halt(1);
+  end;
+  
+  WriteLn('Reloading systemd daemon...');
+  fpSystem('sudo systemctl daemon-reload');
+  
+  WriteLn('Enabling fpradius service...');
+  fpSystem('sudo systemctl enable fpradius.service');
+  
+  WriteLn('Starting fpradius service...');
+  fpSystem('sudo systemctl start fpradius.service');
+  
+  WriteLn('SUCCESS: fpradius service installed and started successfully!');
+end;
+
 begin
   // ตรวจสอบ Parameter --help หรือ -h
   if (ParamCount > 0) and ((ParamStr(1) = '--help') or (ParamStr(1) = '-h')) then
@@ -112,6 +164,10 @@ begin
     WriteLn(' 5. Database Initialization (--init-database)');
     WriteLn('    To automatically create the database and setup tables based on .env credentials, run:');
     WriteLn('      ./fpradius .env --init-database');
+    WriteLn('');
+    WriteLn(' 6. Install as Systemd Service (--installservice)');
+    WriteLn('    To install and start fp-radius as a background service:');
+    WriteLn('      ./fpradius .env --installservice');
     WriteLn('====================================================');
     Halt(0);
   end;
@@ -122,6 +178,8 @@ begin
   begin
     if ParamStr(I) = '--init-database' then
       IsInitDB := True
+    else if ParamStr(I) = '--installservice' then
+      IsInstallSvc := True
     else if not ((ParamStr(I) = '--help') or (ParamStr(I) = '-h')) then
       EnvPath := ParamStr(I); // สมมติว่า parameter อื่นๆ คือ Path ของ .env
   end;
@@ -135,6 +193,13 @@ begin
   if IsInitDB then
   begin
     InitDatabase(Cfg);
+    Halt(0);
+  end;
+  
+  // ถ้าต้องการติดตั้ง Service ให้ทำตรงนี้แล้วออกเลย
+  if IsInstallSvc then
+  begin
+    InstallService(EnvPath);
     Halt(0);
   end;
 
