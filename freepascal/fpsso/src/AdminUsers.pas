@@ -159,7 +159,7 @@ begin
     begin
       Query.SQL.Text := 'SELECT r.id, r.username, r.value, r.attribute, u.firstname, u.lastname, u.department, u.email, u.mobilephone ' +
                         'FROM radcheck r LEFT JOIN userinfo u ON r.username = u.username ' +
-                        'WHERE r.attribute IN (''Cleartext-Password'', ''Suspended-Password'') ORDER BY r.id DESC';
+                        'WHERE r.attribute IN (''Cleartext-Password'', ''Suspended-Password'', ''MD5-Password'') ORDER BY r.id DESC';
       Query.Open;
       
       JArr := TJSONArray.Create;
@@ -241,7 +241,8 @@ begin
           Exit;
         end;
         
-        Conn.ExecuteDirect('UPDATE radcheck SET value = ' + QuotedStr(Password) + ' WHERE id = ' + IDStr);
+        if Password <> '' then
+          Conn.ExecuteDirect('UPDATE radcheck SET attribute = ''Cleartext-Password'', value = ' + QuotedStr(Password) + ' WHERE id = ' + IDStr);
         
         Query.SQL.Text := 'SELECT id FROM userinfo WHERE username = :u';
         Query.ParamByName('u').AsString := Username;
