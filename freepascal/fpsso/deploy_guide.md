@@ -161,6 +161,22 @@ sudo systemctl reload apache2
 
 ---
 
+## 8. การตั้งค่า FortiGate ให้ส่งรายงานการใช้งาน (RADIUS Accounting / Traffic In-Out)
+
+ระบบมีฐานข้อมูล `radacct` สำหรับเก็บประวัติและปริมาณแบนด์วิดท์ (Traffic) ของผู้ใช้งาน หากต้องการให้ FortiGate อัปเดตข้อมูลปริมาณการดาวน์โหลด/อัปโหลดระหว่างที่ผู้ใช้กำลังเชื่อมต่ออยู่ (Interim-Update) แทนที่จะส่งแค่ตอนเริ่มและตอนจบ สามารถตั้งค่าผ่าน Command Line ของ FortiGate ได้ดังนี้:
+
+```text
+config user radius
+    edit "ชื่อ_Radius_Server_ของคุณ"
+        set radius-port 1812
+        set acct-interim-interval 600
+    next
+end
+```
+*(ค่า `600` คือ 600 วินาที หมายถึงสั่งให้ FortiGate ส่งรายงาน Traffic อัปเดตมาให้ระบบทราบทุกๆ 10 นาที)*
+
+---
+
 > [!TIP]
 > **การตรวจสอบและการแก้ปัญหา (Troubleshooting)**
 > - ดู Log ของโปรแกรม fpsso แบบเรียลไทม์: `sudo journalctl -u fpsso -f`
