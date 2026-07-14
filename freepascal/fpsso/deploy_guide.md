@@ -131,6 +131,7 @@ sudo a2enmod proxy proxy_http headers
     # ส่งทราฟฟิก /sso/ ทั้งหมดไปให้ FreePascal ที่รันอยู่พอร์ต 8080
     ProxyPass /sso/ http://127.0.0.1:8080/ timeout=60
     ProxyPassReverse /sso/ http://127.0.0.1:8080/
+</VirtualHost>
 ```
 
 บันทึกไฟล์และ Reload Apache:
@@ -138,6 +139,25 @@ sudo a2enmod proxy proxy_http headers
 sudo apache2ctl configtest   # เช็ค Syntax ว่าถูกต้องไหม (ต้องขึ้น Syntax OK)
 sudo systemctl reload apache2
 ```
+
+---
+
+## 7. การตั้งค่าระบบที่เครื่อง FortiGate (Captive Portal)
+
+เพื่อให้ผู้ใช้งานที่เชื่อมต่อเครือข่ายถูกส่งมาบังคับล็อกอินที่หน้าเว็บ `fpsso` ของเรา ให้ดำเนินการตั้งค่าที่ FortiGate ดังนี้:
+
+1. ล็อกอินเข้าสู่หน้าแอดมินของ **FortiGate**
+2. ไปที่เมนู **Network > Interfaces**
+3. เลือกขา Interface ที่ต้องการให้ผู้ใช้งานต้องล็อกอิน (เช่น ขา LAN หรือ Wi-Fi) แล้วกด **Edit**
+4. เลื่อนลงมาในส่วนของ Security Mode ให้เปิดสวิตช์ **Captive Portal**
+5. เลือก **Authentication Portal** เป็น **External**
+6. ในช่อง **URL** ให้กรอกที่อยู่ของระบบ SSO ของเรา เช่น:
+   ```text
+   https://api1.kpo.go.th/sso/
+   ```
+7. (ข้อควรระวัง) ตรวจสอบให้แน่ใจว่าเครื่องผู้ใช้งาน (Client) สามารถเข้าถึงโดเมน `api1.kpo.go.th` และ `sso.moph.go.th` (สำหรับ ThaID) ได้ก่อนการล็อกอิน โดยอาจจะต้องตั้งค่า Walled Garden, Exempt Destination หรือเปิด Firewall Policy แบบจำกัดเอาไว้
+
+เมื่อตั้งค่าเสร็จสิ้น เวลามีคนมาต่อ Wi-Fi และเปิดเบราว์เซอร์ เครื่อง FortiGate จะทำการ Redirect ทราฟฟิกส่งมาที่หน้า `/sso/` พร้อมพ่วงค่าพารามิเตอร์ `?magic=...` มาด้วย ซึ่งระบบ `fpsso` ของเราจะจัดการต่อและปลดล็อกเน็ตให้โดยอัตโนมัติเมื่อล็อกอินผ่าน
 
 ---
 
