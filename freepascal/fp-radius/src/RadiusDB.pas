@@ -41,6 +41,7 @@ begin
       
       // Auto-insert default test user if it doesn't exist
       Conn.ExecuteDirect('INSERT INTO radcheck (username, attribute, op, value) SELECT * FROM (SELECT ''test'', ''Cleartext-Password'', ''=='', ''test01'') AS tmp WHERE NOT EXISTS (SELECT 1 FROM radcheck WHERE username = ''test'') LIMIT 1');
+      Conn.ExecuteDirect('INSERT INTO userinfo (username, firstname, lastname, creationdate) SELECT * FROM (SELECT ''test'', ''Test'', ''User'', NOW()) AS tmp WHERE NOT EXISTS (SELECT 1 FROM userinfo WHERE username = ''test'') LIMIT 1');
       
       Trans.Commit;
     except
