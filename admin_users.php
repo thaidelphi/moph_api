@@ -494,7 +494,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'list') {
 
         function filterTable() {
             const query = document.getElementById('searchInput').value.toLowerCase();
-            const filtered = allUsers.filter(u => u.username.toLowerCase().includes(query));
+            const filtered = allUsers.filter(u => 
+                (u.username && u.username.toLowerCase().includes(query)) ||
+                (u.firstname && u.firstname.toLowerCase().includes(query)) ||
+                (u.lastname && u.lastname.toLowerCase().includes(query))
+            );
             renderTable(filtered);
         }
 
