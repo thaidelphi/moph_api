@@ -168,7 +168,13 @@ begin
     WriteLn('');
     WriteLn(' 6. Install as Systemd Service (--installservice)');
     WriteLn('    To install and start fp-radius as a background service:');
-    WriteLn('      ./fpradius --installservice');
+    WriteLn('      sudo ./fpradius --installservice');
+    WriteLn('');
+    WriteLn(' 7. Run with PM2 (Alternative Process Manager)');
+    WriteLn('    If you prefer using PM2 instead of Systemd, you can run:');
+    WriteLn('      pm2 start ./fpradius --name "fpradius"');
+    WriteLn('      pm2 save');
+    WriteLn('      pm2 startup');
     WriteLn('====================================================');
     Halt(0);
   end;
