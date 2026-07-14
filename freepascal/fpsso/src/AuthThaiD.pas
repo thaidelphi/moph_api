@@ -101,14 +101,17 @@ begin
       
       if PlainPass <> '' then
       begin
-        SessionID := SessionManager.CreateSession;
-        if SessionManager.GetSession(SessionID, Data) then
+        SessionID := Req.CookieFields.Values['SSOSESSID'];
+        if (SessionID = '') or not SessionManager.GetSession(SessionID, Data) then
         begin
-          Data.Username := PID;
-          Data.FullName := FullName;
-          Data.PlainPass := PlainPass;
-          SessionManager.UpdateSession(SessionID, Data);
+          SessionID := SessionManager.CreateSession;
+          SessionManager.GetSession(SessionID, Data);
         end;
+        
+        Data.Username := PID;
+        Data.FullName := FullName;
+        Data.PlainPass := PlainPass;
+        SessionManager.UpdateSession(SessionID, Data);
         
         with Res.Cookies.Add do
         begin

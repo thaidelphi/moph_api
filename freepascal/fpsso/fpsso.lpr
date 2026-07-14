@@ -14,7 +14,33 @@ procedure HandleRoot(Req: TRequest; Res: TResponse);
 var
   HtmlContent: string;
   TemplatePath: string;
+  MagicToken, SessionID: string;
+  Data: TSessionData;
 begin
+  // Handle FortiGate 'magic' token
+  MagicToken := Req.QueryFields.Values['magic'];
+  if MagicToken <> '' then
+  begin
+    SessionID := Req.CookieFields.Values['SSOSESSID'];
+    if (SessionID = '') or not SessionManager.GetSession(SessionID, Data) then
+    begin
+      SessionID := SessionManager.CreateSession;
+      SessionManager.GetSession(SessionID, Data);
+    end;
+    
+    Data.Magic := MagicToken;
+    SessionManager.UpdateSession(SessionID, Data);
+    
+    with Res.Cookies.Add do
+    begin
+      Name := 'SSOSESSID';
+      Value := SessionID;
+      Path := '/';
+      Expires := Now + 1; // 1 day
+      HttpOnly := True;
+    end;
+  end;
+
   // ตรวจสอบ login.html ในโฟลเดอร์ templates/login_template ก่อน
   TemplatePath := ExtractFilePath(ParamStr(0)) + 'templates/login_template/login.html';
   
