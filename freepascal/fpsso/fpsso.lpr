@@ -65,6 +65,41 @@ begin
     SendJSONError(Res, 404, 'Login template not found at: ' + TemplatePath);
 end;
 
+procedure HandleHowTo(Req: TRequest; Res: TResponse);
+var
+  TemplatePath, MdPath: string;
+  HtmlContent, MdContent: string;
+begin
+  TemplatePath := ExtractFilePath(ParamStr(0)) + 'templates/howto.html';
+  MdPath := ExtractFilePath(ParamStr(0)) + 'deploy_guide.md';
+  
+  if FileExists(TemplatePath) and FileExists(MdPath) then
+  begin
+    with TStringList.Create do
+    try
+      LoadFromFile(MdPath);
+      MdContent := Text;
+      
+      LoadFromFile(TemplatePath);
+      HtmlContent := Text;
+    finally
+      Free;
+    end;
+    
+    // Inject markdown into the HTML template
+    HtmlContent := StringReplace(HtmlContent, '{{MARKDOWN_CONTENT}}', MdContent, [rfReplaceAll]);
+    
+    Res.Code := 200;
+    Res.ContentType := 'text/html; charset=utf-8';
+    Res.Content := HtmlContent;
+    Res.SendContent;
+  end
+  else
+  begin
+    SendJSONError(Res, 404, 'HowTo template or markdown file not found');
+  end;
+end;
+
 begin
   Writeln('Initializing fp-sso...');
   
@@ -75,6 +110,7 @@ begin
   end;
 
   RegisterRoute('GET', '/', @HandleRoot);
+  RegisterRoute('GET', '/howto', @HandleHowTo);
   
   try
     StartServer(8080);
