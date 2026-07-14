@@ -3,12 +3,13 @@ program fpradius;
 {$mode objfpc}{$H+}
 
 uses
-  SysUtils, RadiusConfig, RadiusDB, RadiusServer;
+  SysUtils, RadiusConfig, RadiusDB, RadiusServer, mysql80conn;
 
 var
   Cfg    : TRadiusConfig;
   Server : TRadiusServer;
   EnvPath: string;
+  TestConn: TMySQL80Connection;
 
 begin
   // รับ Path ของ .env จาก Command Line หรือใช้ค่า Default
@@ -22,19 +23,19 @@ begin
   // โหลด Config
   Cfg := LoadConfig(EnvPath);
 
-  // เชื่อมต่อฐานข้อมูล
-  if not DBConnect(Cfg) then
+  // ทดสอบเชื่อมต่อฐานข้อมูลเบื้องต้น
+  if not DBConnect(Cfg, TestConn) then
   begin
     WriteLn('fp-radius: ERROR - Cannot connect to MySQL. Exiting.');
     Halt(1);
   end;
+  DBDisconnect(TestConn);
 
-  // สร้างและเริ่ม RADIUS Server
+  // สร้างและเริ่ม RADIUS Server (แต่ละ Thread จะสร้าง DB Connection ของตัวเอง)
   Server := TRadiusServer.Create(Cfg);
   try
     Server.Start;   // Blocking Loop
   finally
     Server.Free;
-    DBDisconnect;
   end;
 end.

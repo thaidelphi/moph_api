@@ -4,15 +4,15 @@ unit RadiusAccounting;
 
 interface
 
-uses SysUtils, RadiusConfig, RadiusDB, RadiusPacket;
+uses SysUtils, RadiusConfig, RadiusDB, RadiusPacket, mysql80conn;
 
 // จัดการ Accounting-Request (Code=4)
 // Returns: Accounting-Response (Code=5) ในรูป TByteArray
-function HandleAccounting(const Req: TRadiusPacket; const Cfg: TRadiusConfig): TByteArray;
+function HandleAccounting(const Req: TRadiusPacket; const Cfg: TRadiusConfig; Conn: TMySQL80Connection): TByteArray;
 
 implementation
 
-function HandleAccounting(const Req: TRadiusPacket; const Cfg: TRadiusConfig): TByteArray;
+function HandleAccounting(const Req: TRadiusPacket; const Cfg: TRadiusConfig; Conn: TMySQL80Connection): TByteArray;
 var
   StatusType: LongWord;
   SessionTime: LongWord;
@@ -37,7 +37,7 @@ begin
   if StatusType = 2 then // Stop
     SessionTime := GetAttrInt(Req, ATTR_ACCT_SESSION_TIME);
 
-  LogAccounting(SessionID, Username, NasIP, StatusType, SessionTime);
+  LogAccounting(Conn, SessionID, Username, NasIP, StatusType, SessionTime);
   LogMsg(1, Format('Acct: User %s Status %d Time %d', [Username, StatusType, SessionTime]));
 
   Result := BuildAcctResponse(Req, Cfg.SharedSecret);

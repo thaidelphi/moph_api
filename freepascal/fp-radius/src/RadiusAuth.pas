@@ -4,14 +4,14 @@ unit RadiusAuth;
 
 interface
 
-uses SysUtils, RadiusConfig, RadiusDB, RadiusPacket;
+uses SysUtils, RadiusConfig, RadiusDB, RadiusPacket, mysql80conn;
 
 // Handle Auth Request
-function HandleAuth(const Req: TRadiusPacket; const Cfg: TRadiusConfig; const NasIP: string): TByteArray;
+function HandleAuth(const Req: TRadiusPacket; const Cfg: TRadiusConfig; const NasIP: string; Conn: TMySQL80Connection): TByteArray;
 
 implementation
 
-function HandleAuth(const Req: TRadiusPacket; const Cfg: TRadiusConfig; const NasIP: string): TByteArray;
+function HandleAuth(const Req: TRadiusPacket; const Cfg: TRadiusConfig; const NasIP: string; Conn: TMySQL80Connection): TByteArray;
 var
   Username, Password: string;
   Accepted: Boolean;
@@ -21,7 +21,7 @@ begin
   
   LogMsg(1, 'Auth Request from ' + NasIP + ' for user: ' + Username);
   
-  Accepted := CheckUserPassword(Username, Password);
+  Accepted := CheckUserPassword(Conn, Username, Password);
   
   if Accepted then
   begin
@@ -33,8 +33,7 @@ begin
     Result := BuildReject(Req, Cfg.SharedSecret);
     LogMsg(1, 'Access-Reject for ' + Username);
   end;
-  
-  LogAccessAttempt(Username, NasIP, Accepted, Now);
+  LogAccessAttempt(Conn, Username, NasIP, Accepted, Now);
 end;
 
 end.

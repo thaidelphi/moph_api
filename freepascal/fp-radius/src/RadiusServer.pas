@@ -6,7 +6,7 @@ interface
 
 uses
   SysUtils, Sockets, BaseUnix, RadiusConfig, RadiusPacket,
-  RadiusAuth, RadiusAccounting, RadiusDB;
+  RadiusAuth, RadiusAccounting, RadiusDB, RadiusWorker;
 
 type
   TRadiusServer = class
@@ -15,6 +15,9 @@ type
     FAcctSocket : LongInt;   // UDP Socket สำหรับ Port 1813
     FCfg        : TRadiusConfig;
     FRunning    : Boolean;
+    
+    FQueue      : TPacketQueue;
+    FWorkers    : array of TRadiusWorkerThread;
 
     procedure HandleAuthPacket(const Buf: TByteArray; const ClientAddr: TSockAddr);
     procedure HandleAcctPacket(const Buf: TByteArray; const ClientAddr: TSockAddr);
@@ -32,49 +35,58 @@ constructor TRadiusServer.Create(const Cfg: TRadiusConfig);
 begin
   FCfg := Cfg;
   FRunning := False;
+  FQueue := TPacketQueue.Create;
 end;
 
 destructor TRadiusServer.Destroy;
 begin
   Stop;
+  FQueue.Free;
   inherited;
 end;
 
 procedure TRadiusServer.Stop;
+var
+  i: Integer;
 begin
   FRunning := False;
+  
+  if Assigned(FQueue) then
+    FQueue.SignalAll;
+    
+  for i := Low(FWorkers) to High(FWorkers) do
+  begin
+    FWorkers[i].Terminate;
+    FQueue.SignalAll;
+    FWorkers[i].WaitFor;
+    FWorkers[i].Free;
+  end;
+  SetLength(FWorkers, 0);
+
   if FAuthSocket > 0 then fpClose(FAuthSocket);
   if FAcctSocket > 0 then fpClose(FAcctSocket);
 end;
 
 procedure TRadiusServer.HandleAuthPacket(const Buf: TByteArray; const ClientAddr: TSockAddr);
 var
-  Pkt: TRadiusPacket;
-  Response: TByteArray;
-  ClientIP: string;
+  Job: TPacketJob;
 begin
-  ClientIP := NetAddrToStr(ClientAddr.sin_addr);
-  Pkt := ParsePacket(Buf);
-  if Pkt.Code = RADIUS_ACCESS_REQUEST then
-  begin
-    Response := HandleAuth(Pkt, FCfg, ClientIP);
-    if Length(Response) > 0 then
-      fpSendTo(FAuthSocket, @Response[0], Length(Response), 0, @ClientAddr, SizeOf(ClientAddr));
-  end;
+  Job.PktType := ptAuth;
+  Job.Buffer := Buf;
+  Job.ClientAddr := ClientAddr;
+  Job.SocketFD := FAuthSocket;
+  FQueue.Push(Job);
 end;
 
 procedure TRadiusServer.HandleAcctPacket(const Buf: TByteArray; const ClientAddr: TSockAddr);
 var
-  Pkt: TRadiusPacket;
-  Response: TByteArray;
+  Job: TPacketJob;
 begin
-  Pkt := ParsePacket(Buf);
-  if Pkt.Code = RADIUS_ACCT_REQUEST then
-  begin
-    Response := HandleAccounting(Pkt, FCfg);
-    if Length(Response) > 0 then
-      fpSendTo(FAcctSocket, @Response[0], Length(Response), 0, @ClientAddr, SizeOf(ClientAddr));
-  end;
+  Job.PktType := ptAcct;
+  Job.Buffer := Buf;
+  Job.ClientAddr := ClientAddr;
+  Job.SocketFD := FAcctSocket;
+  FQueue.Push(Job);
 end;
 
 procedure TRadiusServer.Start;
@@ -114,6 +126,15 @@ begin
             + ' (Auth) and :'
             + IntToStr(FCfg.AcctPort)
             + ' (Acct)');
+
+  // Initialize Thread Pool
+  SetLength(FWorkers, 20); // 20 threads pool
+  for RecvLen := Low(FWorkers) to High(FWorkers) do
+  begin
+    FWorkers[RecvLen] := TRadiusWorkerThread.Create(FQueue, FCfg);
+    FWorkers[RecvLen].Start;
+  end;
+  LogMsg(1, 'Started 20 Worker Threads.');
 
   FRunning := True;
   ClientAddrLen := SizeOf(ClientAddr);
