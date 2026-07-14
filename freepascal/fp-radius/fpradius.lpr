@@ -71,9 +71,11 @@ begin
     WriteLn('    For Ubuntu/Debian:');
     WriteLn('      sudo apt-get install mariadb-server');
     WriteLn('      sudo systemctl enable mariadb && sudo systemctl start mariadb');
+    WriteLn('      sudo mysql_secure_installation');
     WriteLn('    For CentOS/RHEL:');
     WriteLn('      sudo yum install mariadb-server');
     WriteLn('      sudo systemctl enable mariadb && sudo systemctl start mariadb');
+    WriteLn('      sudo mysql_secure_installation');
     WriteLn('');
     WriteLn(' 3. MySQL/MariaDB Client Library Installation');
     WriteLn('    If you encounter "Can not load default MySQL library..." error, install:');
