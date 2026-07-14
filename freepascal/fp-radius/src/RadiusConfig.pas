@@ -118,7 +118,12 @@ begin
   end;
   
   LogText := LogText + Msg;
-  WriteLn(LogText); // Output to standard output
+  
+  // Output to standard output (with red color if error)
+  if Level = 0 then
+    WriteLn(#27'[31m' + LogText + #27'[0m')
+  else
+    WriteLn(LogText);
 
   if GlobalLogFile <> '' then
   begin
