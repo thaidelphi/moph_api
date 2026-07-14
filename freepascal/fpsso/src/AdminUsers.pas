@@ -22,7 +22,7 @@ var
   SplitPos: Integer;
 begin
   Result := False;
-  AuthHeader := Req.GetCustomHeader('Authorization');
+  AuthHeader := Req.Authorization;
   
   if Pos('Basic ', AuthHeader) = 1 then
   begin
