@@ -39,6 +39,11 @@ begin
     WriteLn('      sudo apt-get install libmysqlclient-dev');
     WriteLn('    สำหรับ CentOS/RHEL:');
     WriteLn('      sudo yum install mysql-devel');
+    WriteLn('');
+    WriteLn(' 3. การเรียกไฟล์ตั้งค่า (.env)');
+    WriteLn('    คุณสามารถระบุพาธของไฟล์ .env ต่อท้ายคำสั่งรันได้เลย เช่น:');
+    WriteLn('      ./fpradius /opt/radius/.env');
+    WriteLn('    * หากไม่ระบุ โปรแกรมจะพยายามไปอ่านไฟล์จาก /var/www/api/.env เป็นค่าเริ่มต้น');
     WriteLn('====================================================');
     Halt(0);
   end;
