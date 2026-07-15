@@ -202,6 +202,15 @@
     </style>
 </head>
 <body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.9); z-index: 9999; justify-content: center; align-items: center; flex-direction: column;">
+        <style>
+            @keyframes spin-login { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        </style>
+        <div style="border: 4px solid rgba(0, 0, 0, 0.1); width: 50px; height: 50px; border-radius: 50%; border-left-color: #007bff; animation: spin-login 1s linear infinite; margin-bottom: 20px;"></div>
+        <h2 style="color: #333; font-size: 18px; margin: 0; font-family: 'Sarabun', sans-serif;">กำลังเข้าสู่ระบบ...</h2>
+        <p style="color: #666; font-size: 14px; margin-top: 5px; font-family: 'Sarabun', sans-serif;">กรุณารอสักครู่</p>
+    </div>
 
     <!-- การ์ดฟอร์มการเข้าสู่ระบบ -->
     <div class="login-card">
@@ -259,8 +268,8 @@
             <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
             <p style="text-align: center; margin-bottom: 10px; font-size: 14px; color: #666;">หรือเข้าสู่ระบบผ่าน</p>
             
-            <a href="/sso/auth/thaid" style="display: block; width: 100%; padding: 12px; background: #004d99; color: white; text-align: center; border-radius: 8px; text-decoration: none; margin-bottom: 10px; font-weight: bold;">เข้าสู่ระบบด้วย ThaID</a>
-            <a href="/sso/auth/providerid" style="display: block; width: 100%; padding: 12px; background: #17a2b8; color: white; text-align: center; border-radius: 8px; text-decoration: none; font-weight: bold;">เข้าสู่ระบบด้วย MOPH ID (หมอพร้อม)</a>
+            <a href="/sso/auth/thaid" onclick="showLoading()" style="display: block; width: 100%; padding: 12px; background: #004d99; color: white; text-align: center; border-radius: 8px; text-decoration: none; margin-bottom: 10px; font-weight: bold;">เข้าสู่ระบบด้วย ThaID</a>
+            <a href="/sso/auth/providerid" onclick="showLoading()" style="display: block; width: 100%; padding: 12px; background: #17a2b8; color: white; text-align: center; border-radius: 8px; text-decoration: none; font-weight: bold;">เข้าสู่ระบบด้วย MOPH ID (หมอพร้อม)</a>
             
         </form>
 
@@ -271,6 +280,10 @@
 
     <!-- โค้ดตรวจสอบความถูกต้องฟอร์มเบื้องต้นก่อนส่งข้อมูลกลับไปที่ FortiGate -->
     <script>
+        function showLoading() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
         function validateForm() {
             // ดึงอ้างอิงของ Input ฟิลด์ Username และ Password
             var usernameField = document.getElementById('username');
@@ -286,6 +299,7 @@
 
             // ซ่อนกล่องข้อความเตือนเมื่อข้อมูลถูกต้องเรียบร้อยแล้ว
             errorBox.style.display = 'none';
+            showLoading(); // แสดงหน้าจอโหลด
             return true; // อนุญาตให้ดำเนินการส่งข้อมูลไปที่ FortiGate
         }
     </script>
