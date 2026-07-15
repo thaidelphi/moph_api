@@ -268,8 +268,8 @@
             <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
             <p style="text-align: center; margin-bottom: 10px; font-size: 14px; color: #666;">หรือเข้าสู่ระบบผ่าน</p>
             
-            <a href="/sso/auth/thaid" onclick="showLoading()" style="display: block; width: 100%; padding: 12px; background: #004d99; color: white; text-align: center; border-radius: 8px; text-decoration: none; margin-bottom: 10px; font-weight: bold;">เข้าสู่ระบบด้วย ThaID</a>
-            <a href="/sso/auth/providerid" onclick="showLoading()" style="display: block; width: 100%; padding: 12px; background: #17a2b8; color: white; text-align: center; border-radius: 8px; text-decoration: none; font-weight: bold;">เข้าสู่ระบบด้วย MOPH ID (หมอพร้อม)</a>
+            <a href="/sso/auth/thaid" onclick="openLogoutWindow(); showLoading();" style="display: block; width: 100%; padding: 12px; background: #004d99; color: white; text-align: center; border-radius: 8px; text-decoration: none; margin-bottom: 10px; font-weight: bold;">เข้าสู่ระบบด้วย ThaID</a>
+            <a href="/sso/auth/providerid" onclick="openLogoutWindow(); showLoading();" style="display: block; width: 100%; padding: 12px; background: #17a2b8; color: white; text-align: center; border-radius: 8px; text-decoration: none; font-weight: bold;">เข้าสู่ระบบด้วย MOPH ID (หมอพร้อม)</a>
             
         </form>
 
@@ -278,10 +278,26 @@
         </div>
     </div>
 
-    <!-- โค้ดตรวจสอบความถูกต้องฟอร์มเบื้องต้นก่อนส่งข้อมูลกลับไปที่ FortiGate -->
     <script>
+        window.addEventListener('load', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const error = urlParams.get('error');
+            if (error) {
+                // ปิด Popup ที่แอบเปิดรอไว้กรณีเข้าสู่ระบบไม่สำเร็จ
+                try {
+                    var popup = window.open("", "LogoutWindow");
+                    if (popup) popup.close();
+                } catch(e) {}
+            }
+        });
+
         function showLoading() {
             document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        function openLogoutWindow() {
+            // ทริคเปิดหน้าต่างเปล่ารอก่อนขณะมี User Gesture เพื่อไม่ให้โดนบล็อก
+            window.open("about:blank", "LogoutWindow", "width=400,height=350,toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes");
         }
 
         function validateForm() {
@@ -299,6 +315,7 @@
 
             // ซ่อนกล่องข้อความเตือนเมื่อข้อมูลถูกต้องเรียบร้อยแล้ว
             errorBox.style.display = 'none';
+            openLogoutWindow();
             showLoading(); // แสดงหน้าจอโหลด
             return true; // อนุญาตให้ดำเนินการส่งข้อมูลไปที่ FortiGate
         }
