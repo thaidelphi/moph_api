@@ -152,7 +152,10 @@ sudo systemctl reload apache2
 
 ระบบ `fpsso` ถูกออกแบบมาให้ทำงานอยู่หลัง Web Server ภายนอก ดังนั้นวิธีที่ดีที่สุดและปลอดภัยที่สุดคือการให้ Apache หรือ Nginx ทำหน้าที่เข้ารหัส SSL แทน (เรียกว่า "SSL Termination") ส่วนตัว `fpsso` จะคอยรับข้อมูลผ่าน HTTP พอร์ตธรรมดาจาก Apache ภายในเครื่องเดียวกันเท่านั้น
 
-หากเซิร์ฟเวอร์ของคุณมี Domain Name ชี้มาเรียบร้อยแล้ว แนะนำให้ใช้ **Let's Encrypt (Certbot)** เพื่อขอรับ Certificate ฟรี และต่ออายุอัตโนมัติ
+คุณสามารถเลือกใช้วิธีใดวิธีหนึ่งตามความเหมาะสมของเซิร์ฟเวอร์คุณ:
+
+### วิธีที่ 1: ใช้ Let's Encrypt (ฟรีและต่ออายุอัตโนมัติ)
+หากเซิร์ฟเวอร์ของคุณมี Domain Name ชี้มาเรียบร้อยแล้ว แนะนำให้ใช้ **Let's Encrypt (Certbot)**
 
 **วิธีติดตั้ง Certbot และดึง Certificate ฟรี:**
 ```bash
@@ -163,7 +166,37 @@ sudo apt install certbot python3-certbot-apache -y
 sudo certbot --apache -d your-domain.com
 ```
 
-> **หมายเหตุสำคัญ:** การ Login ผ่านระบบ ThaID และ ProviderID จำเป็นจะต้องให้ URL ที่เรียกเข้ามาเป็น HTTPS เท่านั้น การใช้ Certbot ร่วมกับคำสั่ง `RequestHeader set X-Forwarded-Proto "https"` ใน Apache (ข้อ 6) จะทำให้ระบบส่งค่าให้ fpsso ทราบว่าการเชื่อมต่อมีความปลอดภัยสมบูรณ์
+### วิธีที่ 2: นำใบรับรอง (Certificate) มาติดตั้งเอง
+หากคุณซื้อ Certificate จากผู้ให้บริการ หรือหน่วยงานมีไฟล์ `.cer`, `.crt`, `.key` ให้มาอยู่แล้ว ให้แก้ไขไฟล์ VirtualHost ด้วยตัวเองดังนี้:
+
+1. นำไฟล์ใบรับรองไปวางไว้ในโฟลเดอร์ที่ปลอดภัยบนเซิร์ฟเวอร์ เช่น `/var/www/ssl-cert/`
+2. สร้างหรือแก้ไขไฟล์ VirtualHost (เช่น `/etc/apache2/sites-available/your-domain-ssl.conf`)
+3. เพิ่มบล็อกสำหรับพอร์ต 443 ตามตัวอย่าง:
+```apache
+<VirtualHost *:443>
+    ServerName yourdomain.com
+    
+    # เปิดใช้งาน SSL และระบุตำแหน่งไฟล์ Certificate
+    SSLEngine on
+    SSLCertificateFile /var/www/ssl-cert/ssl.cer
+    SSLCertificateKeyFile /var/www/ssl-cert/ssl.key
+    SSLCertificateChainFile /var/www/ssl-cert/ssl.ca
+    
+    # === Reverse Proxy สำหรับ FreePascal SSO Server ===
+    ProxyPreserveHost On
+    RequestHeader set X-Forwarded-Proto "https"
+    RequestHeader set X-Forwarded-Host "yourdomain.com"
+    ProxyPass /sso/ http://127.0.0.1:8080/ timeout=60
+    ProxyPassReverse /sso/ http://127.0.0.1:8080/
+</VirtualHost>
+```
+4. เปิดการใช้งานไซต์และโหลด Apache ใหม่:
+```bash
+sudo a2ensite your-domain-ssl.conf
+sudo systemctl reload apache2
+```
+
+> **หมายเหตุสำคัญ:** การ Login ผ่านระบบ ThaID และ ProviderID จำเป็นจะต้องให้ URL ที่เรียกเข้ามาเป็น HTTPS เท่านั้น การตั้งค่าด้วยวิธีใดวิธีหนึ่งร่วมกับคำสั่ง `RequestHeader set X-Forwarded-Proto "https"` ใน Apache จะทำให้ระบบส่งค่าให้ fpsso ทราบว่าการเชื่อมต่อมีความปลอดภัยสมบูรณ์
 
 ---
 
