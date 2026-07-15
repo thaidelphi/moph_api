@@ -28,15 +28,14 @@ begin
   Username := Req.ContentFields.Values['username'];
   Pass := Req.ContentFields.Values['password'];
 
-  if (Username = '') then
+  if (Username = '') or (Pass = '') then
   begin
-    SendJSONError(Res, 400, 'Username required');
+    SendJSONError(Res, 400, 'Username and password required');
     Exit;
   end;
 
-  // Verify username/pass in radius? Or assume it's external.
-  // For local login, we will just pass it to Radius DB to create/get a tmp_passwd
-  PlainPass := SSORadiusAuth(Username, IsActive, '', '');
+  // Local login verifies existing username and password in radius
+  PlainPass := LocalRadiusAuth(Username, Pass, IsActive);
   
   if not IsActive then
   begin

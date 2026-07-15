@@ -9,6 +9,8 @@ uses
 
 // Equivalent to sso_radius_auth in PHP
 function SSORadiusAuth(const Username: string; out IsActive: Boolean; const Email: string = ''; const Fullname: string = ''): string;
+// For local login form (verify existing user password)
+function LocalRadiusAuth(const Username, Password: string; out IsActive: Boolean): string;
 
 implementation
 
@@ -22,6 +24,55 @@ begin
   SetLength(Result, Len);
   for I := 1 to Len do
     Result[I] := Chars[Random(Length(Chars)) + 1];
+end;
+
+function LocalRadiusAuth(const Username, Password: string; out IsActive: Boolean): string;
+var
+  Conn: TMySQL80Connection;
+  Trans: TSQLTransaction;
+  Query: TSQLQuery;
+  TmpPass: string;
+begin
+  IsActive := False;
+  Result := '';
+  Conn := TMySQL80Connection.Create(nil);
+  Trans := TSQLTransaction.Create(nil);
+  Query := TSQLQuery.Create(nil);
+  try
+    Conn.HostName := AppCfg.DBHost;
+    Conn.UserName := AppCfg.DBUser;
+    Conn.Password := AppCfg.DBPass;
+    Conn.DatabaseName := AppCfg.DBName;
+    Conn.Transaction := Trans;
+    Query.DataBase := Conn;
+    
+    try
+      Conn.Connected := True;
+    except
+      on E: Exception do Exit;
+    end;
+    
+    Query.SQL.Text := 'SELECT tmp_passwd, active FROM radcheck_mirror WHERE username = :u LIMIT 1';
+    Query.Params.ParamByName('u').AsString := Username;
+    Query.Open;
+    
+    if not Query.EOF then
+    begin
+      TmpPass := Query.FieldByName('tmp_passwd').AsString;
+      IsActive := (Query.FieldByName('active').AsString = 'Y');
+      
+      if TmpPass = Password then
+      begin
+        Result := TmpPass;
+      end;
+    end;
+    Query.Close;
+    
+  finally
+    Query.Free;
+    Trans.Free;
+    Conn.Free;
+  end;
 end;
 
 function SSORadiusAuth(const Username: string; out IsActive: Boolean; const Email: string = ''; const Fullname: string = ''): string;
