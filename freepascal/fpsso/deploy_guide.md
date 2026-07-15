@@ -155,16 +155,34 @@ sudo systemctl reload apache2
 คุณสามารถเลือกใช้วิธีใดวิธีหนึ่งตามความเหมาะสมของเซิร์ฟเวอร์คุณ:
 
 ### วิธีที่ 1: ใช้ Let's Encrypt (ฟรีและต่ออายุอัตโนมัติ)
-หากเซิร์ฟเวอร์ของคุณมี Domain Name ชี้มาเรียบร้อยแล้ว แนะนำให้ใช้ **Let's Encrypt (Certbot)**
+หากเซิร์ฟเวอร์ของคุณมี Domain Name ชี้มาเรียบร้อยแล้ว แนะนำให้ใช้ **Let's Encrypt (Certbot)** 
 
-**วิธีติดตั้ง Certbot และดึง Certificate ฟรี:**
-```bash
-# ติดตั้ง Certbot และปลั๊กอินสำหรับ Apache
-sudo apt install certbot python3-certbot-apache -y
+**เงื่อนไขที่ต้องมีก่อนทำ:**
+- เซิร์ฟเวอร์ต้องเปิดพอร์ต 80 (HTTP) และ 443 (HTTPS) จากภายนอก
+- ต้องจดโดเมนและชี้ A Record มาที่ IP ของเซิร์ฟเวอร์เรียบร้อยแล้ว (ตัวอย่าง: `sso.yourdomain.com`)
 
-# สั่งให้ Certbot สร้าง SSL และแก้ไขไฟล์ VirtualHost ให้อัตโนมัติ
-sudo certbot --apache -d your-domain.com
-```
+**ขั้นตอนการขอ Certificate:**
+1. ติดตั้ง Certbot และปลั๊กอินสำหรับ Apache:
+   ```bash
+   sudo apt update
+   sudo apt install certbot python3-certbot-apache -y
+   ```
+
+2. สั่งรันคำสั่งขอ Certificate และให้มันตั้งค่า Apache อัตโนมัติ:
+   ```bash
+   sudo certbot --apache -d sso.yourdomain.com
+   ```
+
+3. ระบบจะถามคำถามสั้นๆ ให้ทำตามนี้:
+   - **Enter email address:** ใส่อีเมลของคุณเพื่อรับการแจ้งเตือน
+   - **Please read the Terms of Service...:** พิมพ์ `Y` เพื่อยอมรับเงื่อนไข
+   - **Would you be willing...:** พิมพ์ `N` หรือ `Y` ก็ได้ (เกี่ยวกับการส่งอีเมลโฆษณา)
+   - หากสำเร็จ ระบบจะตั้งค่าไฟล์ VirtualHost ให้มี SSL และสั่ง Reload Apache ทันที
+
+4. (ตัวเลือกเสริม) ตรวจสอบว่าระบบตั้งเวลาต่ออายุ Certificate ให้อัตโนมัติแล้วหรือยัง:
+   ```bash
+   sudo systemctl status certbot.timer
+   ```
 
 ### วิธีที่ 2: นำใบรับรอง (Certificate) มาติดตั้งเอง
 หากคุณซื้อ Certificate จากผู้ให้บริการ หรือหน่วยงานมีไฟล์ `.cer`, `.crt`, `.key` ให้มาอยู่แล้ว ให้แก้ไขไฟล์ VirtualHost ด้วยตัวเองดังนี้:
