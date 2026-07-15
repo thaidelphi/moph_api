@@ -6,7 +6,7 @@ uses
   {$IFDEF UNIX}
   cthreads,
   {$ENDIF}
-  Classes, SysUtils,
+  Classes, SysUtils, Process,
   Config, SessionMgr, Router, HttpServer, HTTPDefs,
   AuthLocal, AuthThaiD, AuthProviderID, AuthGoogle, FortiGate, AdminUsers;
 
@@ -100,8 +100,75 @@ begin
   end;
 end;
 
+procedure InstallService;
+var
+  ServiceFileContent: string;
+  ExePath, WorkDir, OutStr: string;
+  StrList: TStringList;
+begin
+  Writeln('Installing fpsso as a systemd service...');
+  ExePath := ExpandFileName(ParamStr(0));
+  WorkDir := ExtractFilePath(ExePath);
+  if (Length(WorkDir) > 0) and (WorkDir[Length(WorkDir)] = DirectorySeparator) then
+    SetLength(WorkDir, Length(WorkDir) - 1);
+
+  ServiceFileContent := 
+    '[Unit]' + sLineBreak +
+    'Description=FreePascal SSO HTTP Server' + sLineBreak +
+    'After=network.target mysql.service' + sLineBreak +
+    sLineBreak +
+    '[Service]' + sLineBreak +
+    'Type=simple' + sLineBreak +
+    'User=root' + sLineBreak +
+    'WorkingDirectory=' + WorkDir + sLineBreak +
+    'ExecStart=' + ExePath + sLineBreak +
+    'Restart=on-failure' + sLineBreak +
+    'RestartSec=5s' + sLineBreak +
+    'StandardOutput=journal' + sLineBreak +
+    'StandardError=journal' + sLineBreak +
+    sLineBreak +
+    '[Install]' + sLineBreak +
+    'WantedBy=multi-user.target' + sLineBreak;
+
+  StrList := TStringList.Create;
+  try
+    StrList.Text := ServiceFileContent;
+    try
+      StrList.SaveToFile('/etc/systemd/system/fpsso.service');
+      Writeln('Successfully wrote /etc/systemd/system/fpsso.service');
+    except
+      on E: Exception do
+      begin
+        Writeln('Failed to write service file: ', E.Message);
+        Writeln('Did you run with sudo? (e.g., sudo ./fpsso --installservice)');
+        Halt(1);
+      end;
+    end;
+  finally
+    StrList.Free;
+  end;
+
+  Writeln('Reloading systemd daemon...');
+  RunCommand('systemctl', ['daemon-reload'], OutStr);
+  
+  Writeln('Enabling fpsso service...');
+  RunCommand('systemctl', ['enable', 'fpsso'], OutStr);
+  
+  Writeln('Starting fpsso service...');
+  RunCommand('systemctl', ['start', 'fpsso'], OutStr);
+  
+  Writeln('Service installed and started successfully!');
+  Writeln('You can check status with: sudo systemctl status fpsso');
+  Halt(0);
+end;
+
 begin
   Writeln('Initializing fp-sso...');
+  
+  if (ParamCount > 0) and (ParamStr(1) = '--installservice') then
+  begin
+    InstallService;
+  end;
   
   if not LoadConfig('/var/www/api/.env') then
   begin
