@@ -139,6 +139,97 @@ begin
   WriteLn('SUCCESS: fpradius service uninstalled successfully!');
 end;
 
+function PromptDefault(const Msg, DefaultVal: string): string;
+begin
+  if DefaultVal <> '' then
+    Write(Msg, ' [', DefaultVal, ']: ')
+  else
+    Write(Msg, ': ');
+  ReadLn(Result);
+  if Result = '' then Result := DefaultVal;
+end;
+
+procedure SetEnvVar(List: TStringList; const Key, Value: string);
+var
+  I: Integer;
+begin
+  for I := 0 to List.Count - 1 do
+  begin
+    if Pos(Key + '=', Trim(List[I])) = 1 then
+    begin
+      List[I] := Key + '=' + Value;
+      Exit;
+    end;
+  end;
+  List.Add(Key + '=' + Value);
+end;
+
+procedure SetupWizard(const AEnvPath: string);
+var
+  EnvContent: TStringList;
+  Ans: string;
+begin
+  WriteLn('=========================================');
+  WriteLn('    fp-radius Configuration Setup Wizard');
+  WriteLn('=========================================');
+  WriteLn('Leave blank to use the [default value].');
+  WriteLn('');
+  
+  EnvContent := TStringList.Create;
+  try
+    if FileExists(AEnvPath) then
+    begin
+      WriteLn('Existing configuration found at ', AEnvPath, '. Updating it safely.');
+      EnvContent.LoadFromFile(AEnvPath);
+    end;
+
+    SetEnvVar(EnvContent, 'DB_HOST', PromptDefault('Database Host', '127.0.0.1'));
+    SetEnvVar(EnvContent, 'DB_PORT', PromptDefault('Database Port', '3306'));
+    SetEnvVar(EnvContent, 'DB_USER', PromptDefault('Database User', 'root'));
+    SetEnvVar(EnvContent, 'DB_PASS', PromptDefault('Database Password', ''));
+    SetEnvVar(EnvContent, 'DB_NAME', PromptDefault('Database Name', 'radius'));
+    
+    // Check if RADIUS_SECRET exists for spacing
+    if EnvContent.IndexOf('RADIUS_SECRET=') = -1 then EnvContent.Add('');
+    
+    SetEnvVar(EnvContent, 'RADIUS_SECRET', PromptDefault('RADIUS Shared Secret', 'testing123'));
+    SetEnvVar(EnvContent, 'RADIUS_PORT', PromptDefault('RADIUS Auth Port', '1812'));
+    SetEnvVar(EnvContent, 'RADIUS_ACCT_PORT', PromptDefault('RADIUS Acct Port', '1813'));
+    
+    WriteLn('');
+    WriteLn('Saving configuration to: ', AEnvPath);
+    try
+      EnvContent.SaveToFile(AEnvPath);
+      WriteLn('Configuration saved successfully!');
+    except
+      on E: Exception do
+      begin
+        WriteLn('Failed to save .env file: ', E.Message);
+        WriteLn('Did you run with sudo?');
+        Halt(1);
+      end;
+    end;
+  finally
+    EnvContent.Free;
+  end;
+  
+  WriteLn('');
+  Ans := PromptDefault('Do you want to initialize the database schema now? (y/n)', 'y');
+  if LowerCase(Ans) = 'y' then
+  begin
+    InitDatabase(LoadConfig(AEnvPath));
+  end;
+
+  WriteLn('');
+  Ans := PromptDefault('Do you want to install fp-radius as a background service now? (y/n)', 'y');
+  if LowerCase(Ans) = 'y' then
+  begin
+    InstallService(AEnvPath);
+  end;
+  
+  WriteLn('Setup complete! You can start the server manually by running: ./fpradius');
+end;
+
 begin
   // ตรวจสอบ Parameter --help หรือ -h
   if (ParamCount > 0) and ((ParamStr(1) = '--help') or (ParamStr(1) = '-h')) then
@@ -195,11 +286,15 @@ begin
     WriteLn('    To stop and remove the fp-radius background service:');
     WriteLn('      sudo ./fpradius --uninstallservice');
     WriteLn('');
-    WriteLn(' 8. Viewing Logs (Systemd)');
+    WriteLn(' 8. Setup Wizard (--setup-wizard or --install-wizard)');
+    WriteLn('    To launch the interactive configuration wizard:');
+    WriteLn('      sudo ./fpradius --setup-wizard');
+    WriteLn('');
+    WriteLn(' 9. Viewing Logs (Systemd)');
     WriteLn('    To view real-time logs when running as a service:');
     WriteLn('      sudo journalctl -u fpradius -f');
     WriteLn('');
-    WriteLn(' 9. Run with PM2 (Alternative Process Manager)');
+    WriteLn(' 10. Run with PM2 (Alternative Process Manager)');
     WriteLn('    If you prefer using PM2 instead of Systemd, you can run:');
     WriteLn('      pm2 start ./fpradius --name "fpradius"');
     WriteLn('      pm2 save');
@@ -230,6 +325,16 @@ begin
       EnvPath := ExtractFilePath(ParamStr(0)) + '.env'
     else
       EnvPath := '/var/www/api/.env';
+  end;
+
+  // ตรวจสอบ Setup Wizard
+  for I := 1 to ParamCount do
+  begin
+    if (ParamStr(I) = '--setup-wizard') or (ParamStr(I) = '--install-wizard') then
+    begin
+      SetupWizard(EnvPath);
+      Halt(0);
+    end;
   end;
 
   WriteLn('fp-radius: Loading config from ', EnvPath);
