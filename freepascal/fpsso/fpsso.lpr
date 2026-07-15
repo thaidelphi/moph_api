@@ -196,7 +196,7 @@ begin
   if Result = '' then Result := DefaultVal;
 end;
 
-procedure InstallApacheProxy(const DomainName: string);
+procedure InstallApacheProxy(const DomainName, PortStr: string);
 var
   Ans, ConfPath, ProxyStr, OutStr: string;
   StrList: TStringList;
@@ -242,8 +242,8 @@ begin
         '    ProxyPreserveHost On' + sLineBreak +
         '    RequestHeader set X-Forwarded-Proto "https"' + sLineBreak +
         '    RequestHeader set X-Forwarded-Host "' + DomainName + '"' + sLineBreak +
-        '    ProxyPass /sso/ http://127.0.0.1:8080/ timeout=60' + sLineBreak +
-        '    ProxyPassReverse /sso/ http://127.0.0.1:8080/';
+        '    ProxyPass /sso/ http://127.0.0.1:' + PortStr + '/ timeout=60' + sLineBreak +
+        '    ProxyPassReverse /sso/ http://127.0.0.1:' + PortStr + '/';
       
       StrList.Insert(InsertPos, ProxyStr);
       try
@@ -275,7 +275,7 @@ procedure SetupWizard;
 var
   EnvContent: TStringList;
   EnvPath: string;
-  Ans, DomainName: string;
+  Ans, DomainName, PortStr: string;
 begin
   Writeln('=========================================');
   Writeln('    fp-sso Configuration Setup Wizard');
@@ -317,6 +317,8 @@ begin
     EnvContent.Add('FORTIGATE_AUTH_URL=' + PromptDefault('FortiGate Auth URL', 'http://192.168.1.1:1000/fgtauth'));
     EnvContent.Add('LOGIN_TEMPLATE_PATH=' + PromptDefault('Custom Login Template Path', '/var/www/api/freepascal/fpsso/templates/login.html'));
     EnvContent.Add('SSO_AUTO_APPROVE=' + PromptDefault('SSO Auto Approve new users (true/false)', 'false'));
+    PortStr := PromptDefault('Application Port', '8080');
+    EnvContent.Add('APP_PORT=' + PortStr);
     
     Writeln('');
     EnvPath := '/var/www/api/.env';
@@ -343,7 +345,7 @@ begin
     InstallService;
   end;
   
-  InstallApacheProxy(DomainName);
+  InstallApacheProxy(DomainName, PortStr);
   
   Writeln('Setup complete! If you did not install the service, you can start the server manually by running: ./fpsso');
 end;
@@ -364,7 +366,7 @@ begin
   Writeln('  sudo systemctl restart fpsso    Restart the service');
   Writeln('  sudo systemctl status fpsso     Check service status');
   Writeln('');
-  Writeln('Running without any options will start the SSO HTTP server on port 8080.');
+  Writeln('Running without any options will start the SSO HTTP server (default port 8080).');
   Halt(0);
 end;
 
@@ -405,7 +407,7 @@ begin
   RegisterRoute('GET', '/howto', @HandleHowTo);
   
   try
-    StartServer(8080);
+    StartServer(AppCfg.AppPort);
   except
     on E: Exception do
       Writeln('Server error: ', E.Message);

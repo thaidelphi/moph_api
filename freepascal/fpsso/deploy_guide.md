@@ -55,6 +55,12 @@ FORTIGATE_AUTH_URL=http://192.168.1.1:1000/fgtauth
 
 # (Optional) กำหนด Path ของไฟล์ login.html หากต้องการปรับแต่งหน้าเว็บเอง
 LOGIN_TEMPLATE_PATH=/var/www/api/freepascal/fpsso/templates/login.html
+
+# SSO Auto Approve Feature
+# set to true: ล็อกอินผ่าน SSO แล้วใช้อินเทอร์เน็ตได้เลยทันที
+# set to false: แอดมินต้องเข้าไปอนุมัติบัญชีใหม่ก่อนจึงจะใช้งานได้
+SSO_AUTO_APPROVE=false
+APP_PORT=8080
 ```
 
 ## 3. การคอมไพล์โปรแกรม (Compile)

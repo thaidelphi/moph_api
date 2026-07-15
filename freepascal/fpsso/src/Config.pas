@@ -36,6 +36,7 @@ type
     AdminPass: string;
     
     SSOAutoApprove: Boolean;
+    AppPort: Word;
   end;
 
 var
@@ -101,7 +102,8 @@ begin
         
         else if (Key = 'ADMIN_USERNAME') then AppCfg.AdminUser := Value
         else if (Key = 'ADMIN_PASSWORD') then AppCfg.AdminPass := Value
-        else if (Key = 'SSO_AUTO_APPROVE') then AppCfg.SSOAutoApprove := (LowerCase(Value) = 'true') or (Value = '1');
+        else if (Key = 'SSO_AUTO_APPROVE') then AppCfg.SSOAutoApprove := (LowerCase(Value) = 'true') or (Value = '1')
+        else if (Key = 'APP_PORT') then AppCfg.AppPort := StrToIntDef(Value, 8080);
       end;
     end;
     
@@ -124,5 +126,6 @@ initialization
   AppCfg.AdminUser := 'admin';
   AppCfg.AdminPass := 'password';
   AppCfg.SSOAutoApprove := True;
+  AppCfg.AppPort := 8080;
   
 end.
