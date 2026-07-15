@@ -17,6 +17,7 @@ var
   Username, Pass: string;
   Data: TSessionData;
   PlainPass: string;
+  IsActive: Boolean;
 begin
   if Req.Method <> 'POST' then
   begin
@@ -35,7 +36,13 @@ begin
 
   // Verify username/pass in radius? Or assume it's external.
   // For local login, we will just pass it to Radius DB to create/get a tmp_passwd
-  PlainPass := SSORadiusAuth(Username, '', '');
+  PlainPass := SSORadiusAuth(Username, IsActive, '', '');
+  
+  if not IsActive then
+  begin
+    Redirect(Res, '/sso/?error=pending');
+    Exit;
+  end;
   
   if PlainPass <> '' then
   begin

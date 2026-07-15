@@ -865,6 +865,8 @@
                 document.getElementById('errorBox').style.display = 'flex';
                 let errText = decodeURIComponent(error);
                 if (error === '1' || error === 'db') errText = 'ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง';
+                else if (error === 'pending') errText = 'บัญชีของท่านอยู่ระหว่างรอการอนุมัติจากผู้ดูแลระบบ';
+                
                 document.getElementById('errorText').innerText = errText;
             }
         });

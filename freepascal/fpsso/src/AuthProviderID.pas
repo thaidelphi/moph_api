@@ -43,6 +43,7 @@ var
   Client: TFPHttpClient;
   PostData: TStringList;
   ResponseStr: string;
+  IsActive: Boolean;
   JSON: TJSONObject;
   AccessToken, PID, FullName, PlainPass, SessionID: string;
   Data: TSessionData;
@@ -83,9 +84,15 @@ begin
       end;
       
       PID := 'provider_999'; // Placeholder
-      FullName := 'MOPH Provider User';
+      FullName := 'ProviderID User';
       
-      PlainPass := SSORadiusAuth(PID, '', FullName);
+      PlainPass := SSORadiusAuth(PID, IsActive, '', FullName);
+      
+      if not IsActive then
+      begin
+        Redirect(Res, '/sso/?error=pending');
+        Exit;
+      end;
       
       if PlainPass <> '' then
       begin

@@ -50,6 +50,7 @@ var
   PlainPass, PID, FullName, SessionID: string;
   Data: TSessionData;
   AuthHeader: string;
+  IsActive: Boolean;
 begin
   Code := Req.QueryFields.Values['code'];
   State := Req.QueryFields.Values['state'];
@@ -97,7 +98,13 @@ begin
       PID := '1234567890123'; // Placeholder
       FullName := 'ThaID User';
       
-      PlainPass := SSORadiusAuth(PID, '', FullName);
+      PlainPass := SSORadiusAuth(PID, IsActive, '', FullName);
+      
+      if not IsActive then
+      begin
+        Redirect(Res, '/sso/?error=pending');
+        Exit;
+      end;
       
       if PlainPass <> '' then
       begin

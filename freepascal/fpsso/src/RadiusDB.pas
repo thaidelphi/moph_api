@@ -8,7 +8,7 @@ uses
   Classes, SysUtils, md5, mysql80conn, sqldb, db, Config;
 
 // Equivalent to sso_radius_auth in PHP
-function SSORadiusAuth(const Username: string; const Email: string = ''; const Fullname: string = ''): string;
+function SSORadiusAuth(const Username: string; out IsActive: Boolean; const Email: string = ''; const Fullname: string = ''): string;
 
 implementation
 
@@ -24,13 +24,14 @@ begin
     Result[I] := Chars[Random(Length(Chars)) + 1];
 end;
 
-function SSORadiusAuth(const Username: string; const Email: string = ''; const Fullname: string = ''): string;
+function SSORadiusAuth(const Username: string; out IsActive: Boolean; const Email: string = ''; const Fullname: string = ''): string;
 var
   Conn: TMySQL80Connection;
   Trans: TSQLTransaction;
   Query: TSQLQuery;
-  NewPass, MD5Pass, DateReg, DateExp: string;
+  NewPass, MD5Pass, DateReg, DateExp, ActiveStr: string;
 begin
+  IsActive := False;
   Result := '';
   Conn := TMySQL80Connection.Create(nil);
   Trans := TSQLTransaction.Create(nil);
@@ -63,13 +64,14 @@ begin
     end;
     
     // 1. ตรวจสอบว่ามี tmp_passwd ใน radcheck_mirror หรือไม่
-    Query.SQL.Text := 'SELECT tmp_passwd FROM radcheck_mirror WHERE username = :u LIMIT 1';
+    Query.SQL.Text := 'SELECT tmp_passwd, active FROM radcheck_mirror WHERE username = :u LIMIT 1';
     Query.Params.ParamByName('u').AsString := Username;
     Query.Open;
     
     if not Query.EOF then
     begin
       Result := Query.FieldByName('tmp_passwd').AsString;
+      IsActive := (Query.FieldByName('active').AsString = 'Y');
       Query.Close;
       
       if Result <> '' then
@@ -81,25 +83,28 @@ begin
         Query.Params.ParamByName('u').AsString := Username;
         Query.ExecSQL;
 
-        // ซิงค์ข้อมูลลง radcheck_cleartext เพื่อใช้กับ RADIUS
-        Query.SQL.Text := 'SELECT COUNT(*) as cnt FROM radcheck_cleartext WHERE username = :u';
-        Query.Params.ParamByName('u').AsString := Username;
-        Query.Open;
-        if Query.FieldByName('cnt').AsInteger > 0 then
+        // ซิงค์ข้อมูลลง radcheck_cleartext เพื่อใช้กับ RADIUS (ทำเฉพาะกรณีที่ active = 'Y' เท่านั้น)
+        if IsActive then
         begin
-          Query.Close;
-          Query.SQL.Text := 'UPDATE radcheck_cleartext SET value = :v WHERE username = :u';
-          Query.Params.ParamByName('v').AsString := Result;
+          Query.SQL.Text := 'SELECT COUNT(*) as cnt FROM radcheck_cleartext WHERE username = :u';
           Query.Params.ParamByName('u').AsString := Username;
-          Query.ExecSQL;
-        end
-        else
-        begin
-          Query.Close;
-          Query.SQL.Text := 'INSERT INTO radcheck_cleartext (username, attribute, op, value) VALUES (:u, ''Cleartext-Password'', '':='', :v)';
-          Query.Params.ParamByName('u').AsString := Username;
-          Query.Params.ParamByName('v').AsString := Result;
-          Query.ExecSQL;
+          Query.Open;
+          if Query.FieldByName('cnt').AsInteger > 0 then
+          begin
+            Query.Close;
+            Query.SQL.Text := 'UPDATE radcheck_cleartext SET value = :v WHERE username = :u';
+            Query.Params.ParamByName('v').AsString := Result;
+            Query.Params.ParamByName('u').AsString := Username;
+            Query.ExecSQL;
+          end
+          else
+          begin
+            Query.Close;
+            Query.SQL.Text := 'INSERT INTO radcheck_cleartext (username, attribute, op, value) VALUES (:u, ''Cleartext-Password'', '':='', :v)';
+            Query.Params.ParamByName('u').AsString := Username;
+            Query.Params.ParamByName('v').AsString := Result;
+            Query.ExecSQL;
+          end;
         end;
 
         Trans.Commit;
@@ -112,46 +117,55 @@ begin
     NewPass := RandomString(8);
     MD5Pass := MD5Print(MD5String(NewPass));
     
-    // บันทึกใน radcheck (MD5-Password)
-    Query.SQL.Text := 'SELECT COUNT(*) as cnt FROM radcheck WHERE username = :u AND attribute = ''MD5-Password''';
-    Query.Params.ParamByName('u').AsString := Username;
-    Query.Open;
-    if Query.FieldByName('cnt').AsInteger > 0 then
+    ActiveStr := 'Y';
+    if not AppCfg.SSOAutoApprove then
+      ActiveStr := 'N';
+    IsActive := (ActiveStr = 'Y');
+    
+    // บันทึกใน radcheck และ radcheck_cleartext เฉพาะกรณี Active เท่านั้น
+    if IsActive then
     begin
-      Query.Close;
-      Query.SQL.Text := 'UPDATE radcheck SET op = '':='', value = :v WHERE username = :u AND attribute = ''MD5-Password''';
-      Query.Params.ParamByName('v').AsString := MD5Pass;
+      // บันทึกใน radcheck (MD5-Password)
+      Query.SQL.Text := 'SELECT COUNT(*) as cnt FROM radcheck WHERE username = :u AND attribute = ''MD5-Password''';
       Query.Params.ParamByName('u').AsString := Username;
-      Query.ExecSQL;
-    end
-    else
-    begin
-      Query.Close;
-      Query.SQL.Text := 'INSERT INTO radcheck (username, attribute, op, value) VALUES (:u, ''MD5-Password'', '':='', :v)';
-      Query.Params.ParamByName('u').AsString := Username;
-      Query.Params.ParamByName('v').AsString := MD5Pass;
-      Query.ExecSQL;
-    end;
+      Query.Open;
+      if Query.FieldByName('cnt').AsInteger > 0 then
+      begin
+        Query.Close;
+        Query.SQL.Text := 'UPDATE radcheck SET op = '':='', value = :v WHERE username = :u AND attribute = ''MD5-Password''';
+        Query.Params.ParamByName('v').AsString := MD5Pass;
+        Query.Params.ParamByName('u').AsString := Username;
+        Query.ExecSQL;
+      end
+      else
+      begin
+        Query.Close;
+        Query.SQL.Text := 'INSERT INTO radcheck (username, attribute, op, value) VALUES (:u, ''MD5-Password'', '':='', :v)';
+        Query.Params.ParamByName('u').AsString := Username;
+        Query.Params.ParamByName('v').AsString := MD5Pass;
+        Query.ExecSQL;
+      end;
 
-    // บันทึกใน radcheck_cleartext
-    Query.SQL.Text := 'SELECT COUNT(*) as cnt FROM radcheck_cleartext WHERE username = :u';
-    Query.Params.ParamByName('u').AsString := Username;
-    Query.Open;
-    if Query.FieldByName('cnt').AsInteger > 0 then
-    begin
-      Query.Close;
-      Query.SQL.Text := 'UPDATE radcheck_cleartext SET value = :v WHERE username = :u';
-      Query.Params.ParamByName('v').AsString := NewPass;
+      // บันทึกใน radcheck_cleartext
+      Query.SQL.Text := 'SELECT COUNT(*) as cnt FROM radcheck_cleartext WHERE username = :u';
       Query.Params.ParamByName('u').AsString := Username;
-      Query.ExecSQL;
-    end
-    else
-    begin
-      Query.Close;
-      Query.SQL.Text := 'INSERT INTO radcheck_cleartext (username, attribute, op, value) VALUES (:u, ''Cleartext-Password'', '':='', :v)';
-      Query.Params.ParamByName('u').AsString := Username;
-      Query.Params.ParamByName('v').AsString := NewPass;
-      Query.ExecSQL;
+      Query.Open;
+      if Query.FieldByName('cnt').AsInteger > 0 then
+      begin
+        Query.Close;
+        Query.SQL.Text := 'UPDATE radcheck_cleartext SET value = :v WHERE username = :u';
+        Query.Params.ParamByName('v').AsString := NewPass;
+        Query.Params.ParamByName('u').AsString := Username;
+        Query.ExecSQL;
+      end
+      else
+      begin
+        Query.Close;
+        Query.SQL.Text := 'INSERT INTO radcheck_cleartext (username, attribute, op, value) VALUES (:u, ''Cleartext-Password'', '':='', :v)';
+        Query.Params.ParamByName('u').AsString := Username;
+        Query.Params.ParamByName('v').AsString := NewPass;
+        Query.ExecSQL;
+      end;
     end;
     
     // บันทึกใน radcheck_mirror
@@ -176,12 +190,13 @@ begin
     begin
       Query.Close;
       Query.SQL.Text := 'INSERT INTO radcheck_mirror (username, attribute, op, value, tmp_passwd, date_register, date_expire, note, active, email, fullname) ' +
-                        'VALUES (:u, ''MD5-Password'', '':='', :v, :tp, :dreg, :dexp, ''Auto-generated by SSO Auth'', ''Y'', :e, :f)';
+                        'VALUES (:u, ''MD5-Password'', '':='', :v, :tp, :dreg, :dexp, ''Auto-generated by SSO Auth'', :a, :e, :f)';
       Query.Params.ParamByName('u').AsString := Username;
       Query.Params.ParamByName('v').AsString := MD5Pass;
       Query.Params.ParamByName('tp').AsString := NewPass;
       Query.Params.ParamByName('dreg').AsString := DateReg;
       Query.Params.ParamByName('dexp').AsString := DateExp;
+      Query.Params.ParamByName('a').AsString := ActiveStr;
       Query.Params.ParamByName('e').AsString := Email;
       Query.Params.ParamByName('f').AsString := Fullname;
       Query.ExecSQL;

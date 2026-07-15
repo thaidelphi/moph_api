@@ -288,6 +288,16 @@
                     var popup = window.open("", "LogoutWindow");
                     if (popup) popup.close();
                 } catch(e) {}
+                
+                var errorBox = document.getElementById('errorBox');
+                if (errorBox) {
+                    errorBox.style.display = 'block';
+                    if (error === 'pending') {
+                        errorBox.innerHTML = '<strong>รอการอนุมัติ</strong><br>บัญชีของท่านอยู่ระหว่างรอผู้ดูแลระบบอนุมัติการใช้งาน';
+                    } else {
+                        errorBox.innerHTML = '<strong>เข้าสู่ระบบไม่สำเร็จ</strong><br>ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง';
+                    }
+                }
             }
         });
 

@@ -34,6 +34,8 @@ type
     
     AdminUser: string;
     AdminPass: string;
+    
+    SSOAutoApprove: Boolean;
   end;
 
 var
@@ -98,7 +100,8 @@ begin
         else if (Key = 'LOGIN_TEMPLATE_PATH') then AppCfg.LoginTemplatePath := Value
         
         else if (Key = 'ADMIN_USERNAME') then AppCfg.AdminUser := Value
-        else if (Key = 'ADMIN_PASSWORD') then AppCfg.AdminPass := Value;
+        else if (Key = 'ADMIN_PASSWORD') then AppCfg.AdminPass := Value
+        else if (Key = 'SSO_AUTO_APPROVE') then AppCfg.SSOAutoApprove := (LowerCase(Value) = 'true') or (Value = '1');
       end;
     end;
     
@@ -120,5 +123,6 @@ initialization
   AppCfg.LoginTemplatePath := '/var/www/api/freepascal/fpsso/templates/login.html';
   AppCfg.AdminUser := 'admin';
   AppCfg.AdminPass := 'password';
+  AppCfg.SSOAutoApprove := True;
   
 end.
