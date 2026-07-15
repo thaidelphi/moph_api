@@ -148,7 +148,26 @@ sudo systemctl reload apache2
 
 ---
 
-## 7. การตั้งค่าระบบที่เครื่อง FortiGate (Captive Portal)
+## 7. การตั้งค่าความปลอดภัย SSL (HTTPS)
+
+ระบบ `fpsso` ถูกออกแบบมาให้ทำงานอยู่หลัง Web Server ภายนอก ดังนั้นวิธีที่ดีที่สุดและปลอดภัยที่สุดคือการให้ Apache หรือ Nginx ทำหน้าที่เข้ารหัส SSL แทน (เรียกว่า "SSL Termination") ส่วนตัว `fpsso` จะคอยรับข้อมูลผ่าน HTTP พอร์ตธรรมดาจาก Apache ภายในเครื่องเดียวกันเท่านั้น
+
+หากเซิร์ฟเวอร์ของคุณมี Domain Name ชี้มาเรียบร้อยแล้ว แนะนำให้ใช้ **Let's Encrypt (Certbot)** เพื่อขอรับ Certificate ฟรี และต่ออายุอัตโนมัติ
+
+**วิธีติดตั้ง Certbot และดึง Certificate ฟรี:**
+```bash
+# ติดตั้ง Certbot และปลั๊กอินสำหรับ Apache
+sudo apt install certbot python3-certbot-apache -y
+
+# สั่งให้ Certbot สร้าง SSL และแก้ไขไฟล์ VirtualHost ให้อัตโนมัติ
+sudo certbot --apache -d your-domain.com
+```
+
+> **หมายเหตุสำคัญ:** การ Login ผ่านระบบ ThaID และ ProviderID จำเป็นจะต้องให้ URL ที่เรียกเข้ามาเป็น HTTPS เท่านั้น การใช้ Certbot ร่วมกับคำสั่ง `RequestHeader set X-Forwarded-Proto "https"` ใน Apache (ข้อ 6) จะทำให้ระบบส่งค่าให้ fpsso ทราบว่าการเชื่อมต่อมีความปลอดภัยสมบูรณ์
+
+---
+
+## 8. การตั้งค่าระบบที่เครื่อง FortiGate (Captive Portal)
 
 เพื่อให้ผู้ใช้งานที่เชื่อมต่อเครือข่ายถูกส่งมาบังคับล็อกอินที่หน้าเว็บ `fpsso` ของเรา ให้ดำเนินการตั้งค่าที่ FortiGate ดังนี้:
 
@@ -205,7 +224,7 @@ sudo systemctl reload apache2
 
 ---
 
-## 8. การตั้งค่า FortiGate ให้ส่งรายงานการใช้งาน (RADIUS Accounting / Traffic In-Out)
+## 9. การตั้งค่า FortiGate ให้ส่งรายงานการใช้งาน (RADIUS Accounting / Traffic In-Out)
 
 ระบบมีฐานข้อมูล `radacct` สำหรับเก็บประวัติและปริมาณแบนด์วิดท์ (Traffic) ของผู้ใช้งาน หากต้องการให้ FortiGate อัปเดตข้อมูลปริมาณการดาวน์โหลด/อัปโหลดระหว่างที่ผู้ใช้กำลังเชื่อมต่ออยู่ (Interim-Update) แทนที่จะส่งแค่ตอนเริ่มและตอนจบ สามารถตั้งค่าผ่าน Command Line ของ FortiGate ได้ดังนี้:
 
