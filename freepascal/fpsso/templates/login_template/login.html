@@ -604,6 +604,15 @@
     </style>
 </head>
 <body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.9); z-index: 9999; justify-content: center; align-items: center; flex-direction: column;">
+        <style>
+            @keyframes spin-login { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        </style>
+        <div style="border: 4px solid rgba(0, 0, 0, 0.1); width: 50px; height: 50px; border-radius: 50%; border-left-color: #007bff; animation: spin-login 1s linear infinite; margin-bottom: 20px;"></div>
+        <h2 style="color: #333; font-size: 18px; margin: 0; font-family: 'Sarabun', sans-serif;">กำลังเข้าสู่ระบบ...</h2>
+        <p style="color: #666; font-size: 14px; margin-top: 5px; font-family: 'Sarabun', sans-serif;">กรุณารอสักครู่</p>
+    </div>
 
     <div class="login-box">
 
@@ -650,7 +659,7 @@
                     <div id="successText"></div>
                 </div>
                 
-                <form id="loginForm" method="POST" action="/sso/auth/login">
+                <form id="loginForm" method="POST" action="/sso/auth/login" onsubmit="return validateForm()">
                     <div class="form-group">
                         <label for="username" class="form-label" id="txt-label_username"></label>
                         <div class="input-wrapper">
@@ -688,7 +697,7 @@
                 <!-- SSO Alternative Logins -->
                 <div class="sso-grid" style="grid-template-columns: repeat(2, 1fr);">
                     <!-- ThaID Link -->
-                    <a href="/sso/auth/thaid" class="sso-grid-item">
+                    <a href="/sso/auth/thaid" onclick="showLoading()" class="sso-grid-item">
                         <div class="sso-icon-box thaid-bg">
                             <img src="/images/thaid.png" alt="ThaID Logo">
                         </div>
@@ -696,7 +705,7 @@
                     </a>
 
                     <!-- Google Authentication Option (ลิงก์เข้าสู่ระบบผ่าน Google จริง) -->
-                    <a href="/sso/auth/google" class="sso-grid-item">
+                    <a href="/sso/auth/google" onclick="showLoading()" class="sso-grid-item">
                         <div class="sso-icon-box google-bg">
                             <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="flex-shrink: 0;">
                                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -711,7 +720,7 @@
                 </div>
 
                 <!-- ProviderID Link - Wide display -->
-                <a href="/sso/auth/providerid" class="sso-long-btn">
+                <a href="/sso/auth/providerid" onclick="showLoading()" class="sso-long-btn">
                     <img src="/images/providerid.png" alt="Provider ID Logo" onerror="this.src='https://moph.id.th/favicon.ico';">
                     <span id="txt-label_providerid"></span>
                 </a>
@@ -848,9 +857,31 @@
             const error = urlParams.get('error');
             if (error) {
                 document.getElementById('errorBox').style.display = 'flex';
-                document.getElementById('errorText').innerText = decodeURIComponent(error);
+                let errText = decodeURIComponent(error);
+                if (error === '1' || error === 'db') errText = 'ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง';
+                document.getElementById('errorText').innerText = errText;
             }
         });
+
+        function showLoading() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        function validateForm() {
+            var usernameField = document.getElementById('username');
+            var passwordField = document.getElementById('password');
+            var errorBox = document.getElementById('errorBox');
+
+            if (usernameField.value.trim() === "" || passwordField.value.trim() === "") {
+                errorBox.style.display = 'flex';
+                document.getElementById('errorText').innerText = 'กรุณากรอกข้อมูลผู้ใช้งานและรหัสผ่านให้ครบถ้วน';
+                return false; 
+            }
+
+            errorBox.style.display = 'none';
+            showLoading();
+            return true;
+        }
     </script>
 
 </body>
