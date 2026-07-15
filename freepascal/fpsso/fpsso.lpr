@@ -159,7 +159,6 @@ begin
   
   Writeln('Service installed and started successfully!');
   Writeln('You can check status with: sudo systemctl status fpsso');
-  Halt(0);
 end;
 
 procedure UninstallService;
@@ -185,7 +184,6 @@ begin
   RunCommand('systemctl', ['daemon-reload'], OutStr);
   
   Writeln('Service uninstalled successfully!');
-  Halt(0);
 end;
 
 function PromptDefault(const Msg, DefaultVal: string): string;
@@ -196,6 +194,81 @@ begin
     Write(Msg, ': ');
   ReadLn(Result);
   if Result = '' then Result := DefaultVal;
+end;
+
+procedure InstallApacheProxy(const DomainName: string);
+var
+  Ans, ConfPath, ProxyStr, OutStr: string;
+  StrList: TStringList;
+  I, InsertPos: Integer;
+  HasProxy: Boolean;
+begin
+  Writeln('');
+  Ans := PromptDefault('Do you want to automatically configure Apache Reverse Proxy? (y/n)', 'y');
+  if LowerCase(Ans) <> 'y' then Exit;
+
+  ConfPath := PromptDefault('Apache VirtualHost config file path', '/etc/apache2/sites-available/api.conf');
+  if not FileExists(ConfPath) then
+  begin
+    Writeln('File not found: ', ConfPath);
+    Exit;
+  end;
+
+  StrList := TStringList.Create;
+  try
+    StrList.LoadFromFile(ConfPath);
+    
+    HasProxy := False;
+    InsertPos := -1;
+    for I := 0 to StrList.Count - 1 do
+    begin
+      if Pos('ProxyPass /sso/', StrList[I]) > 0 then
+      begin
+        HasProxy := True;
+        Break;
+      end;
+      if Pos('</VirtualHost>', StrList[I]) > 0 then
+        InsertPos := I;
+    end;
+
+    if HasProxy then
+    begin
+      Writeln('Proxy configuration already exists in this file. Skipping.');
+    end
+    else if InsertPos >= 0 then
+    begin
+      ProxyStr := 
+        '    # === Reverse Proxy for FreePascal SSO Server ===' + sLineBreak +
+        '    ProxyPreserveHost On' + sLineBreak +
+        '    RequestHeader set X-Forwarded-Proto "https"' + sLineBreak +
+        '    RequestHeader set X-Forwarded-Host "' + DomainName + '"' + sLineBreak +
+        '    ProxyPass /sso/ http://127.0.0.1:8080/ timeout=60' + sLineBreak +
+        '    ProxyPassReverse /sso/ http://127.0.0.1:8080/';
+      
+      StrList.Insert(InsertPos, ProxyStr);
+      try
+        StrList.SaveToFile(ConfPath);
+        Writeln('Successfully injected reverse proxy configuration into: ', ConfPath);
+        
+        Writeln('Enabling Apache proxy modules...');
+        RunCommand('a2enmod', ['proxy', 'proxy_http', 'headers'], OutStr);
+        
+        Writeln('Reloading Apache...');
+        RunCommand('systemctl', ['reload', 'apache2'], OutStr);
+        
+        Writeln('Apache Reverse Proxy configured successfully!');
+      except
+        on E: Exception do
+          Writeln('Failed to write Apache config. Did you run with sudo? Error: ', E.Message);
+      end;
+    end
+    else
+    begin
+      Writeln('Could not find </VirtualHost> tag in the file. Skipping injection.');
+    end;
+  finally
+    StrList.Free;
+  end;
 end;
 
 procedure SetupWizard;
@@ -268,11 +341,11 @@ begin
   if LowerCase(Ans) = 'y' then
   begin
     InstallService;
-  end else
-  begin
-    Writeln('Setup complete! You can start the server manually by running: ./fpsso');
-    Halt(0);
   end;
+  
+  InstallApacheProxy(DomainName);
+  
+  Writeln('Setup complete! If you did not install the service, you can start the server manually by running: ./fpsso');
 end;
 
 procedure ShowHelp;
@@ -304,13 +377,22 @@ begin
       ShowHelp;
     
     if ParamStr(1) = '--installservice' then
+    begin
       InstallService;
+      Halt(0);
+    end;
       
     if ParamStr(1) = '--uninstallservice' then
+    begin
       UninstallService;
+      Halt(0);
+    end;
       
     if ParamStr(1) = '--setup-wizard' then
+    begin
       SetupWizard;
+      Halt(0);
+    end;
   end;
   
   if not LoadConfig('/var/www/api/.env') then
