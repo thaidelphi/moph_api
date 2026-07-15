@@ -4,7 +4,7 @@ program fpradius;
 
 uses
   {$IFDEF UNIX}cthreads, Unix,{$ENDIF}
-  SysUtils, RadiusConfig, RadiusDB, RadiusServer, mysql80conn, RadiusSchemaData;
+  SysUtils, Classes, RadiusConfig, RadiusDB, RadiusServer, mysql80conn, RadiusSchemaData;
 
 var
   Cfg    : TRadiusConfig;
