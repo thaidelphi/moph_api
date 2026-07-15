@@ -285,6 +285,12 @@ begin
   Writeln('  --uninstallservice   Stop and remove the systemd service');
   Writeln('  --setup-wizard       Launch the interactive configuration wizard to generate .env');
   Writeln('');
+  Writeln('Service Management Commands (Systemd):');
+  Writeln('  sudo systemctl start fpsso      Start the service');
+  Writeln('  sudo systemctl stop fpsso       Stop the service');
+  Writeln('  sudo systemctl restart fpsso    Restart the service');
+  Writeln('  sudo systemctl status fpsso     Check service status');
+  Writeln('');
   Writeln('Running without any options will start the SSO HTTP server on port 8080.');
   Halt(0);
 end;
