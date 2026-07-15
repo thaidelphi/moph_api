@@ -202,12 +202,15 @@ procedure SetupWizard;
 var
   EnvContent: TStringList;
   EnvPath: string;
-  Ans: string;
+  Ans, DomainName: string;
 begin
   Writeln('=========================================');
   Writeln('    fp-sso Configuration Setup Wizard');
   Writeln('=========================================');
   Writeln('Leave blank to use the [default value].');
+  Writeln('');
+  
+  DomainName := PromptDefault('Base Domain Name (e.g. api.domain.go.th)', 'yourdomain.com');
   Writeln('');
   
   EnvContent := TStringList.Create;
@@ -222,7 +225,7 @@ begin
     Writeln('--- ThaID Configuration ---');
     EnvContent.Add('THAID_CLIENT_ID=' + PromptDefault('ThaID Client ID', ''));
     EnvContent.Add('THAID_SECRET_ID=' + PromptDefault('ThaID Secret', ''));
-    EnvContent.Add('THAID_REDIRECT_URI=' + PromptDefault('ThaID Redirect URI', 'https://yourdomain.com/sso/auth/thaid/callback'));
+    EnvContent.Add('THAID_REDIRECT_URI=' + PromptDefault('ThaID Redirect URI', 'https://' + DomainName + '/sso/auth/thaid/callback'));
     EnvContent.Add('THAID_URL_TOKEN=' + PromptDefault('ThaID Token URL', 'https://imauth.bora.dopa.go.th/api/v2/oauth2/token/'));
     EnvContent.Add('THAID_URL_AUTH=' + PromptDefault('ThaID Auth URL', 'https://imauth.bora.dopa.go.th/api/v2/oauth2/auth/'));
     EnvContent.Add('THAID_SCOPE=' + PromptDefault('ThaID Scope', 'pid name address'));
@@ -232,7 +235,7 @@ begin
     Writeln('--- MOPH Provider ID Configuration ---');
     EnvContent.Add('PROVIDER_ID_CLIENT_ID=' + PromptDefault('Provider ID Client ID', ''));
     EnvContent.Add('PROVIDER_ID_SECRET_KEY=' + PromptDefault('Provider ID Secret', ''));
-    EnvContent.Add('PROVIDER_ID_REDIRECT_URI=' + PromptDefault('Provider ID Redirect URI', 'https://yourdomain.com/sso/auth/providerid/callback'));
+    EnvContent.Add('PROVIDER_ID_REDIRECT_URI=' + PromptDefault('Provider ID Redirect URI', 'https://' + DomainName + '/sso/auth/providerid/callback'));
     EnvContent.Add('PROVIDER_ID_URL=' + PromptDefault('Provider ID Base URL', 'https://provider.id.th'));
     EnvContent.Add('');
     
