@@ -275,22 +275,36 @@ begin
   end;
 end;
 
+procedure ShowHelp;
+begin
+  Writeln('Usage: fpsso [OPTIONS]');
+  Writeln('');
+  Writeln('Options:');
+  Writeln('  -h, --help           Show this help message and exit');
+  Writeln('  --installservice     Generate systemd service file and install it');
+  Writeln('  --uninstallservice   Stop and remove the systemd service');
+  Writeln('  --setup-wizard       Launch the interactive configuration wizard to generate .env');
+  Writeln('');
+  Writeln('Running without any options will start the SSO HTTP server on port 8080.');
+  Halt(0);
+end;
+
 begin
   Writeln('Initializing fp-sso...');
   
-  if (ParamCount > 0) and (ParamStr(1) = '--installservice') then
+  if (ParamCount > 0) then
   begin
-    InstallService;
-  end;
-
-  if (ParamCount > 0) and (ParamStr(1) = '--uninstallservice') then
-  begin
-    UninstallService;
-  end;
-  
-  if (ParamCount > 0) and (ParamStr(1) = '--setup-wizard') then
-  begin
-    SetupWizard;
+    if (ParamStr(1) = '-h') or (ParamStr(1) = '--help') then
+      ShowHelp;
+    
+    if ParamStr(1) = '--installservice' then
+      InstallService;
+      
+    if ParamStr(1) = '--uninstallservice' then
+      UninstallService;
+      
+    if ParamStr(1) = '--setup-wizard' then
+      SetupWizard;
   end;
   
   if not LoadConfig('/var/www/api/.env') then
