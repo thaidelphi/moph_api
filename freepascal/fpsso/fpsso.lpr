@@ -188,6 +188,90 @@ begin
   Halt(0);
 end;
 
+function PromptDefault(const Msg, DefaultVal: string): string;
+begin
+  if DefaultVal <> '' then
+    Write(Msg, ' [', DefaultVal, ']: ')
+  else
+    Write(Msg, ': ');
+  ReadLn(Result);
+  if Result = '' then Result := DefaultVal;
+end;
+
+procedure SetupWizard;
+var
+  EnvContent: TStringList;
+  EnvPath: string;
+  Ans: string;
+begin
+  Writeln('=========================================');
+  Writeln('    fp-sso Configuration Setup Wizard');
+  Writeln('=========================================');
+  Writeln('Leave blank to use the [default value].');
+  Writeln('');
+  
+  EnvContent := TStringList.Create;
+  try
+    EnvContent.Add('DB_HOST=' + PromptDefault('Database Host', '127.0.0.1'));
+    EnvContent.Add('DB_USER=' + PromptDefault('Database User', 'root'));
+    EnvContent.Add('DB_PASS=' + PromptDefault('Database Password', ''));
+    EnvContent.Add('DB_NAME=' + PromptDefault('Database Name', 'radius'));
+    EnvContent.Add('');
+    
+    Writeln('');
+    Writeln('--- ThaID Configuration ---');
+    EnvContent.Add('THAID_CLIENT_ID=' + PromptDefault('ThaID Client ID', ''));
+    EnvContent.Add('THAID_SECRET_ID=' + PromptDefault('ThaID Secret', ''));
+    EnvContent.Add('THAID_REDIRECT_URI=' + PromptDefault('ThaID Redirect URI', 'https://yourdomain.com/sso/auth/thaid/callback'));
+    EnvContent.Add('THAID_URL_TOKEN=' + PromptDefault('ThaID Token URL', 'https://imauth.bora.dopa.go.th/api/v2/oauth2/token/'));
+    EnvContent.Add('THAID_URL_AUTH=' + PromptDefault('ThaID Auth URL', 'https://imauth.bora.dopa.go.th/api/v2/oauth2/auth/'));
+    EnvContent.Add('THAID_SCOPE=' + PromptDefault('ThaID Scope', 'pid name address'));
+    EnvContent.Add('');
+    
+    Writeln('');
+    Writeln('--- MOPH Provider ID Configuration ---');
+    EnvContent.Add('PROVIDER_ID_CLIENT_ID=' + PromptDefault('Provider ID Client ID', ''));
+    EnvContent.Add('PROVIDER_ID_SECRET_KEY=' + PromptDefault('Provider ID Secret', ''));
+    EnvContent.Add('PROVIDER_ID_REDIRECT_URI=' + PromptDefault('Provider ID Redirect URI', 'https://yourdomain.com/sso/auth/providerid/callback'));
+    EnvContent.Add('PROVIDER_ID_URL=' + PromptDefault('Provider ID Base URL', 'https://provider.id.th'));
+    EnvContent.Add('');
+    
+    Writeln('');
+    Writeln('--- FortiGate & System Configuration ---');
+    EnvContent.Add('FORTIGATE_AUTH_URL=' + PromptDefault('FortiGate Auth URL', 'http://192.168.1.1:1000/fgtauth'));
+    EnvContent.Add('LOGIN_TEMPLATE_PATH=' + PromptDefault('Custom Login Template Path', '/var/www/api/freepascal/fpsso/templates/login.html'));
+    EnvContent.Add('SSO_AUTO_APPROVE=' + PromptDefault('SSO Auto Approve new users (true/false)', 'false'));
+    
+    Writeln('');
+    EnvPath := '/var/www/api/.env';
+    Writeln('Saving configuration to: ', EnvPath);
+    try
+      EnvContent.SaveToFile(EnvPath);
+      Writeln('Configuration saved successfully!');
+    except
+      on E: Exception do
+      begin
+        Writeln('Failed to save .env file: ', E.Message);
+        Writeln('Did you run with sudo? (e.g., sudo ./fpsso --setup-wizard)');
+        Halt(1);
+      end;
+    end;
+  finally
+    EnvContent.Free;
+  end;
+  
+  Writeln('');
+  Ans := PromptDefault('Do you want to install fpsso as a background service now? (y/n)', 'y');
+  if LowerCase(Ans) = 'y' then
+  begin
+    InstallService;
+  end else
+  begin
+    Writeln('Setup complete! You can start the server manually by running: ./fpsso');
+    Halt(0);
+  end;
+end;
+
 begin
   Writeln('Initializing fp-sso...');
   
@@ -199,6 +283,11 @@ begin
   if (ParamCount > 0) and (ParamStr(1) = '--uninstallservice') then
   begin
     UninstallService;
+  end;
+  
+  if (ParamCount > 0) and (ParamStr(1) = '--setup-wizard') then
+  begin
+    SetupWizard;
   end;
   
   if not LoadConfig('/var/www/api/.env') then
