@@ -162,12 +162,43 @@ begin
   Halt(0);
 end;
 
+procedure UninstallService;
+var
+  OutStr: string;
+begin
+  Writeln('Uninstalling fpsso systemd service...');
+  
+  Writeln('Stopping fpsso service...');
+  RunCommand('systemctl', ['stop', 'fpsso'], OutStr);
+  
+  Writeln('Disabling fpsso service...');
+  RunCommand('systemctl', ['disable', 'fpsso'], OutStr);
+  
+  if FileExists('/etc/systemd/system/fpsso.service') then
+  begin
+    Writeln('Removing service file...');
+    if not DeleteFile('/etc/systemd/system/fpsso.service') then
+      Writeln('Failed to delete /etc/systemd/system/fpsso.service. Did you run with sudo?');
+  end;
+  
+  Writeln('Reloading systemd daemon...');
+  RunCommand('systemctl', ['daemon-reload'], OutStr);
+  
+  Writeln('Service uninstalled successfully!');
+  Halt(0);
+end;
+
 begin
   Writeln('Initializing fp-sso...');
   
   if (ParamCount > 0) and (ParamStr(1) = '--installservice') then
   begin
     InstallService;
+  end;
+
+  if (ParamCount > 0) and (ParamStr(1) = '--uninstallservice') then
+  begin
+    UninstallService;
   end;
   
   if not LoadConfig('/var/www/api/.env') then
