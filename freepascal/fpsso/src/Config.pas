@@ -35,8 +35,13 @@ type
     AdminUser: string;
     AdminPass: string;
     
+    UseSSL: Boolean;
+    SSLCert: string;
+    SSLKey: string;
+    
     SSOAutoApprove: Boolean;
     AppPort: Word;
+    LicenseKeyPath: string;  // path ไปยังไฟล์ license.key
   end;
 
 var
@@ -102,8 +107,12 @@ begin
         
         else if (Key = 'ADMIN_USERNAME') then AppCfg.AdminUser := Value
         else if (Key = 'ADMIN_PASSWORD') then AppCfg.AdminPass := Value
+        else if (Key = 'USE_SSL') then AppCfg.UseSSL := (LowerCase(Value) = 'true') or (Value = '1')
+        else if (Key = 'SSL_CERT') then AppCfg.SSLCert := Value
+        else if (Key = 'SSL_KEY') then AppCfg.SSLKey := Value
         else if (Key = 'SSO_AUTO_APPROVE') then AppCfg.SSOAutoApprove := (LowerCase(Value) = 'true') or (Value = '1')
-        else if (Key = 'APP_PORT') then AppCfg.AppPort := StrToIntDef(Value, 8080);
+        else if (Key = 'APP_PORT') then AppCfg.AppPort := StrToIntDef(Value, 8080)
+        else if (Key = 'LICENSE_KEY') then AppCfg.LicenseKeyPath := Value;
       end;
     end;
     
@@ -122,10 +131,14 @@ initialization
   AppCfg.DBUser := 'root';
   AppCfg.DBPass := '';
   AppCfg.DBName := 'radius';
-  AppCfg.LoginTemplatePath := '/var/www/api/freepascal/fpsso/templates/login.html';
+  AppCfg.LoginTemplatePath := ExtractFilePath(ParamStr(0)) + 'templates/login.html';
   AppCfg.AdminUser := 'admin';
   AppCfg.AdminPass := 'password';
+  AppCfg.UseSSL := False;
+  AppCfg.SSLCert := ExtractFilePath(ParamStr(0)) + 'cert.pem';
+  AppCfg.SSLKey := ExtractFilePath(ParamStr(0)) + 'key.pem';
   AppCfg.SSOAutoApprove := True;
   AppCfg.AppPort := 8080;
+  AppCfg.LicenseKeyPath := 'license.key';  // ค่าเริ่มต้นอยู่ข้าง binary
   
 end.

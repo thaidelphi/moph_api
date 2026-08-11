@@ -26,6 +26,9 @@ procedure Redirect(Res: TResponse; const URL: string);
 
 implementation
 
+uses
+  License;
+
 procedure RegisterRoute(const AMethod, APath: string; AHandler: TRouteHandler);
 begin
   SetLength(Routes, Length(Routes) + 1);
@@ -56,10 +59,18 @@ var
 begin
   Method := UpperCase(Req.Method);
   Path := Req.PathInfo;
+  
+  // ตัด /sso ออกจากเริ่มต้น Path (เผื่อหลุดมาจาก reverse proxy แบบไม่สมบูรณ์)
+  if Pos('/sso', Path) = 1 then
+    Path := Copy(Path, 5, Length(Path));
+    
   if Path = '' then
     Path := '/';
+    
+  // Scattered License Check
+  QuickLicenseCheck;
   
-  Writeln('SSO Request: ', Method, ' ', Req.URI, ' (PathInfo: ', Path, ')');
+  Writeln('SSO Request: ', Method, ' ', Req.URI, ' (Routed Path: ', Path, ')');
   
   // Clean trailing slash if not root
   if (Length(Path) > 1) and (Path[Length(Path)] = '/') then

@@ -8,7 +8,8 @@ uses
   {$ENDIF}
   Classes, SysUtils, Process,
   Config, SessionMgr, Router, HttpServer, HTTPDefs,
-  AuthLocal, AuthThaiD, AuthProviderID, AuthGoogle, FortiGate, AdminUsers;
+  AuthLocal, AuthThaiD, AuthProviderID, AuthGoogle, FortiGate, AdminUsers,
+  License;
 
 // Thread สำหรับล้าง Session ที่หมดอายุแล้วออกจาก Memory ทุก 10 นาที
 type
@@ -382,6 +383,11 @@ begin
   Writeln('  --installservice     Generate systemd service file and install it');
   Writeln('  --uninstallservice   Stop and remove the systemd service');
   Writeln('  --setup-wizard       Launch the interactive configuration wizard to generate .env');
+  Writeln('  --hwid               Show Machine ID of this server (for license activation)');
+  Writeln('  --genkey             Generate a new license key file (developer tool)');
+  Writeln('');
+  Writeln('License:');
+  Writeln('  Place license.key file next to the fpsso binary, or set LICENSE_KEY in .env');
   Writeln('');
   Writeln('Service Management Commands (Systemd):');
   Writeln('  sudo systemctl start fpsso      Start the service');
@@ -395,6 +401,13 @@ end;
 var
   EnvPathToLoad: string;
   CleanupThread: TSessionCleanupThread;  // Thread สำหรับล้าง Session หมดอายุ
+  WatchdogThread: TLicenseWatchdogThread; // Thread ตรวจสอบ License และ Debugger
+  LicInfo: TLicenseInfo;  // ข้อมูล License ที่อ่านได้
+  LicPath: string;  // path ของไฟล์ license.key
+  // ตัวแปรสำหรับ --genkey (Interactive mode)
+  GenMachineID, GenLicensee, GenExpiry, GenFeatures: string;
+  GenSerial, GenIssuedDate, GenMaxUsersStr: string;
+  GenMaxUsers: Integer;
 
 begin
   Writeln('Initializing fp-sso...');
@@ -421,6 +434,77 @@ begin
       SetupWizard;
       Halt(0);
     end;
+
+    // แสดง Machine ID ของเครื่องปัจจุบัน (สำหรับส่งให้ผู้พัฒนาเพื่อสร้าง License Key)
+    if ParamStr(1) = '--hwid' then
+    begin
+      Writeln('=== fpsso Machine ID ===' );
+      Writeln('Machine ID: ', GetMachineID);
+      Writeln('');
+      Writeln('กรุณาส่งค่า Machine ID นี้ให้กับผู้พัฒนาเพื่อสร้าง License Key');
+      Halt(0);
+    end;
+
+    // สร้าง License Key (Interactive Mode สำหรับผู้พัฒนา)
+    if ParamStr(1) = '--genkey' then
+    begin
+      Writeln('=== fpsso License Key Generator ===');
+      Writeln('');
+      
+      // รับข้อมูลจากผู้ใช้แบบ Interactive
+      Write('Machine ID ของลูกค้า: ');
+      ReadLn(GenMachineID);
+      if GenMachineID = '' then
+      begin
+        Writeln('ERROR: Machine ID ต้องไม่ว่าง');
+        Halt(1);
+      end;
+      
+      Write('ชื่อหน่วยงาน: ');
+      ReadLn(GenLicensee);
+      if GenLicensee = '' then
+        GenLicensee := 'Unnamed';
+      
+      Write('วันหมดอายุ (YYYY-MM-DD, ว่าง=ไม่หมดอายุ): ');
+      ReadLn(GenExpiry);
+      
+      Write('จำนวนผู้ใช้สูงสุด (0=ไม่จำกัด): ');
+      ReadLn(GenMaxUsersStr);
+      GenMaxUsers := StrToIntDef(GenMaxUsersStr, 0);
+      
+      Write('ฟีเจอร์ (all/basic) [all]: ');
+      ReadLn(GenFeatures);
+      if GenFeatures = '' then
+        GenFeatures := 'all';
+      
+      // สร้าง Serial Number
+      GenSerial := GenerateSerialNumber;
+      GenIssuedDate := FormatDateTime('yyyy-mm-dd', Now);
+      
+      // สร้างไฟล์ License Key
+      if GenerateLicenseFile(
+        GenSerial, GenLicensee, GenMachineID,
+        GenIssuedDate, GenExpiry, GenFeatures,
+        GenMaxUsers, 'license.key'
+      ) then
+      begin
+        Writeln('');
+        Writeln('License Key สร้างสำเร็จ!');
+        Writeln('  Serial    : ', GenSerial);
+        Writeln('  Licensee  : ', GenLicensee);
+        Writeln('  Machine ID: ', GenMachineID);
+        Writeln('  Issued    : ', GenIssuedDate);
+        Writeln('  Expiry    : ', GenExpiry);
+        Writeln('  Max Users : ', GenMaxUsers);
+        Writeln('  Features  : ', GenFeatures);
+        Writeln('');
+        Writeln('ไฟล์บันทึกที่: license.key');
+      end
+      else
+        Writeln('ERROR: ไม่สามารถสร้าง License Key ได้');
+      
+      Halt(0);
+    end;
   end;
 
   EnvPathToLoad := '.env';
@@ -436,11 +520,78 @@ begin
   RegisterRoute('GET', '/', @HandleRoot);
   RegisterRoute('GET', '/howto', @HandleHowTo);
 
+  // ===== ตรวจสอบ License Key ก่อนเริ่ม Server =====
+  LicPath := AppCfg.LicenseKeyPath;
+  // ถ้าเป็น relative path ให้หาจากข้าง binary
+  if not FileExists(LicPath) then
+    LicPath := ExtractFilePath(ParamStr(0)) + AppCfg.LicenseKeyPath;
+
+  LicInfo := ValidateLicense(LicPath);
+
+  if LicInfo.Status <> lsValid then
+  begin
+    Writeln('');
+    Writeln('============================================');
+    Writeln('  fpsso LICENSE VALIDATION FAILED');
+    Writeln('============================================');
+    Writeln('  สถานะ: ', LicenseStatusText(LicInfo.Status));
+    Writeln('');
+    case LicInfo.Status of
+      lsNotFound:
+      begin
+        Writeln('  ไม่พบไฟล์ License Key');
+        Writeln('  กรุณาวาง license.key ไว้ข้าง fpsso binary');
+        Writeln('');
+        Writeln('  หากยังไม่มี License Key:');
+        Writeln('    1. รัน: ./fpsso --hwid');
+        Writeln('    2. ส่งค่า Machine ID ให้ผู้พัฒนา');
+        Writeln('    3. รับไฟล์ license.key กลับมาวางไว้ข้าง fpsso');
+      end;
+      lsInvalidMachine:
+      begin
+        Writeln('  Machine ID ของเครื่องนี้: ', GetMachineID);
+        Writeln('  Machine ID ใน License  : ', LicInfo.MachineID);
+        Writeln('');
+        Writeln('  License นี้ถูกผูกกับเครื่องอื่น กรุณาติดต่อผู้พัฒนาเพื่อขอ License ใหม่');
+      end;
+      lsExpired:
+      begin
+        Writeln('  Serial   : ', LicInfo.Serial);
+        Writeln('  หมดอายุ  : ', LicInfo.ExpiryDate);
+        Writeln('');
+        Writeln('  กรุณาติดต่อผู้พัฒนาเพื่อต่ออายุ License');
+      end;
+      lsInvalidSignature:
+      begin
+        Writeln('  ไฟล์ License อาจถูกแก้ไขหรือเสียหาย');
+        Writeln('  กรุณาติดต่อผู้พัฒนาเพื่อขอ License ใหม่');
+      end;
+    end;
+    Writeln('');
+    Writeln('============================================');
+    Halt(1);
+  end;
+
+  // แสดงข้อมูล License ที่ถูกต้อง
+  Writeln('License: ', LicInfo.Serial, ' (', LicInfo.Licensee, ')');
+  if LicInfo.ExpiryDate <> '' then
+    Writeln('License Expiry: ', LicInfo.ExpiryDate)
+  else
+    Writeln('License Expiry: Lifetime (ไม่หมดอายุ)');
+
   // เริ่ม Background Thread ล้าง Session ที่หมดอายุแล้วทุก 10 นาที
   CleanupThread := TSessionCleanupThread.Create(True);
   CleanupThread.FreeOnTerminate := True;
   CleanupThread.Start;
   Writeln('Session cleanup thread started (interval: 10 min, max age: 30 min).');
+
+  // แจ้งให้ License unit ทราบว่าไฟล์อยู่ที่ไหน เพื่อใช้ตรวจซ้ำใน watchdog และ quick check
+  GlobalLicensePath := LicPath;
+
+  // เริ่ม Watchdog Thread ตรวจสอบ License, Debugger, Binary Integrity ซ้ำทุก 5 นาที
+  WatchdogThread := TLicenseWatchdogThread.Create(LicPath);
+  WatchdogThread.Start;
+  Writeln('License watchdog thread started (interval: 5 min).');
 
   try
     StartServer(AppCfg.AppPort);
