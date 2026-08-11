@@ -502,16 +502,24 @@ begin
       end;
     end;
     Writeln('');
+    Writeln('  ระบบจะทำงานใน DEMO MODE (จำกัด 10 login ต่อวัน)');
     Writeln('============================================');
-    Halt(1);
-  end;
-
-  // แสดงข้อมูล License ที่ถูกต้อง
-  Writeln('License: ', LicInfo.Serial, ' (', LicInfo.Licensee, ')');
-  if LicInfo.ExpiryDate <> '' then
-    Writeln('License Expiry: ', LicInfo.ExpiryDate)
+    
+    // ทำงานต่อในโหมด Demo
+    DemoModeActive := True;
+    LicenseVerified := False;
+  end
   else
-    Writeln('License Expiry: Lifetime (ไม่หมดอายุ)');
+  begin
+    // แสดงข้อมูล License ที่ถูกต้อง
+    DemoModeActive := False;
+    LicenseVerified := True;
+    Writeln('License: ', LicInfo.Serial, ' (', LicInfo.Licensee, ')');
+    if LicInfo.ExpiryDate <> '' then
+      Writeln('License Expiry: ', LicInfo.ExpiryDate)
+    else
+      Writeln('License Expiry: Lifetime (ไม่หมดอายุ)');
+  end;
 
   // เริ่ม Background Thread ล้าง Session ที่หมดอายุแล้วทุก 10 นาที
   CleanupThread := TSessionCleanupThread.Create(True);

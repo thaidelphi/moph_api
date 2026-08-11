@@ -7,6 +7,8 @@ interface
 uses
   Classes, SysUtils, HTTPDefs, fpHTTP;
 
+procedure ShowDemoLimitError(Res: TResponse);
+
 type
   TRouteHandler = procedure(Req: TRequest; Res: TResponse);
 
@@ -28,6 +30,19 @@ implementation
 
 uses
   License;
+
+procedure ShowDemoLimitError(Res: TResponse);
+begin
+  Res.Code := 403;
+  Res.ContentType := 'text/html; charset=utf-8';
+  Res.Content := '<html><head><meta charset="utf-8"><title>License Limit Reached</title></head>' +
+                 '<body style="font-family: sans-serif; text-align: center; padding: 50px; background-color: #f8f9fa;">' +
+                 '<h2 style="color: #dc3545;">ขีดจำกัดการใช้งาน Demo (10 Users/Day)</h2>' +
+                 '<p>ระบบของคุณทำงานอยู่ในโหมด Demo และครบกำหนดจำนวนผู้ใช้งานสูงสุดในวันนี้แล้ว</p>' +
+                 '<p>กรุณาติดต่อผู้พัฒนาเพื่อสั่งซื้อ License Key สำหรับการใช้งานแบบไม่จำกัด</p>' +
+                 '</body></html>';
+  Res.SendContent;
+end;
 
 procedure RegisterRoute(const AMethod, APath: string; AHandler: TRouteHandler);
 begin

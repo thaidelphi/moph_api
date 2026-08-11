@@ -69,6 +69,8 @@ var
   GlobalLicensePath: string;
   { Flag ระบุว่า License ผ่านการตรวจสอบแล้ว }
   LicenseVerified: Boolean;
+  { Flag ระบุว่าทำงานใน Demo Mode (ไม่มี License, จำกัด 10 user/day) }
+  DemoModeActive: Boolean;
 
 implementation
 
@@ -418,8 +420,8 @@ procedure QuickLicenseCheck;
 var
   LicInfo: TLicenseInfo;
 begin
-  // ตรวจสอบ flag ก่อน (กันไม่ให้ bypass ได้ง่าย)
-  if not LicenseVerified then
+  // ตรวจสอบ flag ก่อน
+  if not LicenseVerified and not DemoModeActive then
   begin
     Writeln('LICENSE ERROR: License verification flag is invalid.');
     Halt(1);
@@ -432,8 +434,8 @@ begin
     Halt(1);
   end;
 
-  // ตรวจ License ไฟล์จริงซ้ำเป็นระยะ (เผื่อไฟล์ถูกลบหรือเปลี่ยน)
-  if GlobalLicensePath <> '' then
+  // ตรวจ License ไฟล์จริงซ้ำเป็นระยะ (ยกเว้นโหมด Demo)
+  if (not DemoModeActive) and (GlobalLicensePath <> '') then
   begin
     LicInfo := ValidateLicense(GlobalLicensePath);
     if LicInfo.Status <> lsValid then
@@ -481,8 +483,8 @@ begin
       Halt(1);
     end;
 
-    // ตรวจ License ไฟล์ซ้ำ
-    if FLicensePath <> '' then
+    // ตรวจ License ไฟล์ซ้ำ (ยกเว้น Demo mode)
+    if (not DemoModeActive) and (FLicensePath <> '') then
     begin
       LicInfo := ValidateLicense(FLicensePath);
       if LicInfo.Status <> lsValid then
@@ -581,6 +583,7 @@ end;
 initialization
   Randomize;
   LicenseVerified := False;
+  DemoModeActive := False;
   GlobalLicensePath := '';
   // เก็บ SHA1 hash ของ binary ตัวเองตอนเริ่มต้น เพื่อใช้ตรวจสอบ integrity ทีหลัง
   OriginalBinaryHash := ComputeBinaryHash;

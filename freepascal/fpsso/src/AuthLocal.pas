@@ -45,6 +45,13 @@ begin
   
   if PlainPass <> '' then
   begin
+    // ตรวจสอบ Demo Limit
+    if not SessionManager.CheckAndRegisterLogin then
+    begin
+      ShowDemoLimitError(Res);
+      Exit;
+    end;
+    
     SessionID := Req.CookieFields.Values['SSOSESSID'];
     if (SessionID = '') or not SessionManager.GetSession(SessionID, Data) then
     begin

@@ -5,7 +5,7 @@ unit SessionMgr;
 interface
 
 uses
-  Classes, SysUtils, syncobjs, fgl;
+  Classes, SysUtils, syncobjs, fgl, License;
 
 type
   TSessionData = record
@@ -42,10 +42,15 @@ type
     procedure UpdateSession(const SessionID: string; const Data: TSessionData);
     procedure DeleteSession(const SessionID: string);
     procedure CleanupExpired(MaxAgeMinutes: Integer);
+    
+    // ตรวจสอบลิมิต Demo Mode
+    function CheckAndRegisterLogin: Boolean;
   end;
 
 var
   SessionManager: TSessionManager;
+  LastLoginDate: TDate;
+  DailyLoginCount: Integer;
 
 implementation
 
@@ -170,8 +175,40 @@ begin
   end;
 end;
 
+function TSessionManager.CheckAndRegisterLogin: Boolean;
+var
+  Today: TDate;
+begin
+  FLock.Acquire;
+  try
+    Today := Trunc(Now);
+    
+    // รีเซ็ตการนับเมื่อเปลี่ยนวัน
+    if LastLoginDate <> Today then
+    begin
+      LastLoginDate := Today;
+      DailyLoginCount := 0;
+    end;
+    
+    // ตรวจสอบโหมด Demo (จำกัด 10 login ต่อวัน)
+    if License.DemoModeActive and (DailyLoginCount >= 10) then
+    begin
+      Result := False;
+      Exit;
+    end;
+    
+    // บันทึกการ login สำเร็จ
+    Inc(DailyLoginCount);
+    Result := True;
+  finally
+    FLock.Release;
+  end;
+end;
+
 initialization
   SessionManager := TSessionManager.Create;
+  LastLoginDate := 0;
+  DailyLoginCount := 0;
 
 finalization
   SessionManager.Free;

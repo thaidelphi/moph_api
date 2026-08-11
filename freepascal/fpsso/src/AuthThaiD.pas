@@ -244,6 +244,13 @@ begin
 
       if PlainPass <> '' then
       begin
+        // ตรวจสอบ Demo Limit
+        if not SessionManager.CheckAndRegisterLogin then
+        begin
+          ShowDemoLimitError(Res);
+          Exit;
+        end;
+        
         // อัปเดต Session ด้วยข้อมูลผู้ใช้และ Credential
         Data.Username := PID;
         Data.FullName := FullName;
