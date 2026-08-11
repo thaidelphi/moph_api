@@ -384,7 +384,6 @@ begin
   Writeln('  --uninstallservice   Stop and remove the systemd service');
   Writeln('  --setup-wizard       Launch the interactive configuration wizard to generate .env');
   Writeln('  --hwid               Show Machine ID of this server (for license activation)');
-  Writeln('  --genkey             Generate a new license key file (developer tool)');
   Writeln('');
   Writeln('License:');
   Writeln('  Place license.key file next to the fpsso binary, or set LICENSE_KEY in .env');
@@ -404,10 +403,6 @@ var
   WatchdogThread: TLicenseWatchdogThread; // Thread ตรวจสอบ License และ Debugger
   LicInfo: TLicenseInfo;  // ข้อมูล License ที่อ่านได้
   LicPath: string;  // path ของไฟล์ license.key
-  // ตัวแปรสำหรับ --genkey (Interactive mode)
-  GenMachineID, GenLicensee, GenExpiry, GenFeatures: string;
-  GenSerial, GenIssuedDate, GenMaxUsersStr: string;
-  GenMaxUsers: Integer;
 
 begin
   Writeln('Initializing fp-sso...');
@@ -442,67 +437,6 @@ begin
       Writeln('Machine ID: ', GetMachineID);
       Writeln('');
       Writeln('กรุณาส่งค่า Machine ID นี้ให้กับผู้พัฒนาเพื่อสร้าง License Key');
-      Halt(0);
-    end;
-
-    // สร้าง License Key (Interactive Mode สำหรับผู้พัฒนา)
-    if ParamStr(1) = '--genkey' then
-    begin
-      Writeln('=== fpsso License Key Generator ===');
-      Writeln('');
-      
-      // รับข้อมูลจากผู้ใช้แบบ Interactive
-      Write('Machine ID ของลูกค้า: ');
-      ReadLn(GenMachineID);
-      if GenMachineID = '' then
-      begin
-        Writeln('ERROR: Machine ID ต้องไม่ว่าง');
-        Halt(1);
-      end;
-      
-      Write('ชื่อหน่วยงาน: ');
-      ReadLn(GenLicensee);
-      if GenLicensee = '' then
-        GenLicensee := 'Unnamed';
-      
-      Write('วันหมดอายุ (YYYY-MM-DD, ว่าง=ไม่หมดอายุ): ');
-      ReadLn(GenExpiry);
-      
-      Write('จำนวนผู้ใช้สูงสุด (0=ไม่จำกัด): ');
-      ReadLn(GenMaxUsersStr);
-      GenMaxUsers := StrToIntDef(GenMaxUsersStr, 0);
-      
-      Write('ฟีเจอร์ (all/basic) [all]: ');
-      ReadLn(GenFeatures);
-      if GenFeatures = '' then
-        GenFeatures := 'all';
-      
-      // สร้าง Serial Number
-      GenSerial := GenerateSerialNumber;
-      GenIssuedDate := FormatDateTime('yyyy-mm-dd', Now);
-      
-      // สร้างไฟล์ License Key
-      if GenerateLicenseFile(
-        GenSerial, GenLicensee, GenMachineID,
-        GenIssuedDate, GenExpiry, GenFeatures,
-        GenMaxUsers, 'license.key'
-      ) then
-      begin
-        Writeln('');
-        Writeln('License Key สร้างสำเร็จ!');
-        Writeln('  Serial    : ', GenSerial);
-        Writeln('  Licensee  : ', GenLicensee);
-        Writeln('  Machine ID: ', GenMachineID);
-        Writeln('  Issued    : ', GenIssuedDate);
-        Writeln('  Expiry    : ', GenExpiry);
-        Writeln('  Max Users : ', GenMaxUsers);
-        Writeln('  Features  : ', GenFeatures);
-        Writeln('');
-        Writeln('ไฟล์บันทึกที่: license.key');
-      end
-      else
-        Writeln('ERROR: ไม่สามารถสร้าง License Key ได้');
-      
       Halt(0);
     end;
   end;
