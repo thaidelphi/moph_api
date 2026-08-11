@@ -209,25 +209,36 @@ begin
           SendJSONErrorMsg(Res, 'Missing data');
           Exit;
         end;
-        
-        // Check if exists
+
+        // ตรวจสอบว่ามี Username อยู่แล้วหรือไม่
         Query.SQL.Text := 'SELECT id FROM radcheck WHERE username = :u';
         Query.ParamByName('u').AsString := Username;
         Query.Open;
         if not Query.EOF then
         begin
+          Query.Close;
           SendJSONErrorMsg(Res, 'Username already exists.');
           Exit;
         end;
         Query.Close;
-        
-        // Insert
-        Conn.ExecuteDirect('INSERT INTO radcheck (username, attribute, op, value) VALUES (' +
-          QuotedStr(Username) + ', ''Cleartext-Password'', ''=='', ' + QuotedStr(Password) + ')');
-        
-        Conn.ExecuteDirect('INSERT INTO userinfo (username, firstname, lastname, department, email, mobilephone, creationdate) VALUES (' +
-          QuotedStr(Username) + ', ' + QuotedStr(FirstName) + ', ' + QuotedStr(LastName) + ', ' + QuotedStr(Department) + ', ' + QuotedStr(Email) + ', ' + QuotedStr(MobilePhone) + ', NOW())');
-        
+
+        // Insert radcheck ด้วย Parameterized Query ป้องกัน SQL Injection
+        Query.SQL.Text := 'INSERT INTO radcheck (username, attribute, op, value) VALUES (:u, ''Cleartext-Password'', ''=='', :v)';
+        Query.ParamByName('u').AsString := Username;
+        Query.ParamByName('v').AsString := Password;
+        Query.ExecSQL;
+
+        // Insert userinfo ด้วย Parameterized Query
+        Query.SQL.Text := 'INSERT INTO userinfo (username, firstname, lastname, department, email, mobilephone, creationdate) ' +
+                          'VALUES (:u, :fn, :ln, :dep, :em, :mp, NOW())';
+        Query.ParamByName('u').AsString := Username;
+        Query.ParamByName('fn').AsString := FirstName;
+        Query.ParamByName('ln').AsString := LastName;
+        Query.ParamByName('dep').AsString := Department;
+        Query.ParamByName('em').AsString := Email;
+        Query.ParamByName('mp').AsString := MobilePhone;
+        Query.ExecSQL;
+
         Trans.Commit;
         SendJSONSuccess(Res);
         Exit;
@@ -235,26 +246,52 @@ begin
       
       if Action = 'edit' then
       begin
-        if (IDStr = '') or (Password = '') then
+        if IDStr = '' then
         begin
           SendJSONErrorMsg(Res, 'Missing data');
           Exit;
         end;
-        
+
+        // อัปเดต radcheck ด้วย Parameterized Query ป้องกัน SQL Injection
         if Password <> '' then
-          Conn.ExecuteDirect('UPDATE radcheck SET attribute = ''Cleartext-Password'', value = ' + QuotedStr(Password) + ' WHERE id = ' + IDStr);
-        
+        begin
+          Query.SQL.Text := 'UPDATE radcheck SET attribute = ''Cleartext-Password'', value = :v WHERE id = :id';
+          Query.ParamByName('v').AsString := Password;
+          Query.ParamByName('id').AsInteger := StrToIntDef(IDStr, 0);
+          Query.ExecSQL;
+        end;
+
+        // ตรวจสอบและ Upsert userinfo ด้วย Parameterized Query
         Query.SQL.Text := 'SELECT id FROM userinfo WHERE username = :u';
         Query.ParamByName('u').AsString := Username;
         Query.Open;
         if Query.EOF then
-          Conn.ExecuteDirect('INSERT INTO userinfo (username, firstname, lastname, department, email, mobilephone, creationdate) VALUES (' +
-            QuotedStr(Username) + ', ' + QuotedStr(FirstName) + ', ' + QuotedStr(LastName) + ', ' + QuotedStr(Department) + ', ' + QuotedStr(Email) + ', ' + QuotedStr(MobilePhone) + ', NOW())')
+        begin
+          Query.Close;
+          Query.SQL.Text := 'INSERT INTO userinfo (username, firstname, lastname, department, email, mobilephone, creationdate) ' +
+                            'VALUES (:u, :fn, :ln, :dep, :em, :mp, NOW())';
+          Query.ParamByName('u').AsString := Username;
+          Query.ParamByName('fn').AsString := FirstName;
+          Query.ParamByName('ln').AsString := LastName;
+          Query.ParamByName('dep').AsString := Department;
+          Query.ParamByName('em').AsString := Email;
+          Query.ParamByName('mp').AsString := MobilePhone;
+          Query.ExecSQL;
+        end
         else
-          Conn.ExecuteDirect('UPDATE userinfo SET firstname = ' + QuotedStr(FirstName) + ', lastname = ' + QuotedStr(LastName) + 
-            ', department = ' + QuotedStr(Department) + ', email = ' + QuotedStr(Email) + ', mobilephone = ' + QuotedStr(MobilePhone) + ', updatedate = NOW() WHERE username = ' + QuotedStr(Username));
-        Query.Close;
-        
+        begin
+          Query.Close;
+          Query.SQL.Text := 'UPDATE userinfo SET firstname = :fn, lastname = :ln, department = :dep, ' +
+                            'email = :em, mobilephone = :mp, updatedate = NOW() WHERE username = :u';
+          Query.ParamByName('fn').AsString := FirstName;
+          Query.ParamByName('ln').AsString := LastName;
+          Query.ParamByName('dep').AsString := Department;
+          Query.ParamByName('em').AsString := Email;
+          Query.ParamByName('mp').AsString := MobilePhone;
+          Query.ParamByName('u').AsString := Username;
+          Query.ExecSQL;
+        end;
+
         Trans.Commit;
         SendJSONSuccess(Res);
         Exit;
@@ -262,22 +299,32 @@ begin
       
       if Action = 'delete' then
       begin
-        if (IDStr = '') then
+        if IDStr = '' then
         begin
           SendJSONErrorMsg(Res, 'Missing data');
           Exit;
         end;
-        
-        Query.SQL.Text := 'SELECT username FROM radcheck WHERE id = ' + IDStr;
+
+        // ดึง username ก่อนลบ เพื่อลบ userinfo ด้วย Parameterized Query
+        Query.SQL.Text := 'SELECT username FROM radcheck WHERE id = :id';
+        Query.ParamByName('id').AsInteger := StrToIntDef(IDStr, 0);
         Query.Open;
         if not Query.EOF then
         begin
           Username := Query.FieldByName('username').AsString;
-          Conn.ExecuteDirect('DELETE FROM userinfo WHERE username = ' + QuotedStr(Username));
-        end;
-        Query.Close;
-        
-        Conn.ExecuteDirect('DELETE FROM radcheck WHERE id = ' + IDStr);
+          Query.Close;
+          Query.SQL.Text := 'DELETE FROM userinfo WHERE username = :u';
+          Query.ParamByName('u').AsString := Username;
+          Query.ExecSQL;
+        end
+        else
+          Query.Close;
+
+        // ลบ radcheck ด้วย Parameterized Query
+        Query.SQL.Text := 'DELETE FROM radcheck WHERE id = :id';
+        Query.ParamByName('id').AsInteger := StrToIntDef(IDStr, 0);
+        Query.ExecSQL;
+
         Trans.Commit;
         SendJSONSuccess(Res);
         Exit;
@@ -285,18 +332,23 @@ begin
       
       if Action = 'toggle_suspend' then
       begin
-        if (IDStr = '') then
+        if IDStr = '' then
         begin
           SendJSONErrorMsg(Res, 'Missing data');
           Exit;
         end;
-        
+
+        // สลับสถานะ Active/Suspended ด้วย Parameterized Query
         if Attr = 'Cleartext-Password' then
           Attr := 'Suspended-Password'
         else
           Attr := 'Cleartext-Password';
-          
-        Conn.ExecuteDirect('UPDATE radcheck SET attribute = ' + QuotedStr(Attr) + ' WHERE id = ' + IDStr);
+
+        Query.SQL.Text := 'UPDATE radcheck SET attribute = :attr WHERE id = :id';
+        Query.ParamByName('attr').AsString := Attr;
+        Query.ParamByName('id').AsInteger := StrToIntDef(IDStr, 0);
+        Query.ExecSQL;
+
         Trans.Commit;
         SendJSONSuccess(Res);
         Exit;

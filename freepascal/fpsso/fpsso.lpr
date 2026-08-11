@@ -10,6 +10,28 @@ uses
   Config, SessionMgr, Router, HttpServer, HTTPDefs,
   AuthLocal, AuthThaiD, AuthProviderID, AuthGoogle, FortiGate, AdminUsers;
 
+// Thread สำหรับล้าง Session ที่หมดอายุแล้วออกจาก Memory ทุก 10 นาที
+type
+  TSessionCleanupThread = class(TThread)
+  protected
+    procedure Execute; override;
+  end;
+
+procedure TSessionCleanupThread.Execute;
+begin
+  // วนซ้ำตลอดเวลาจนกว่า Thread จะถูกสั่งหยุด
+  while not Terminated do
+  begin
+    Sleep(10 * 60 * 1000); // รอ 10 นาที (milliseconds)
+    if not Terminated then
+    begin
+      // ล้าง Session ที่ไม่มีการใช้งานมานานเกิน 30 นาที
+      SessionManager.CleanupExpired(30);
+      Writeln('SessionCleanup: Expired sessions cleaned up.');
+    end;
+  end;
+end;
+
 procedure HandleRoot(Req: TRequest; Res: TResponse);
 var
   HtmlContent: string;
@@ -314,14 +336,15 @@ begin
     
     Writeln('');
     Writeln('--- FortiGate & System Configuration ---');
-    EnvContent.Add('FORTIGATE_AUTH_URL=' + PromptDefault('FortiGate Auth URL', 'http://192.168.1.1:1000/fgtauth'));
-    EnvContent.Add('LOGIN_TEMPLATE_PATH=' + PromptDefault('Custom Login Template Path', '/var/www/api/freepascal/fpsso/templates/login.html'));
+    EnvContent.Add('FORTIGATE_LOGOUT_URL=' + PromptDefault('FortiGate Logout URL', ''));
+    EnvContent.Add('LOGIN_TEMPLATE_PATH=' + PromptDefault('Custom Login Template Path', ExtractFilePath(ParamStr(0)) + 'templates/login.html'));
+    EnvContent.Add('ADMIN_USERNAME=' + PromptDefault('Admin Username', 'admin'));
     EnvContent.Add('SSO_AUTO_APPROVE=' + PromptDefault('SSO Auto Approve new users (true/false)', 'false'));
     PortStr := PromptDefault('Application Port', '8080');
     EnvContent.Add('APP_PORT=' + PortStr);
     
     Writeln('');
-    EnvPath := '/var/www/api/.env';
+    EnvPath := ExtractFilePath(ParamStr(0)) + '.env';
     Writeln('Saving configuration to: ', EnvPath);
     try
       EnvContent.SaveToFile(EnvPath);
@@ -369,43 +392,56 @@ begin
   Writeln('Running without any options will start the SSO HTTP server (default port 8080).');
   Halt(0);
 end;
+var
+  EnvPathToLoad: string;
+  CleanupThread: TSessionCleanupThread;  // Thread สำหรับล้าง Session หมดอายุ
 
 begin
   Writeln('Initializing fp-sso...');
-  
+
   if (ParamCount > 0) then
   begin
     if (ParamStr(1) = '-h') or (ParamStr(1) = '--help') then
       ShowHelp;
-    
+
     if ParamStr(1) = '--installservice' then
     begin
       InstallService;
       Halt(0);
     end;
-      
+
     if ParamStr(1) = '--uninstallservice' then
     begin
       UninstallService;
       Halt(0);
     end;
-      
+
     if ParamStr(1) = '--setup-wizard' then
     begin
       SetupWizard;
       Halt(0);
     end;
   end;
-  
-  if not LoadConfig('/var/www/api/.env') then
+
+  EnvPathToLoad := '.env';
+  if not FileExists(EnvPathToLoad) then
+    EnvPathToLoad := ExtractFilePath(ParamStr(0)) + '.env';
+
+  if not LoadConfig(EnvPathToLoad) then
   begin
-    Writeln('ERROR: Could not load /var/www/api/.env');
+    Writeln('ERROR: Could not load ', EnvPathToLoad);
     Halt(1);
   end;
 
   RegisterRoute('GET', '/', @HandleRoot);
   RegisterRoute('GET', '/howto', @HandleHowTo);
-  
+
+  // เริ่ม Background Thread ล้าง Session ที่หมดอายุแล้วทุก 10 นาที
+  CleanupThread := TSessionCleanupThread.Create(True);
+  CleanupThread.FreeOnTerminate := True;
+  CleanupThread.Start;
+  Writeln('Session cleanup thread started (interval: 10 min, max age: 30 min).');
+
   try
     StartServer(AppCfg.AppPort);
   except

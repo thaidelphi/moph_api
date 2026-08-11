@@ -11,6 +11,29 @@ procedure HandleFortiGateHandshake(Req: TRequest; Res: TResponse);
 
 implementation
 
+{ ฟังก์ชัน HTML Encode ป้องกัน XSS จากค่าที่ฝังใน HTML Attribute }
+function HtmlEncode(const S: string): string;
+var
+  I: Integer;
+  C: Char;
+begin
+  Result := '';
+  for I := 1 to Length(S) do
+  begin
+    C := S[I];
+    case C of
+      '&': Result := Result + '&amp;';
+      '<': Result := Result + '&lt;';
+      '>': Result := Result + '&gt;';
+      '"': Result := Result + '&quot;';
+      '''': Result := Result + '&#39;';
+    else
+      Result := Result + C;
+    end;
+  end;
+end;
+
+{ Handler: หน้า Handshake ที่ Auto-submit ข้อมูลกลับไปยัง FortiGate }
 procedure HandleFortiGateHandshake(Req: TRequest; Res: TResponse);
 var
   SessionID: string;
@@ -18,14 +41,21 @@ var
   HtmlContent: string;
 begin
   SessionID := Req.CookieFields.Values['SSOSESSID'];
-  
+
   if (SessionID = '') or not SessionManager.GetSession(SessionID, Data) then
   begin
     Redirect(Res, '/sso/?error=session');
     Exit;
   end;
-  
-  // Basic template replacement
+
+  // ตรวจสอบว่ามีข้อมูลที่จำเป็นครบถ้วน
+  if (Data.Username = '') or (Data.PlainPass = '') then
+  begin
+    Redirect(Res, '/sso/?error=session');
+    Exit;
+  end;
+
+  // HTML Encode ค่าทั้งหมดที่จะฝังใน HTML เพื่อป้องกัน XSS
   HtmlContent := '<!DOCTYPE html><html lang="th"><head><meta charset="utf-8">' + LineEnding +
     '    <link rel="stylesheet" href="/assets/css/fonts.css">' + LineEnding +
     '    <title>กำลังเชื่อมต่อระบบเครือข่าย...</title>' + LineEnding +
@@ -45,16 +75,16 @@ begin
     '        <h2>กำลังอนุญาตสิทธิ์เข้าใช้งานอินเทอร์เน็ต</h2>' + LineEnding +
     '        <p>กรุณารอสักครู่ ระบบกำลังลงทะเบียนอุปกรณ์ของท่านกับทาง FortiGate...</p>' + LineEnding +
     '    </div>' + LineEnding +
-    '    <form id="fortigate_form" action="' + AppCfg.FortiGateAuthURL + '" method="post" style="display: none;">' + LineEnding +
-    '        <input type="hidden" name="username" value="' + Data.Username + '">' + LineEnding +
-    '        <input type="hidden" name="password" value="' + Data.PlainPass + '">' + LineEnding +
-    '        <input type="hidden" name="magic" value="' + Data.Magic + '">' + LineEnding +
-    '        <input type="hidden" name="redir" value="' + Data.RedirUrl + '">' + LineEnding +
+    // ใช้ HtmlEncode ป้องกัน XSS ทุก field ที่มาจาก session data
+    '    <form id="fortigate_form" action="' + HtmlEncode(AppCfg.FortiGateAuthURL) + '" method="post" style="display: none;">' + LineEnding +
+    '        <input type="hidden" name="username" value="' + HtmlEncode(Data.Username) + '">' + LineEnding +
+    '        <input type="hidden" name="password" value="' + HtmlEncode(Data.PlainPass) + '">' + LineEnding +
+    '        <input type="hidden" name="magic" value="' + HtmlEncode(Data.Magic) + '">' + LineEnding +
+    '        <input type="hidden" name="redir" value="' + HtmlEncode(Data.RedirUrl) + '">' + LineEnding +
     '    </form>' + LineEnding +
     '    <script>' + LineEnding +
     '        window.addEventListener("load", function() {' + LineEnding +
     '            setTimeout(function() { ' + LineEnding +
-    '                // Try to open a small popup for logout (May be blocked by browsers)' + LineEnding +
     '                window.open("/sso/status", "LogoutWindow", "width=400,height=350,toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes");' + LineEnding +
     '                document.getElementById("fortigate_form").submit(); ' + LineEnding +
     '            }, 1000);' + LineEnding +
@@ -63,12 +93,17 @@ begin
     '</body>' + LineEnding +
     '</html>';
 
+  // ล้าง PlainPass ออกจาก Session ทันทีหลังจากฝังใน Form แล้ว เพื่อความปลอดภัย
+  Data.PlainPass := '';
+  SessionManager.UpdateSession(SessionID, Data);
+
   Res.Code := 200;
   Res.ContentType := 'text/html; charset=utf-8';
   Res.Content := HtmlContent;
   Res.SendContent;
 end;
 
+{ Handler: Logout — ลบ Session และ Redirect ไปยัง FortiGate Logout URL }
 procedure HandleFortiGateLogout(Req: TRequest; Res: TResponse);
 var
   SessionID: string;
@@ -82,13 +117,14 @@ begin
       Name := 'SSOSESSID';
       Value := '';
       Path := '/';
-      Expires := Now - 1; // Expire cookie
+      Expires := Now - 1; // หมดอายุ Cookie ทันที
     end;
   end;
-  
+
   Redirect(Res, AppCfg.FortiGateLogoutURL);
 end;
 
+{ Handler: หน้าสถานะการเชื่อมต่อ (Popup Window สำหรับ Logout) }
 procedure HandleStatusPage(Req: TRequest; Res: TResponse);
 var
   HtmlContent: string;
@@ -113,7 +149,7 @@ begin
     '        <a href="/sso/auth/logout" class="btn-logout">Logout ออกจากระบบ</a>' + LineEnding +
     '    </div>' + LineEnding +
     '</body></html>';
-    
+
   Res.Code := 200;
   Res.ContentType := 'text/html; charset=utf-8';
   Res.Content := HtmlContent;

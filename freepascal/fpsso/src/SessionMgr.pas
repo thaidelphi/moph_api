@@ -15,10 +15,13 @@ type
     // FortiGate handshake data
     Magic: string;
     RedirUrl: string;
-    
-    // Auto-login credential
+
+    // Auto-login credential (ล้างหลัง Handshake สำเร็จเพื่อความปลอดภัย)
     PlainPass: string;
-    
+
+    // OAuth2 State Token สำหรับป้องกัน CSRF Attack
+    OAuthState: string;
+
     CreatedAt: TDateTime;
     LastAccessed: TDateTime;
   end;
@@ -83,16 +86,17 @@ begin
   Data.Magic := '';
   Data.RedirUrl := '';
   Data.PlainPass := '';
+  Data.OAuthState := '';   // เริ่มต้น OAuthState เป็นว่าง
   Data.CreatedAt := Now;
   Data.LastAccessed := Now;
-  
+
   FLock.Acquire;
   try
     FMap.Add(NewID, Data);
   finally
     FLock.Release;
   end;
-  
+
   Result := NewID;
 end;
 
