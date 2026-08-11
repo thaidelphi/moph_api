@@ -6,10 +6,11 @@ interface
 
 uses
   Classes, SysUtils, HTTPDefs, fpHTTP, fpjson, jsonparser, Router, Config, 
-  mysql80conn, sqldb, db, Base64;
+  mysql80conn, sqldb, db, Base64, License;
 
 procedure HandleAdminHtml(Req: TRequest; Res: TResponse);
 procedure HandleApiUsers(Req: TRequest; Res: TResponse);
+procedure HandleApiLicense(Req: TRequest; Res: TResponse);
 
 implementation
 
@@ -127,6 +128,73 @@ begin
   end
   else
     SendJSONError(Res, 404, 'Admin template not found at: ' + TemplatePath);
+end;
+
+// -------------------------------------------------------------
+// GET / POST /sso/api/license
+// -------------------------------------------------------------
+procedure HandleApiLicense(Req: TRequest; Res: TResponse);
+var
+  JObj: TJSONObject;
+  LicText: string;
+  F: TextFile;
+begin
+  if not CheckBasicAuth(Req, Res) then Exit;
+
+  if Req.Method = 'GET' then
+  begin
+    JObj := TJSONObject.Create;
+    JObj.Add('machine_id', GetMachineID);
+    JObj.Add('demo_mode', DemoModeActive);
+    JObj.Add('license_path', GlobalLicensePath);
+    
+    if not DemoModeActive then
+    begin
+      JObj.Add('serial', GlobalLicenseInfo.Serial);
+      JObj.Add('licensee', GlobalLicenseInfo.Licensee);
+      JObj.Add('issued', GlobalLicenseInfo.IssuedDate);
+      JObj.Add('expiry', GlobalLicenseInfo.ExpiryDate);
+      JObj.Add('features', GlobalLicenseInfo.Features);
+      JObj.Add('max_users', GlobalLicenseInfo.MaxUsers);
+    end;
+    
+    SendJSONResponse(Res, JObj);
+    Exit;
+  end;
+
+  if Req.Method = 'POST' then
+  begin
+    LicText := Trim(Req.ContentFields.Values['license_text']);
+    if LicText = '' then
+    begin
+      SendJSONErrorMsg(Res, 'License text is empty');
+      Exit;
+    end;
+    
+    // บันทึกไฟล์ทับของเดิม
+    AssignFile(F, GlobalLicensePath);
+    try
+      Rewrite(F);
+      Write(F, LicText);
+      CloseFile(F);
+    except
+      on E: Exception do
+      begin
+        SendJSONErrorMsg(Res, 'Failed to save license file: ' + E.Message);
+        Exit;
+      end;
+    end;
+    
+    // โหลด License ใหม่เข้าระบบ
+    ReloadLicense;
+    
+    if DemoModeActive then
+      SendJSONErrorMsg(Res, 'License saved but validation failed. Still in Demo Mode.')
+    else
+      SendJSONSuccess(Res);
+      
+    Exit;
+  end;
 end;
 
 // -------------------------------------------------------------
@@ -367,5 +435,7 @@ initialization
   RegisterRoute('GET', '/admin', @HandleAdminHtml);
   RegisterRoute('GET', '/api/users', @HandleApiUsers);
   RegisterRoute('POST', '/api/users', @HandleApiUsers);
+  RegisterRoute('GET', '/api/license', @HandleApiLicense);
+  RegisterRoute('POST', '/api/license', @HandleApiLicense);
 
 end.

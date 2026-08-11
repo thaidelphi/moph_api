@@ -282,18 +282,89 @@
             color: #64748b;
             font-size: 0.95rem;
         }
+
+        /* Tabs CSS */
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom: 2px solid var(--primary);
+        }
+        .tab-btn:hover:not(.active) {
+            color: var(--text-main);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+
+        /* License Grid */
+        .license-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .license-card {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+        .license-card h3 { margin-bottom: 1rem; font-size: 1.1rem; color: #fff; }
+        .license-info-row { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
+        .license-info-row span.label { color: var(--text-muted); }
+        .license-info-row span.val { font-weight: 600; }
+        
+        textarea.license-textarea {
+            width: 100%;
+            height: 150px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: white;
+            padding: 1rem;
+            font-family: monospace;
+            resize: vertical;
+            margin-bottom: 1rem;
+        }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <div class="header">
-            <h1><svg fill="currentColor" viewBox="0 0 20 20" width="1.5em" height="1.5em" style="vertical-align: middle; margin-right: 8px;"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/></svg> RADIUS Users</h1>
-            <button class="btn btn-primary" onclick="openAddModal()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="1.2em" height="1.2em" style="vertical-align: middle; margin-right: 4px;" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg> เพิ่มผู้ใช้ใหม่</button>
+        <div class="header" style="margin-bottom: 1rem;">
+            <h1><svg fill="currentColor" viewBox="0 0 20 20" width="1.5em" height="1.5em" style="vertical-align: middle; margin-right: 8px;"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/></svg> System Administration</h1>
         </div>
 
-        <div class="panel">
-            <input type="text" id="searchInput" class="search-bar" placeholder="ค้นหาผู้ใช้งาน (Username)..." onkeyup="filterTable()">
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('users')">Manage Users</button>
+            <button class="tab-btn" onclick="switchTab('license')">Manage License</button>
+        </div>
+
+        <div id="tab-users" class="tab-content active">
+            <div class="panel">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                    <input type="text" id="searchInput" class="search-bar" placeholder="ค้นหาผู้ใช้งาน (Username)..." onkeyup="filterTable()" style="margin-bottom: 0;">
+                    <button class="btn btn-primary" onclick="openAddModal()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="1.2em" height="1.2em" style="vertical-align: middle; margin-right: 4px;" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg> เพิ่มผู้ใช้ใหม่</button>
+                </div>
             
             <div style="overflow-x: auto;">
                 <table id="usersTable">
@@ -320,6 +391,33 @@
                 <button id="nextPage" onclick="changePage(1)">ถัดไป</button>
             </div>
         </div>
+    </div>
+
+        <div id="tab-license" class="tab-content">
+            <div class="license-grid">
+                <div class="license-card">
+                    <h3>Current License Info</h3>
+                    <div class="license-info-row"><span class="label">Status:</span> <span class="val" id="licStatus">-</span></div>
+                    <div class="license-info-row"><span class="label">Machine ID:</span> <span class="val" id="licMachineID" style="color: #60a5fa; cursor: pointer;" onclick="copyMachineID()" title="Click to copy">-</span></div>
+                    <hr style="border: 0; border-top: 1px solid var(--border); margin: 1rem 0;">
+                    <div class="license-info-row"><span class="label">Serial:</span> <span class="val" id="licSerial">-</span></div>
+                    <div class="license-info-row"><span class="label">Licensee:</span> <span class="val" id="licLicensee">-</span></div>
+                    <div class="license-info-row"><span class="label">Issued:</span> <span class="val" id="licIssued">-</span></div>
+                    <div class="license-info-row"><span class="label">Expiry:</span> <span class="val" id="licExpiry">-</span></div>
+                    <div class="license-info-row"><span class="label">Features:</span> <span class="val" id="licFeatures">-</span></div>
+                    <div class="license-info-row"><span class="label">Max Users:</span> <span class="val" id="licMaxUsers">-</span></div>
+                </div>
+                
+                <div class="license-card">
+                    <h3>Update License</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">Paste the contents of your new license.key file below and click Apply.</p>
+                    <textarea id="licenseInput" class="license-textarea" placeholder="FPSSO-xxxx-xxxx..."></textarea>
+                    <button class="btn btn-primary" onclick="uploadLicense()" style="width: 100%;">Apply License</button>
+                    <p id="licenseMsg" style="margin-top: 1rem; font-size: 0.9rem;"></p>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <!-- Modal Form -->
@@ -367,11 +465,22 @@
     </div>
 
     <script>
-        
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById('tab-' + tabName).classList.add('active');
+            event.currentTarget.classList.add('active');
+            
+            if (tabName === 'license') {
+                loadLicenseInfo();
+            }
+        }
+
         let allUsers = [];
         let currentFilteredUsers = [];
         let currentPage = 1;
-        const rowsPerPage = 10;
+        const rowsPerPage = 50;
         
         function changePage(direction) {
             currentPage += direction;
@@ -537,6 +646,79 @@
             
             await fetch('/sso/api/users', { method: 'POST', body: formData });
             loadUsers();
+        }
+
+        // --- License Functions ---
+        function loadLicenseInfo() {
+            fetch('/sso/api/license')
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('licMachineID').innerText = data.machine_id;
+                    if (data.demo_mode) {
+                        document.getElementById('licStatus').innerText = 'DEMO MODE';
+                        document.getElementById('licStatus').style.color = '#fbbf24';
+                        document.getElementById('licSerial').innerText = '-';
+                        document.getElementById('licLicensee').innerText = '-';
+                        document.getElementById('licIssued').innerText = '-';
+                        document.getElementById('licExpiry').innerText = '-';
+                        document.getElementById('licFeatures').innerText = '-';
+                        document.getElementById('licMaxUsers').innerText = '-';
+                    } else {
+                        document.getElementById('licStatus').innerText = 'VALID';
+                        document.getElementById('licStatus').style.color = '#34d399';
+                        document.getElementById('licSerial').innerText = data.serial || '-';
+                        document.getElementById('licLicensee').innerText = data.licensee || '-';
+                        document.getElementById('licIssued').innerText = data.issued || '-';
+                        document.getElementById('licExpiry').innerText = data.expiry || 'Never';
+                        document.getElementById('licFeatures').innerText = data.features || 'none';
+                        document.getElementById('licMaxUsers').innerText = data.max_users == 0 ? 'Unlimited' : data.max_users;
+                    }
+                })
+                .catch(err => console.error(err));
+        }
+
+        function copyMachineID() {
+            const hwid = document.getElementById('licMachineID').innerText;
+            navigator.clipboard.writeText(hwid).then(() => {
+                alert('Copied Machine ID to clipboard: ' + hwid);
+            });
+        }
+
+        function uploadLicense() {
+            const txt = document.getElementById('licenseInput').value;
+            if (!txt) {
+                alert('Please paste license text first.');
+                return;
+            }
+            
+            const msgEl = document.getElementById('licenseMsg');
+            msgEl.style.color = 'white';
+            msgEl.innerText = 'Applying...';
+            
+            const fd = new URLSearchParams();
+            fd.append('license_text', txt);
+            
+            fetch('/sso/api/license', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: fd
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    msgEl.style.color = '#34d399';
+                    msgEl.innerText = 'License applied successfully!';
+                    document.getElementById('licenseInput').value = '';
+                    loadLicenseInfo();
+                } else {
+                    msgEl.style.color = '#ef4444';
+                    msgEl.innerText = 'Error: ' + data.error;
+                }
+            })
+            .catch(err => {
+                msgEl.style.color = '#ef4444';
+                msgEl.innerText = 'Network error: ' + err;
+            });
         }
 
         // Init

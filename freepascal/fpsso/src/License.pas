@@ -67,6 +67,9 @@ procedure QuickLicenseCheck;
 { ตรวจสอบว่าฟีเจอร์ที่ระบุเปิดใช้งานใน License หรือไม่ }
 function HasFeature(const FeatureName: string): Boolean;
 
+{ โหลดและตรวจสอบ License ใหม่ (ใช้เมื่อมีการอัปโหลดไฟล์ใหม่ผ่านหน้าเว็บ) }
+procedure ReloadLicense;
+
 var
   { ค่า License Path สำหรับใช้ในการตรวจสอบซ้ำจากจุดต่างๆ }
   GlobalLicensePath: string;
@@ -500,6 +503,29 @@ begin
       end;
       GlobalLicenseInfo := LicInfo;
     end;
+  end;
+end;
+
+{ โหลดและตรวจสอบ License ใหม่ }
+procedure ReloadLicense;
+var
+  LicInfo: TLicenseInfo;
+begin
+  if GlobalLicensePath = '' then Exit;
+  
+  LicInfo := ValidateLicense(GlobalLicensePath);
+  if LicInfo.Status <> lsValid then
+  begin
+    Writeln('RELOAD LICENSE ERROR: ', LicenseStatusText(LicInfo.Status));
+    DemoModeActive := True;
+    LicenseVerified := False;
+  end
+  else
+  begin
+    DemoModeActive := False;
+    LicenseVerified := True;
+    GlobalLicenseInfo := LicInfo;
+    Writeln('RELOAD License: ', LicInfo.Serial, ' (', LicInfo.Licensee, ')');
   end;
 end;
 
