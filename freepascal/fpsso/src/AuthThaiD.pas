@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, HTTPDefs, fpHTTP, fpjson, jsonparser, fphttpclient, opensslsockets, uriparser,
-  Router, SessionMgr, RadiusDB, Config, base64;
+  Router, SessionMgr, RadiusDB, Config, base64, License;
 
 procedure HandleThaiDLogin(Req: TRequest; Res: TResponse);
 procedure HandleThaiDCallback(Req: TRequest; Res: TResponse);
@@ -80,6 +80,13 @@ var
   State, AuthUrl, SessionID: string;
   Data: TSessionData;
 begin
+  if not HasFeature('thaid') then
+  begin
+    Res.Content := '{"error": "ThaID login is not enabled in your license"}';
+    Res.Code := 403;
+    Exit;
+  end;
+
   // สร้าง State Token และบันทึกลง Session เพื่อตรวจสอบ CSRF ในขั้นตอน Callback
   State := GenerateStateToken;
   SessionID := Req.CookieFields.Values['SSOSESSID'];
@@ -129,6 +136,13 @@ var
   PayloadStr: string;
   PayloadJSON: TJSONObject;
 begin
+  if not HasFeature('thaid') then
+  begin
+    Res.Content := '{"error": "ThaID login is not enabled in your license"}';
+    Res.Code := 403;
+    Exit;
+  end;
+
   Code := Req.QueryFields.Values['code'];
   State := Req.QueryFields.Values['state'];
 

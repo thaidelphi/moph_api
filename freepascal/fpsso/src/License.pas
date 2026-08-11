@@ -64,9 +64,14 @@ function IsDebuggerPresent: Boolean;
 { ตรวจสอบ License แบบกระจาย (เรียกจากหลายจุดในโปรแกรม) }
 procedure QuickLicenseCheck;
 
+{ ตรวจสอบว่าฟีเจอร์ที่ระบุเปิดใช้งานใน License หรือไม่ }
+function HasFeature(const FeatureName: string): Boolean;
+
 var
   { ค่า License Path สำหรับใช้ในการตรวจสอบซ้ำจากจุดต่างๆ }
   GlobalLicensePath: string;
+  { ข้อมูล License ปัจจุบัน }
+  GlobalLicenseInfo: TLicenseInfo;
   { Flag ระบุว่า License ผ่านการตรวจสอบแล้ว }
   LicenseVerified: Boolean;
   { Flag ระบุว่าทำงานใน Demo Mode (ไม่มี License, จำกัด 10 user/day) }
@@ -443,6 +448,7 @@ begin
       Writeln('LICENSE ERROR: ', LicenseStatusText(LicInfo.Status));
       Halt(1);
     end;
+    GlobalLicenseInfo := LicInfo;
   end;
 end;
 
@@ -492,8 +498,30 @@ begin
         Writeln('WATCHDOG: License validation failed: ', LicenseStatusText(LicInfo.Status));
         Halt(1);
       end;
+      GlobalLicenseInfo := LicInfo;
     end;
   end;
+end;
+
+{ ตรวจสอบว่าฟีเจอร์ที่ระบุเปิดใช้งานใน License หรือไม่ }
+function HasFeature(const FeatureName: string): Boolean;
+var
+  FeatStr: string;
+begin
+  // ใน Demo Mode เปิดใช้ทุกฟีเจอร์ (จำกัดแค่ 10 users/day แทน)
+  if DemoModeActive then
+  begin
+    Result := True;
+    Exit;
+  end;
+
+  // อ่านฟีเจอร์จาก License ปัจจุบัน
+  FeatStr := LowerCase(GlobalLicenseInfo.Features);
+  
+  if Pos('all', FeatStr) > 0 then
+    Result := True
+  else
+    Result := Pos(LowerCase(FeatureName), FeatStr) > 0;
 end;
 
 { ===================================================================== }

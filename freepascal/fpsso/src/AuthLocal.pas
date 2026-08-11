@@ -5,7 +5,7 @@ unit AuthLocal;
 interface
 
 uses
-  Classes, SysUtils, HTTPDefs, fpHTTP, Router, SessionMgr, RadiusDB;
+  Classes, SysUtils, HTTPDefs, fpHTTP, Router, SessionMgr, RadiusDB, License;
 
 procedure HandleLogin(Req: TRequest; Res: TResponse);
 
@@ -22,6 +22,12 @@ begin
   if Req.Method <> 'POST' then
   begin
     SendJSONError(Res, 405, 'Method Not Allowed');
+    Exit;
+  end;
+  
+  if not HasFeature('local') then
+  begin
+    SendJSONError(Res, 403, 'Username/Password login is not enabled in your license');
     Exit;
   end;
 

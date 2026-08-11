@@ -9,6 +9,7 @@ var
   GenMachineID, GenLicensee, GenExpiry, GenFeatures: string;
   GenSerial, GenIssuedDate, GenMaxUsersStr: string;
   GenMaxUsers: Integer;
+  Ans: string;
 
 begin
   Writeln('============================================');
@@ -37,10 +38,28 @@ begin
   ReadLn(GenMaxUsersStr);
   GenMaxUsers := StrToIntDef(GenMaxUsersStr, 0);
   
-  Write('ฟีเจอร์ (all/basic) [all]: ');
-  ReadLn(GenFeatures);
+  GenFeatures := '';
+  
+  Write('เปิดใช้ Login ด้วย Username/Password (y/n) [y]: ');
+  ReadLn(Ans);
+  if (Ans = '') or (LowerCase(Ans) = 'y') then
+    GenFeatures := GenFeatures + 'local,';
+
+  Write('เปิดใช้ Login ด้วย ThaID (y/n) [y]: ');
+  ReadLn(Ans);
+  if (Ans = '') or (LowerCase(Ans) = 'y') then
+    GenFeatures := GenFeatures + 'thaid,';
+
+  Write('เปิดใช้ Login ด้วย Provider ID (y/n) [y]: ');
+  ReadLn(Ans);
+  if (Ans = '') or (LowerCase(Ans) = 'y') then
+    GenFeatures := GenFeatures + 'providerid,';
+    
+  // ลบ comma ตัวสุดท้าย
+  if Length(GenFeatures) > 0 then
+    SetLength(GenFeatures, Length(GenFeatures) - 1);
   if GenFeatures = '' then
-    GenFeatures := 'all';
+    GenFeatures := 'none';
   
   // สร้าง Serial Number
   GenSerial := GenerateSerialNumber;

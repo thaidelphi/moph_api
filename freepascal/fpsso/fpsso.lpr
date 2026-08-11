@@ -79,6 +79,23 @@ begin
     finally
       Free;
     end;
+    
+    // แทนที่ Template variables ด้วย Feature Flags
+    if HasFeature('local') then
+      HtmlContent := StringReplace(HtmlContent, '{{FEAT_LOCAL}}', 'true', [rfReplaceAll])
+    else
+      HtmlContent := StringReplace(HtmlContent, '{{FEAT_LOCAL}}', 'false', [rfReplaceAll]);
+      
+    if HasFeature('thaid') then
+      HtmlContent := StringReplace(HtmlContent, '{{FEAT_THAID}}', 'true', [rfReplaceAll])
+    else
+      HtmlContent := StringReplace(HtmlContent, '{{FEAT_THAID}}', 'false', [rfReplaceAll]);
+      
+    if HasFeature('providerid') then
+      HtmlContent := StringReplace(HtmlContent, '{{FEAT_PROVIDERID}}', 'true', [rfReplaceAll])
+    else
+      HtmlContent := StringReplace(HtmlContent, '{{FEAT_PROVIDERID}}', 'false', [rfReplaceAll]);
+    
     Res.Code := 200;
     Res.ContentType := 'text/html; charset=utf-8';
     Res.Content := HtmlContent;
@@ -514,6 +531,7 @@ begin
     // แสดงข้อมูล License ที่ถูกต้อง
     DemoModeActive := False;
     LicenseVerified := True;
+    GlobalLicenseInfo := LicInfo;
     Writeln('License: ', LicInfo.Serial, ' (', LicInfo.Licensee, ')');
     if LicInfo.ExpiryDate <> '' then
       Writeln('License Expiry: ', LicInfo.ExpiryDate)

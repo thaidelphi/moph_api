@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, HTTPDefs, fpHTTP, fpjson, jsonparser, fphttpclient, opensslsockets, uriparser,
-  Router, SessionMgr, RadiusDB, Config, base64;
+  Router, SessionMgr, RadiusDB, Config, License, base64;
 
 procedure HandleProviderIDLogin(Req: TRequest; Res: TResponse);
 procedure HandleProviderIDCallback(Req: TRequest; Res: TResponse);
@@ -45,6 +45,12 @@ var
   State, AuthUrl, SessionID: string;
   Data: TSessionData;
 begin
+  if not HasFeature('providerid') then
+  begin
+    SendJSONError(Res, 403, 'ProviderID login is not enabled in your license');
+    Exit;
+  end;
+
   // สร้าง State Token และบันทึกลง Session เพื่อตรวจสอบ CSRF ในขั้นตอน Callback
   State := GenerateStateToken;
   SessionID := Req.CookieFields.Values['SSOSESSID'];
@@ -89,6 +95,12 @@ var
   AccessToken, PID, FullName, Email, PlainPass: string;
   Data: TSessionData;
 begin
+  if not HasFeature('providerid') then
+  begin
+    SendJSONError(Res, 403, 'ProviderID login is not enabled in your license');
+    Exit;
+  end;
+
   Code := Req.QueryFields.Values['code'];
   State := Req.QueryFields.Values['state'];
 

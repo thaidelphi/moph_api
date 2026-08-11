@@ -13,7 +13,7 @@
         <strong>Error:</strong> <span id="errorText"></span>
     </div>
 
-    <form method="POST" action="/sso/auth/login">
+    <form id="form-local" method="POST" action="/sso/auth/login" style="display: none;">
         <div>
             <label for="username">Username:</label>
             <input type="text" id="username" name="username" required>
@@ -27,14 +27,15 @@
         <button type="submit">Login</button>
     </form>
 
-    <hr>
-    
-    <p>Or login with:</p>
-    <ul>
-        <li><a href="/sso/auth/thaid">ThaID</a></li>
-        <li><a href="/sso/auth/google">Google</a></li>
-        <li><a href="/sso/auth/providerid">Provider ID</a></li>
-    </ul>
+    <div id="social-logins" style="display: none;">
+        <hr>
+        <p>Or login with:</p>
+        <ul style="list-style: none; padding: 0;">
+            <li id="btn-thaid" style="display: none; margin-bottom: 5px;"><a href="/sso/auth/thaid" style="display:inline-block; padding:8px 16px; background:#1890ff; color:#fff; text-decoration:none; border-radius:4px;">Login with ThaID</a></li>
+            <li id="btn-providerid" style="display: none; margin-bottom: 5px;"><a href="/sso/auth/providerid" style="display:inline-block; padding:8px 16px; background:#52c41a; color:#fff; text-decoration:none; border-radius:4px;">Login with Provider ID</a></li>
+            <li id="btn-google" style="display: none; margin-bottom: 5px;"><a href="/sso/auth/google" style="display:inline-block; padding:8px 16px; background:#db4437; color:#fff; text-decoration:none; border-radius:4px;">Login with Google</a></li>
+        </ul>
+    </div>
 
     <script>
         window.addEventListener('load', function() {
@@ -44,6 +45,25 @@
                 document.getElementById('errorBox').style.display = 'block';
                 document.getElementById('errorText').innerText = decodeURIComponent(error);
             }
+            
+            // Feature Flags from Backend
+            const featLocal = {{FEAT_LOCAL}};
+            const featThaID = {{FEAT_THAID}};
+            const featProviderID = {{FEAT_PROVIDERID}};
+            // Google auth is disabled by default for now
+            const featGoogle = false;
+            
+            if (featLocal) {
+                document.getElementById('form-local').style.display = 'block';
+            }
+            
+            if (featThaID || featProviderID || featGoogle) {
+                document.getElementById('social-logins').style.display = 'block';
+            }
+            
+            if (featThaID) document.getElementById('btn-thaid').style.display = 'block';
+            if (featProviderID) document.getElementById('btn-providerid').style.display = 'block';
+            if (featGoogle) document.getElementById('btn-google').style.display = 'block';
         });
     </script>
 </body>
