@@ -54,6 +54,11 @@ begin
   ReadLn(Ans);
   if LowerCase(Ans) = 'y' then
     GenFeatures := GenFeatures + 'providerid,';
+
+  Write('เปิดใช้ Login ด้วย Google (y/n) [n]: ');
+  ReadLn(Ans);
+  if LowerCase(Ans) = 'y' then
+    GenFeatures := GenFeatures + 'google,';
     
   // ลบ comma ตัวสุดท้าย
   if Length(GenFeatures) > 0 then

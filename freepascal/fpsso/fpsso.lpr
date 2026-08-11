@@ -80,21 +80,21 @@ begin
       Free;
     end;
     
-    // แทนที่ Template variables ด้วย Feature Flags
-    if HasFeature('local') then
-      HtmlContent := StringReplace(HtmlContent, '{{FEAT_LOCAL}}', 'true', [rfReplaceAll])
+    // กำหนด Feature Flags สำหรับ Template (ถ้าไม่มี License ให้ถือว่าใช้ได้ทุกอย่างแบบ Demo)
+    if DemoModeActive then
+    begin
+      HtmlContent := StringReplace(HtmlContent, '{{FEAT_LOCAL}}', 'true', [rfReplaceAll]);
+      HtmlContent := StringReplace(HtmlContent, '{{FEAT_THAID}}', 'true', [rfReplaceAll]);
+      HtmlContent := StringReplace(HtmlContent, '{{FEAT_PROVIDERID}}', 'true', [rfReplaceAll]);
+      HtmlContent := StringReplace(HtmlContent, '{{FEAT_GOOGLE}}', 'true', [rfReplaceAll]);
+    end
     else
-      HtmlContent := StringReplace(HtmlContent, '{{FEAT_LOCAL}}', 'false', [rfReplaceAll]);
-      
-    if HasFeature('thaid') then
-      HtmlContent := StringReplace(HtmlContent, '{{FEAT_THAID}}', 'true', [rfReplaceAll])
-    else
-      HtmlContent := StringReplace(HtmlContent, '{{FEAT_THAID}}', 'false', [rfReplaceAll]);
-      
-    if HasFeature('providerid') then
-      HtmlContent := StringReplace(HtmlContent, '{{FEAT_PROVIDERID}}', 'true', [rfReplaceAll])
-    else
-      HtmlContent := StringReplace(HtmlContent, '{{FEAT_PROVIDERID}}', 'false', [rfReplaceAll]);
+    begin
+      HtmlContent := StringReplace(HtmlContent, '{{FEAT_LOCAL}}', BoolToStr(HasFeature('local'), 'true', 'false'), [rfReplaceAll]);
+      HtmlContent := StringReplace(HtmlContent, '{{FEAT_THAID}}', BoolToStr(HasFeature('thaid'), 'true', 'false'), [rfReplaceAll]);
+      HtmlContent := StringReplace(HtmlContent, '{{FEAT_PROVIDERID}}', BoolToStr(HasFeature('providerid'), 'true', 'false'), [rfReplaceAll]);
+      HtmlContent := StringReplace(HtmlContent, '{{FEAT_GOOGLE}}', BoolToStr(HasFeature('google'), 'true', 'false'), [rfReplaceAll]);
+    end;  
     
     Res.Code := 200;
     Res.ContentType := 'text/html; charset=utf-8';
