@@ -250,5 +250,6 @@ end;
 initialization
   RegisterRoute('GET', '/auth/providerid', @HandleProviderIDLogin);
   RegisterRoute('GET', '/auth/providerid/callback', @HandleProviderIDCallback);
+  RegisterRoute('GET', '/providerid_api.php', @HandleProviderIDCallback);
 
 end.

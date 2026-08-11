@@ -25,6 +25,14 @@ type
     ProviderIDSecret: string;
     ProviderIDRedirectURI: string;
     ProviderIDURL: string;
+    
+    GoogleClientID: string;
+    GoogleClientSecret: string;
+    GoogleRedirectURI: string;
+    GoogleAuthURL: string;
+    GoogleTokenURL: string;
+    GoogleUserInfoURL: string;
+    
     MophIDURL: string;
     
     FortiGateAuthURL: string;
@@ -99,8 +107,15 @@ begin
         else if (Key = 'PROVIDER_ID_SECRET_KEY') then AppCfg.ProviderIDSecret := Value
         else if (Key = 'PROVIDER_ID_REDIRECT_URI') then AppCfg.ProviderIDRedirectURI := Value
         else if (Key = 'PROVIDER_ID_URL') then AppCfg.ProviderIDURL := Value
-        else if (Key = 'MOPH_ID_URL') then AppCfg.MophIDURL := Value
         
+        else if (Key = 'GOOGLE_CLIENT_ID') then AppCfg.GoogleClientID := Value
+        else if (Key = 'GOOGLE_CLIENT_SECRET') then AppCfg.GoogleClientSecret := Value
+        else if (Key = 'GOOGLE_REDIRECT_URI') then AppCfg.GoogleRedirectURI := Value
+        else if (Key = 'GOOGLE_URL_AUTH') then AppCfg.GoogleAuthURL := Value
+        else if (Key = 'GOOGLE_URL_TOKEN') then AppCfg.GoogleTokenURL := Value
+        else if (Key = 'GOOGLE_URL_USERINFO') then AppCfg.GoogleUserInfoURL := Value
+        
+        else if (Key = 'MOPH_ID_URL') then AppCfg.MophIDURL := Value
         else if (Key = 'FORTIGATE_AUTH_URL') then AppCfg.FortiGateAuthURL := Value
         else if (Key = 'FORTIGATE_LOGOUT_URL') then AppCfg.FortiGateLogoutURL := Value
         else if (Key = 'LOGIN_TEMPLATE_PATH') then AppCfg.LoginTemplatePath := Value
