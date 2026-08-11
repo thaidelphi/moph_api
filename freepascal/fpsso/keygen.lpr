@@ -40,19 +40,19 @@ begin
   
   GenFeatures := '';
   
-  Write('เปิดใช้ Login ด้วย Username/Password (y/n) [y]: ');
+  Write('เปิดใช้ Login ด้วย Username/Password (y/n) [n]: ');
   ReadLn(Ans);
-  if (Ans = '') or (LowerCase(Ans) = 'y') then
+  if LowerCase(Ans) = 'y' then
     GenFeatures := GenFeatures + 'local,';
 
-  Write('เปิดใช้ Login ด้วย ThaID (y/n) [y]: ');
+  Write('เปิดใช้ Login ด้วย ThaID (y/n) [n]: ');
   ReadLn(Ans);
-  if (Ans = '') or (LowerCase(Ans) = 'y') then
+  if LowerCase(Ans) = 'y' then
     GenFeatures := GenFeatures + 'thaid,';
 
-  Write('เปิดใช้ Login ด้วย Provider ID (y/n) [y]: ');
+  Write('เปิดใช้ Login ด้วย Provider ID (y/n) [n]: ');
   ReadLn(Ans);
-  if (Ans = '') or (LowerCase(Ans) = 'y') then
+  if LowerCase(Ans) = 'y' then
     GenFeatures := GenFeatures + 'providerid,';
     
   // ลบ comma ตัวสุดท้าย
