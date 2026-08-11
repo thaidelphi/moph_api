@@ -292,5 +292,6 @@ end;
 initialization
   RegisterRoute('GET', '/auth/thaid', @HandleThaiDLogin);
   RegisterRoute('GET', '/auth/thaid/callback', @HandleThaiDCallback);
+  RegisterRoute('GET', '/thaid_api.php', @HandleThaiDCallback);
 
 end.
