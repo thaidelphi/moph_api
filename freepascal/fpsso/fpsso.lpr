@@ -115,6 +115,52 @@ begin
     SendJSONError(Res, 404, 'Login template not found at: ' + TemplatePath);
 end;
 
+function ReadBinaryFile(const FileName: string): string;
+var
+  FS: TFileStream;
+begin
+  Result := '';
+  if FileExists(FileName) then
+  begin
+    FS := TFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
+    try
+      SetLength(Result, FS.Size);
+      if FS.Size > 0 then
+        FS.ReadBuffer(Result[1], FS.Size);
+    finally
+      FS.Free;
+    end;
+  end;
+end;
+
+procedure HandleImage(Req: TRequest; Res: TResponse);
+var
+  FilePath: string;
+  Ext: string;
+begin
+  FilePath := ExtractFilePath(ParamStr(0)) + 'templates/login_template' + Req.PathInfo;
+  if FileExists(FilePath) then
+  begin
+    Res.Code := 200;
+    Ext := LowerCase(ExtractFileExt(FilePath));
+    if Ext = '.png' then Res.ContentType := 'image/png'
+    else if (Ext = '.jpg') or (Ext = '.jpeg') then Res.ContentType := 'image/jpeg'
+    else if Ext = '.svg' then Res.ContentType := 'image/svg+xml'
+    else Res.ContentType := 'application/octet-stream';
+    
+    Res.SetCustomHeader('Cache-Control', 'public, max-age=86400');
+    Res.Content := ReadBinaryFile(FilePath);
+    Res.SendContent;
+  end
+  else
+  begin
+    Res.Code := 404;
+    Res.ContentType := 'text/plain';
+    Res.Content := 'Image not found';
+    Res.SendContent;
+  end;
+end;
+
 procedure HandleHowTo(Req: TRequest; Res: TResponse);
 var
   TemplatePath, MdPath: string;
@@ -480,6 +526,10 @@ begin
 
   RegisterRoute('GET', '/', @HandleRoot);
   RegisterRoute('GET', '/howto', @HandleHowTo);
+  RegisterRoute('GET', '/images/logo_moph.png', @HandleImage);
+  RegisterRoute('GET', '/images/login_illustration.png', @HandleImage);
+  RegisterRoute('GET', '/images/thaid.png', @HandleImage);
+  RegisterRoute('GET', '/images/providerid.png', @HandleImage);
 
   // ===== ตรวจสอบ License Key ก่อนเริ่ม Server =====
   LicPath := AppCfg.LicenseKeyPath;
