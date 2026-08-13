@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <title>สถานะการเชื่อมต่อ</title>
+    <style>
+        body { font-family: "Sarabun", sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .box { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 100%; }
+        .success-icon { color: #28a745; font-size: 50px; margin-bottom: 15px; }
+        h2 { color: #333; font-size: 22px; margin: 10px 0; }
+        p { color: #666; font-size: 15px; margin-bottom: 30px; line-height: 1.5; }
+        .btn-logout { background-color: #dc3545; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; transition: 0.3s; border: none; cursor: pointer; width: 100%; box-sizing: border-box; }
+        .btn-logout:hover { background-color: #c82333; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <div class="success-icon">✔️</div>
+        <h2>เชื่อมต่อสำเร็จ</h2>
+        <p>คุณสามารถใช้งานอินเทอร์เน็ตได้แล้ว<br><small>(อย่าปิดหน้าต่างนี้หากต้องการ Logout)</small></p>
+        <a href="/sso/auth/logout" class="btn-logout">Logout ออกจากระบบ</a>
+    </div>
+</body>
+</html>
