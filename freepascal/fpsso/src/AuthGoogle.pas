@@ -231,6 +231,9 @@ begin
         Data.PlainPass := PlainPass;
         SessionManager.UpdateSession(SessionID, Data);
 
+        // บันทึก Log การล็อกอิน
+        LogAuthEvent(GoogleID, 'LOGIN', GetClientIP(Req));
+
         Redirect(Res, '/sso/fortigate/handshake');
       end
       else

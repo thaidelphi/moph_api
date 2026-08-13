@@ -69,6 +69,9 @@ begin
     Data.PlainPass := PlainPass;
     SessionManager.UpdateSession(SessionID, Data);
     
+    // บันทึก Log การล็อกอิน
+    LogAuthEvent(Username, 'LOGIN', GetClientIP(Req));
+    
     // Set or refresh cookie
     with Res.Cookies.Add do
     begin

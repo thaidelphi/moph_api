@@ -232,9 +232,15 @@ begin
     finally
       HtmlContent.Free;
     end;
+    
+    // บันทึก Log การล็อกเอาต์
+    LogAuthEvent(Data.Username, 'LOGOUT', GetClientIP(Req));
   end
   else
   begin
+    // บันทึก Log การล็อกเอาต์
+    LogAuthEvent(Data.Username, 'LOGOUT', GetClientIP(Req));
+    
     // ถ้าไม่ได้ตั้งค่า API ไว้ ให้ใช้วิธี Redirect กลับไปที่ FortiGate
     if Data.PostUrl <> '' then
       LogoutUrl := StringReplace(Data.PostUrl, 'fgtauth', 'logout?', [rfIgnoreCase])

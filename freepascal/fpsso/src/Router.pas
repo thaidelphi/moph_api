@@ -25,6 +25,7 @@ procedure RegisterRoute(const AMethod, APath: string; AHandler: TRouteHandler);
 procedure HandleRequest(Req: TRequest; Res: TResponse);
 procedure SendJSONError(Res: TResponse; StatusCode: Integer; const Msg: string);
 procedure Redirect(Res: TResponse; const URL: string);
+function GetClientIP(Req: TRequest): string;
 
 implementation
 
@@ -65,6 +66,15 @@ begin
   Res.Code := 302;
   Res.SetCustomHeader('Location', URL);
   Res.SendContent;
+end;
+
+function GetClientIP(Req: TRequest): string;
+begin
+  Result := Req.GetCustomHeader('X-Forwarded-For');
+  if Result = '' then
+    Result := Req.GetCustomHeader('X-Real-IP');
+  if Result = '' then
+    Result := Req.RemoteAddress;
 end;
 
 procedure HandleRequest(Req: TRequest; Res: TResponse);

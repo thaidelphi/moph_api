@@ -12,6 +12,7 @@ function SSORadiusAuth(const Username: string; out IsActive: Boolean; const Emai
 function LocalRadiusAuth(const Username, Password: string; out IsActive: Boolean): string;
 
 procedure EnsureDBSchema;
+procedure LogAuthEvent(const Username, EventType, IPAddress: string);
 function GetUserProfile(const Username: string; out FullName, Email, Phone: string): Boolean;
 function UpdateUserProfile(const Username, FullName, Email, Phone, NewPassword: string): Boolean;
 
@@ -63,9 +64,58 @@ begin
       else
         Query.Close;
         
+      // Create login_history table if it doesn't exist
+      Query.SQL.Text := 'CREATE TABLE IF NOT EXISTS login_history (' +
+                        'id INT AUTO_INCREMENT PRIMARY KEY, ' +
+                        'username VARCHAR(64) NOT NULL, ' +
+                        'event_type VARCHAR(20) NOT NULL, ' + // LOGIN or LOGOUT
+                        'ip_address VARCHAR(45) NOT NULL, ' +
+                        'event_time DATETIME NOT NULL' +
+                        ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;';
+      Query.ExecSQL;
+      Trans.Commit;
+        
     except
       on E: Exception do
         Writeln('EnsureDBSchema Error: ', E.Message);
+    end;
+  finally
+    Query.Free;
+    Trans.Free;
+    Conn.Free;
+  end;
+end;
+
+procedure LogAuthEvent(const Username, EventType, IPAddress: string);
+var
+  Conn: TMySQL80Connection;
+  Trans: TSQLTransaction;
+  Query: TSQLQuery;
+begin
+  if Username = '' then Exit;
+  
+  Conn := TMySQL80Connection.Create(nil);
+  Trans := TSQLTransaction.Create(nil);
+  Query := TSQLQuery.Create(nil);
+  try
+    Conn.HostName := AppCfg.DBHost;
+    Conn.UserName := AppCfg.DBUser;
+    Conn.Password := AppCfg.DBPass;
+    Conn.DatabaseName := AppCfg.DBName;
+    Conn.Transaction := Trans;
+    Query.DataBase := Conn;
+    
+    try
+      Conn.Connected := True;
+      Query.SQL.Text := 'INSERT INTO login_history (username, event_type, ip_address, event_time) ' +
+                        'VALUES (:u, :e, :ip, NOW())';
+      Query.Params.ParamByName('u').AsString := Username;
+      Query.Params.ParamByName('e').AsString := EventType;
+      Query.Params.ParamByName('ip').AsString := IPAddress;
+      Query.ExecSQL;
+      Trans.Commit;
+    except
+      on E: Exception do Writeln('LogAuthEvent Error: ', E.Message);
     end;
   finally
     Query.Free;
