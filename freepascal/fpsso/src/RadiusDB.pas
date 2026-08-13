@@ -12,7 +12,7 @@ function SSORadiusAuth(const Username: string; out IsActive: Boolean; const Emai
 function LocalRadiusAuth(const Username, Password: string; out IsActive: Boolean): string;
 
 procedure EnsureDBSchema;
-procedure LogAuthEvent(const Username, EventType, IPAddress: string);
+procedure LogAuthEvent(const Username, EventType, IPAddress, AuthMethod: string);
 function GetUserProfile(const Username: string; out FullName, Email, Phone: string): Boolean;
 function UpdateUserProfile(const Username, FullName, Email, Phone, NewPassword: string): Boolean;
 
@@ -70,10 +70,25 @@ begin
                         'username VARCHAR(64) NOT NULL, ' +
                         'event_type VARCHAR(20) NOT NULL, ' + // LOGIN or LOGOUT
                         'ip_address VARCHAR(45) NOT NULL, ' +
+                        'auth_method VARCHAR(20) DEFAULT NULL, ' +
                         'event_time DATETIME NOT NULL' +
                         ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;';
       Query.ExecSQL;
       Trans.Commit;
+      
+      // Auto-add auth_method if missing (for existing tables)
+      Query.Close;
+      Query.SQL.Text := 'SHOW COLUMNS FROM login_history LIKE ''auth_method''';
+      Query.Open;
+      if Query.EOF then
+      begin
+        Query.Close;
+        Query.SQL.Text := 'ALTER TABLE login_history ADD COLUMN auth_method VARCHAR(20) DEFAULT NULL';
+        Query.ExecSQL;
+        Trans.Commit;
+      end
+      else
+        Query.Close;
         
     except
       on E: Exception do
@@ -86,7 +101,7 @@ begin
   end;
 end;
 
-procedure LogAuthEvent(const Username, EventType, IPAddress: string);
+procedure LogAuthEvent(const Username, EventType, IPAddress, AuthMethod: string);
 var
   Conn: TMySQL80Connection;
   Trans: TSQLTransaction;
@@ -107,11 +122,12 @@ begin
     
     try
       Conn.Connected := True;
-      Query.SQL.Text := 'INSERT INTO login_history (username, event_type, ip_address, event_time) ' +
-                        'VALUES (:u, :e, :ip, NOW())';
+      Query.SQL.Text := 'INSERT INTO login_history (username, event_type, ip_address, auth_method, event_time) ' +
+                        'VALUES (:u, :e, :ip, :m, NOW())';
       Query.Params.ParamByName('u').AsString := Username;
       Query.Params.ParamByName('e').AsString := EventType;
       Query.Params.ParamByName('ip').AsString := IPAddress;
+      Query.Params.ParamByName('m').AsString := AuthMethod;
       Query.ExecSQL;
       Trans.Commit;
     except

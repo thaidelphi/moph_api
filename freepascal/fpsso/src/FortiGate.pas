@@ -234,12 +234,12 @@ begin
     end;
     
     // บันทึก Log การล็อกเอาต์
-    LogAuthEvent(Data.Username, 'LOGOUT', GetClientIP(Req));
+    LogAuthEvent(Data.Username, 'LOGOUT', GetClientIP(Req), Data.AuthMethod);
   end
   else
   begin
     // บันทึก Log การล็อกเอาต์
-    LogAuthEvent(Data.Username, 'LOGOUT', GetClientIP(Req));
+    LogAuthEvent(Data.Username, 'LOGOUT', GetClientIP(Req), Data.AuthMethod);
     
     // ถ้าไม่ได้ตั้งค่า API ไว้ ให้ใช้วิธี Redirect กลับไปที่ FortiGate
     if Data.PostUrl <> '' then

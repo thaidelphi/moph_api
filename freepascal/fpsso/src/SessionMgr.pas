@@ -13,6 +13,7 @@ type
     FullName: string;
     Email: string;
     Phone: string;
+    AuthMethod: string;
     // FortiGate handshake data
     Magic: string;
     RedirUrl: string;

@@ -269,10 +269,11 @@ begin
         Data.Username := PID;
         Data.FullName := FullName;
         Data.PlainPass := PlainPass;
+        Data.AuthMethod := 'THAID';
         SessionManager.UpdateSession(SessionID, Data);
 
         // บันทึก Log การล็อกอิน
-        LogAuthEvent(PID, 'LOGIN', GetClientIP(Req));
+        LogAuthEvent(PID, 'LOGIN', GetClientIP(Req), 'THAID');
 
         Redirect(Res, '/sso/fortigate/handshake');
       end

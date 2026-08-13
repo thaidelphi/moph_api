@@ -67,10 +67,11 @@ begin
     
     Data.Username := Username;
     Data.PlainPass := PlainPass;
+    Data.AuthMethod := 'LOCAL';
     SessionManager.UpdateSession(SessionID, Data);
     
     // บันทึก Log การล็อกอิน
-    LogAuthEvent(Username, 'LOGIN', GetClientIP(Req));
+    LogAuthEvent(Username, 'LOGIN', GetClientIP(Req), 'LOCAL');
     
     // Set or refresh cookie
     with Res.Cookies.Add do

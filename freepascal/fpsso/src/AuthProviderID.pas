@@ -227,10 +227,11 @@ begin
         Data.Username := PID;
         Data.FullName := FullName;
         Data.PlainPass := PlainPass;
+        Data.AuthMethod := 'PROVIDERID';
         SessionManager.UpdateSession(SessionID, Data);
 
         // บันทึก Log การล็อกอิน
-        LogAuthEvent(PID, 'LOGIN', GetClientIP(Req));
+        LogAuthEvent(PID, 'LOGIN', GetClientIP(Req), 'PROVIDERID');
 
         Redirect(Res, '/sso/fortigate/handshake');
       end

@@ -229,10 +229,11 @@ begin
         Data.Username := GoogleID;
         Data.FullName := FullName;
         Data.PlainPass := PlainPass;
+        Data.AuthMethod := 'GOOGLE';
         SessionManager.UpdateSession(SessionID, Data);
 
         // บันทึก Log การล็อกอิน
-        LogAuthEvent(GoogleID, 'LOGIN', GetClientIP(Req));
+        LogAuthEvent(GoogleID, 'LOGIN', GetClientIP(Req), 'GOOGLE');
 
         Redirect(Res, '/sso/fortigate/handshake');
       end
