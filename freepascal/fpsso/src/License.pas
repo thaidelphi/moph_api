@@ -5,7 +5,7 @@ unit License;
 interface
 
 uses
-  Classes, SysUtils, HMAC, SHA1, BaseUnix;
+  Classes, SysUtils, HMAC, SHA1;
 
 type
   { สถานะผลลัพธ์จากการตรวจสอบ License }
