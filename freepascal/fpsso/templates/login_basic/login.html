@@ -47,6 +47,9 @@
             }
             
             // Feature Flags from Backend
+            // อธิบาย: ตัวแปร {{...}} เหล่านี้คือ Template Variables ที่จะถูก Backend 
+            // (ไฟล์ HttpServer.pas) ทำการแทนที่ด้วยค่าจริง (true หรือ false) ก่อนส่งหน้าเว็บมาให้
+            // เพื่อใช้บอกให้ Javascript รู้ว่าผู้ดูแลระบบเปิดให้ล็อกอินช่องทางไหนบ้าง
             const featLocal = {{FEAT_LOCAL}};
             const featThaID = {{FEAT_THAID}};
             const featProviderID = {{FEAT_PROVIDERID}};
