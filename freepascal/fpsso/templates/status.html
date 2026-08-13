@@ -11,8 +11,10 @@
         .success-icon { color: #28a745; font-size: 50px; margin-bottom: 15px; }
         h2 { color: #333; font-size: 22px; margin: 10px 0; }
         p { color: #666; font-size: 15px; margin-bottom: 30px; line-height: 1.5; }
-        .btn-logout { background-color: #dc3545; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; transition: 0.3s; border: none; cursor: pointer; width: 100%; box-sizing: border-box; }
+        .btn-logout { background-color: #dc3545; color: white; padding: 12px 10px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; transition: 0.3s; border: none; cursor: pointer; width: 100%; box-sizing: border-box; text-align: center;}
         .btn-logout:hover { background-color: #c82333; }
+        .btn-profile { background-color: #007bff; color: white; padding: 12px 10px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; transition: 0.3s; border: none; cursor: pointer; width: 100%; box-sizing: border-box; text-align: center;}
+        .btn-profile:hover { background-color: #0056b3; }
     </style>
 </head>
 <body>
@@ -20,7 +22,10 @@
         <div class="success-icon">✔️</div>
         <h2>ยินดีต้อนรับ, {{USER_DISPLAY_NAME}}</h2>
         <p>เชื่อมต่อสำเร็จ! คุณสามารถใช้งานอินเทอร์เน็ตได้แล้ว<br><small>(อย่าปิดหน้าต่างนี้หากต้องการ Logout)</small></p>
-        <a href="/sso/auth/logout" class="btn-logout">Logout ออกจากระบบ</a>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <a href="/sso/profile" class="btn-profile">แก้ไขโปรไฟล์</a>
+            <a href="/sso/auth/logout" class="btn-logout">Logout ออกจากระบบ</a>
+        </div>
     </div>
 </body>
 </html>

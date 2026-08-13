@@ -5,7 +5,7 @@ unit FortiGate;
 interface
 
 uses
-  Classes, SysUtils, HTTPDefs, fpHTTP, Router, SessionMgr, Config, fphttpclient, fpjson, jsonparser;
+  Classes, SysUtils, HTTPDefs, fpHTTP, Router, SessionMgr, Config, fphttpclient, fpjson, jsonparser, RadiusDB;
 
 procedure HandleFortiGateHandshake(Req: TRequest; Res: TResponse);
 
@@ -304,9 +304,86 @@ begin
   end;
 end;
 
+procedure HandleProfileGet(Req: TRequest; Res: TResponse);
+var
+  SessionID: string;
+  Data: TSessionData;
+  HtmlContent: TStringList;
+  DBFullName, DBEmail, DBPhone: string;
+begin
+  SessionID := Req.CookieFields.Values['SSOSESSID'];
+  if (SessionID = '') or not SessionManager.GetSession(SessionID, Data) then
+  begin
+    Redirect(Res, '/');
+    Exit;
+  end;
+  
+  if GetUserProfile(Data.Username, DBFullName, DBEmail, DBPhone) then
+  begin
+    Data.FullName := DBFullName;
+    Data.Email := DBEmail;
+    Data.Phone := DBPhone;
+    SessionManager.UpdateSession(SessionID, Data);
+  end;
+
+  HtmlContent := TStringList.Create;
+  try
+    if FileExists('templates/profile.html') then
+      HtmlContent.LoadFromFile('templates/profile.html', TEncoding.UTF8)
+    else
+      HtmlContent.Text := 'Profile template not found.';
+      
+    HtmlContent.Text := StringReplace(HtmlContent.Text, '{{USERNAME}}', HtmlEncode(Data.Username), [rfReplaceAll]);
+    HtmlContent.Text := StringReplace(HtmlContent.Text, '{{FULLNAME}}', HtmlEncode(Data.FullName), [rfReplaceAll]);
+    HtmlContent.Text := StringReplace(HtmlContent.Text, '{{EMAIL}}', HtmlEncode(Data.Email), [rfReplaceAll]);
+    HtmlContent.Text := StringReplace(HtmlContent.Text, '{{PHONE}}', HtmlEncode(Data.Phone), [rfReplaceAll]);
+    
+    Res.Code := 200;
+    Res.ContentType := 'text/html; charset=utf-8';
+    Res.Content := HtmlContent.Text;
+    Res.SendContent;
+  finally
+    HtmlContent.Free;
+  end;
+end;
+
+procedure HandleProfilePost(Req: TRequest; Res: TResponse);
+var
+  SessionID: string;
+  Data: TSessionData;
+  NewFullName, NewEmail, NewPhone, NewPassword: string;
+begin
+  SessionID := Req.CookieFields.Values['SSOSESSID'];
+  if (SessionID = '') or not SessionManager.GetSession(SessionID, Data) then
+  begin
+    Redirect(Res, '/');
+    Exit;
+  end;
+  
+  NewFullName := Req.ContentFields.Values['fullname'];
+  NewEmail := Req.ContentFields.Values['email'];
+  NewPhone := Req.ContentFields.Values['phone'];
+  NewPassword := Req.ContentFields.Values['password'];
+  
+  if UpdateUserProfile(Data.Username, NewFullName, NewEmail, NewPhone, NewPassword) then
+  begin
+    Data.FullName := NewFullName;
+    Data.Email := NewEmail;
+    Data.Phone := NewPhone;
+    SessionManager.UpdateSession(SessionID, Data);
+    Redirect(Res, '/sso/profile?success=1');
+  end
+  else
+  begin
+    Redirect(Res, '/sso/profile?error=UpdateFailed');
+  end;
+end;
+
 initialization
   RegisterRoute('GET', '/fortigate/handshake', @HandleFortiGateHandshake);
   RegisterRoute('GET', '/auth/logout', @HandleFortiGateLogout);
   RegisterRoute('GET', '/status', @HandleStatusPage);
+  RegisterRoute('GET', '/profile', @HandleProfileGet);
+  RegisterRoute('POST', '/profile', @HandleProfilePost);
 
 end.

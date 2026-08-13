@@ -9,8 +9,11 @@ uses
 
 // Equivalent to sso_radius_auth in PHP
 function SSORadiusAuth(const Username: string; out IsActive: Boolean; const Email: string = ''; const Fullname: string = ''): string;
-// For local login form (verify existing user password)
 function LocalRadiusAuth(const Username, Password: string; out IsActive: Boolean): string;
+
+procedure EnsureDBSchema;
+function GetUserProfile(const Username: string; out FullName, Email, Phone: string): Boolean;
+function UpdateUserProfile(const Username, FullName, Email, Phone, NewPassword: string): Boolean;
 
 implementation
 
@@ -24,6 +27,151 @@ begin
   SetLength(Result, Len);
   for I := 1 to Len do
     Result[I] := Chars[Random(Length(Chars)) + 1];
+end;
+
+procedure EnsureDBSchema;
+var
+  Conn: TMySQL80Connection;
+  Trans: TSQLTransaction;
+  Query: TSQLQuery;
+begin
+  Conn := TMySQL80Connection.Create(nil);
+  Trans := TSQLTransaction.Create(nil);
+  Query := TSQLQuery.Create(nil);
+  try
+    Conn.HostName := AppCfg.DBHost;
+    Conn.UserName := AppCfg.DBUser;
+    Conn.Password := AppCfg.DBPass;
+    Conn.DatabaseName := AppCfg.DBName;
+    Conn.Transaction := Trans;
+    Query.DataBase := Conn;
+    
+    try
+      Conn.Connected := True;
+      
+      // Check if phone column exists
+      Query.SQL.Text := 'SHOW COLUMNS FROM radcheck_mirror LIKE ''phone''';
+      Query.Open;
+      if Query.EOF then
+      begin
+        Query.Close;
+        Query.SQL.Text := 'ALTER TABLE radcheck_mirror ADD COLUMN phone VARCHAR(20) DEFAULT NULL';
+        Query.ExecSQL;
+        Trans.Commit;
+        Writeln('Database Schema: Added phone column to radcheck_mirror.');
+      end
+      else
+        Query.Close;
+        
+    except
+      on E: Exception do
+        Writeln('EnsureDBSchema Error: ', E.Message);
+    end;
+  finally
+    Query.Free;
+    Trans.Free;
+    Conn.Free;
+  end;
+end;
+
+function GetUserProfile(const Username: string; out FullName, Email, Phone: string): Boolean;
+var
+  Conn: TMySQL80Connection;
+  Trans: TSQLTransaction;
+  Query: TSQLQuery;
+begin
+  Result := False;
+  FullName := ''; Email := ''; Phone := '';
+  Conn := TMySQL80Connection.Create(nil);
+  Trans := TSQLTransaction.Create(nil);
+  Query := TSQLQuery.Create(nil);
+  try
+    Conn.HostName := AppCfg.DBHost;
+    Conn.UserName := AppCfg.DBUser;
+    Conn.Password := AppCfg.DBPass;
+    Conn.DatabaseName := AppCfg.DBName;
+    Conn.Transaction := Trans;
+    Query.DataBase := Conn;
+    
+    try
+      Conn.Connected := True;
+      Query.SQL.Text := 'SELECT fullname, email, phone FROM radcheck_mirror WHERE username = :u LIMIT 1';
+      Query.Params.ParamByName('u').AsString := Username;
+      Query.Open;
+      if not Query.EOF then
+      begin
+        FullName := Query.FieldByName('fullname').AsString;
+        Email := Query.FieldByName('email').AsString;
+        Phone := Query.FieldByName('phone').AsString;
+        Result := True;
+      end;
+    except
+    end;
+  finally
+    Query.Free;
+    Trans.Free;
+    Conn.Free;
+  end;
+end;
+
+function UpdateUserProfile(const Username, FullName, Email, Phone, NewPassword: string): Boolean;
+var
+  Conn: TMySQL80Connection;
+  Trans: TSQLTransaction;
+  Query: TSQLQuery;
+begin
+  Result := False;
+  Conn := TMySQL80Connection.Create(nil);
+  Trans := TSQLTransaction.Create(nil);
+  Query := TSQLQuery.Create(nil);
+  try
+    Conn.HostName := AppCfg.DBHost;
+    Conn.UserName := AppCfg.DBUser;
+    Conn.Password := AppCfg.DBPass;
+    Conn.DatabaseName := AppCfg.DBName;
+    Conn.Transaction := Trans;
+    Query.DataBase := Conn;
+    
+    try
+      Conn.Connected := True;
+      
+      Query.SQL.Text := 'UPDATE radcheck_mirror SET fullname = :f, email = :e, phone = :p WHERE username = :u';
+      Query.Params.ParamByName('f').AsString := FullName;
+      Query.Params.ParamByName('e').AsString := Email;
+      Query.Params.ParamByName('p').AsString := Phone;
+      Query.Params.ParamByName('u').AsString := Username;
+      Query.ExecSQL;
+      
+      if NewPassword <> '' then
+      begin
+        Query.SQL.Text := 'UPDATE radcheck_mirror SET tmp_passwd = :pw WHERE username = :u';
+        Query.Params.ParamByName('pw').AsString := NewPassword;
+        Query.Params.ParamByName('u').AsString := Username;
+        Query.ExecSQL;
+        
+        // Update RADIUS cleartext password if applicable
+        Query.SQL.Text := 'UPDATE radcheck_cleartext SET value = :pw WHERE username = :u';
+        Query.Params.ParamByName('pw').AsString := NewPassword;
+        Query.Params.ParamByName('u').AsString := Username;
+        Query.ExecSQL;
+        
+        // Also update radcheck if it exists there (local users)
+        Query.SQL.Text := 'UPDATE radcheck SET value = :pw WHERE username = :u AND attribute = ''Cleartext-Password''';
+        Query.Params.ParamByName('pw').AsString := NewPassword;
+        Query.Params.ParamByName('u').AsString := Username;
+        Query.ExecSQL;
+      end;
+      
+      Trans.Commit;
+      Result := True;
+    except
+      if Trans.Active then Trans.Rollback;
+    end;
+  finally
+    Query.Free;
+    Trans.Free;
+    Conn.Free;
+  end;
 end;
 
 function LocalRadiusAuth(const Username, Password: string; out IsActive: Boolean): string;

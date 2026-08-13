@@ -9,7 +9,7 @@ uses
   Classes, SysUtils, Process,
   Config, SessionMgr, Router, HttpServer, HTTPDefs,
   AuthLocal, AuthThaiD, AuthProviderID, AuthGoogle, FortiGate, AdminUsers,
-  License;
+  License, RadiusDB;
 
 // Thread สำหรับล้าง Session ที่หมดอายุแล้วออกจาก Memory ทุก 10 นาที
 type
@@ -523,6 +523,9 @@ begin
     Writeln('ERROR: Could not load ', EnvPathToLoad);
     Halt(1);
   end;
+
+  // ตรวจสอบและสร้างโครงสร้างตารางฐานข้อมูลที่จำเป็น
+  EnsureDBSchema;
 
   RegisterRoute('GET', '/', @HandleRoot);
   RegisterRoute('GET', '/howto', @HandleHowTo);

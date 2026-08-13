@@ -12,6 +12,7 @@ type
     Username: string;
     FullName: string;
     Email: string;
+    Phone: string;
     // FortiGate handshake data
     Magic: string;
     RedirUrl: string;
