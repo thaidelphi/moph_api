@@ -110,6 +110,7 @@ var
   ResponseStr: string;
   JSON: TJSONObject;
   GoogleID, Email, FullName: string;
+  TargetUsername, ExistingUser: string;
   PlainPass: string;
   IsActive: Boolean;
 begin
@@ -206,9 +207,20 @@ begin
         Exit;
       end;
 
+      // ค้นหาว่ามี User ในระบบ (Username) ที่ใช้อีเมลนี้หรือไม่
+      // ถ้ามี ให้ใช้ Username ของเขาล็อกอิน (ผูกบัญชีอัตโนมัติ)
+      // ถ้าไม่มี ให้ใช้ GoogleID เป็น Username
+      TargetUsername := GoogleID;
+      if Email <> '' then
+      begin
+        ExistingUser := FindUsernameByEmail(Email);
+        if ExistingUser <> '' then
+          TargetUsername := ExistingUser;
+      end;
+
       // บันทึกหรืออัปเดตข้อมูลผู้ใช้ใน radcheck_mirror และขอ tmp_passwd
       IsActive := False;
-      PlainPass := SSORadiusAuth(GoogleID, IsActive, Email, FullName);
+      PlainPass := SSORadiusAuth(TargetUsername, IsActive, Email, FullName);
 
       if not IsActive then
       begin
@@ -226,14 +238,14 @@ begin
         end;
         
         // อัปเดต Session ด้วยข้อมูลผู้ใช้และ Credential
-        Data.Username := GoogleID;
+        Data.Username := TargetUsername;
         Data.FullName := FullName;
         Data.PlainPass := PlainPass;
         Data.AuthMethod := 'GOOGLE';
         SessionManager.UpdateSession(SessionID, Data);
 
         // บันทึก Log การล็อกอิน
-        LogAuthEvent(GoogleID, 'LOGIN', GetClientIP(Req), 'GOOGLE');
+        LogAuthEvent(TargetUsername, 'LOGIN', GetClientIP(Req), 'GOOGLE');
 
         Redirect(Res, '/sso/fortigate/handshake');
       end

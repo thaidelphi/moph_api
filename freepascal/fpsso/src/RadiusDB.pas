@@ -15,6 +15,7 @@ procedure EnsureDBSchema;
 procedure LogAuthEvent(const Username, EventType, IPAddress, AuthMethod: string);
 function GetUserProfile(const Username: string; out FullName, Email, Phone: string): Boolean;
 function UpdateUserProfile(const Username, FullName, Email, Phone, NewPassword: string): Boolean;
+function FindUsernameByEmail(const Email: string): string;
 
 implementation
 
@@ -171,6 +172,42 @@ begin
         Phone := Query.FieldByName('phone').AsString;
         Result := True;
       end;
+    except
+    end;
+  finally
+    Query.Free;
+    Trans.Free;
+    Conn.Free;
+  end;
+end;
+
+function FindUsernameByEmail(const Email: string): string;
+var
+  Conn: TMySQL80Connection;
+  Trans: TSQLTransaction;
+  Query: TSQLQuery;
+begin
+  Result := '';
+  if Email = '' then Exit;
+  
+  Conn := TMySQL80Connection.Create(nil);
+  Trans := TSQLTransaction.Create(nil);
+  Query := TSQLQuery.Create(nil);
+  try
+    Conn.HostName := AppCfg.DBHost;
+    Conn.UserName := AppCfg.DBUser;
+    Conn.Password := AppCfg.DBPass;
+    Conn.DatabaseName := AppCfg.DBName;
+    Conn.Transaction := Trans;
+    Query.DataBase := Conn;
+    
+    try
+      Conn.Connected := True;
+      Query.SQL.Text := 'SELECT username FROM radcheck_mirror WHERE email = :e LIMIT 1';
+      Query.Params.ParamByName('e').AsString := Email;
+      Query.Open;
+      if not Query.EOF then
+        Result := Query.FieldByName('username').AsString;
     except
     end;
   finally
