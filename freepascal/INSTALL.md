@@ -70,18 +70,7 @@ cd api/freepascal
 
 ## 5. การตั้งค่าระบบ (Configuration)
 
-### 5.1 ระบบ SSO (`fpsso`)
-```bash
-cd /var/www/api/freepascal/fpsso
-cp .env.example .env
-nano .env
-```
-ตั้งค่าที่สำคัญใน `.env`:
-- `DB_HOST`, `DB_USER`, `DB_PASS`, `DB_NAME` (ให้ตรงกับฐานข้อมูลที่สร้างไว้)
-- การตั้งค่า `PROVIDERID_*` และ `THAID_*` (API Keys ต่างๆ)
-- `TEMPLATE_FOLDER=templates/login_template`
-
-### 5.2 ระบบ RADIUS Proxy (`fp-radius`)
+### 5.1 ระบบ RADIUS Proxy (`fp-radius`)
 ```bash
 cd /var/www/api/freepascal/fp-radius
 cp .env.example .env
@@ -92,33 +81,36 @@ nano .env
 - `RADIUS_AUTH_PORT=1812` (พอร์ตที่รับข้อมูลจาก FortiGate)
 - `RADIUS_SECRET=testing123` (ตั้งค่าให้ตรงกับฝั่ง FortiGate)
 
+### 5.2 ระบบ SSO (`fpsso`)
+```bash
+cd /var/www/api/freepascal/fpsso
+cp .env.example .env
+nano .env
+```
+ตั้งค่าที่สำคัญใน `.env`:
+- `DB_HOST`, `DB_USER`, `DB_PASS`, `DB_NAME` (ให้ตรงกับฐานข้อมูลที่สร้างไว้)
+- การตั้งค่า `PROVIDERID_*` และ `THAID_*` (API Keys ต่างๆ)
+- `TEMPLATE_FOLDER=templates/login_template`
+
 ---
 
 ## 6. การ Compile และติดตั้งเป็น Service
 
 ### 6.1 Compile ระบบ
 เพื่อให้ระบบทำงานได้เร็วที่สุด ต้อง Compile เป็นโหมด Release
-**fpsso:**
-```bash
-cd /var/www/api/freepascal/fpsso
-fpc -O3 -XX -Xs -Fu"src" fpsso.lpr
-```
 **fp-radius:**
 ```bash
 cd /var/www/api/freepascal/fp-radius
 fpc -O3 -XX -Xs -Fu"src" fpradius.lpr
 ```
+**fpsso:**
+```bash
+cd /var/www/api/freepascal/fpsso
+fpc -O3 -XX -Xs -Fu"src" fpsso.lpr
+```
 
 ### 6.2 ติดตั้ง Service (Systemd)
 เพื่อให้โปรแกรมทำงานแบบ Background และรันอัตโนมัติเมื่อเปิดเครื่อง
-
-**ติดตั้ง fpsso:**
-```bash
-sudo cp /var/www/api/freepascal/fpsso/fpsso.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable fpsso
-sudo systemctl start fpsso
-```
 
 **ติดตั้ง fpradius:**
 โปรแกรม `fp-radius` มีคำสั่งช่วยติดตั้ง Service และ Database ในตัว คุณสามารถใช้คำสั่งต่อไปนี้ได้เลย:
@@ -138,6 +130,14 @@ sudo ./fpradius --installservice
 sudo systemctl daemon-reload
 sudo systemctl enable fpradius
 sudo systemctl start fpradius
+```
+
+**ติดตั้ง fpsso:**
+```bash
+sudo cp /var/www/api/freepascal/fpsso/fpsso.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable fpsso
+sudo systemctl start fpsso
 ```
 
 ---
