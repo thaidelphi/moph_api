@@ -13,3 +13,6 @@
 - **Database Changes**: Every time there is a database table modification or addition, implement an automatic migration system or auto-create logic (like 'CREATE TABLE IF NOT EXISTS' or ALTER scripts) inside the application code instead of just relying on manual SQL scripts.
 
 - **CLI Parameters**: Every time a new command line parameter or flag is added to the application, you MUST immediately update the '--help' (or equivalent) documentation output to accurately reflect the change and usage.
+
+- **Package Deployment**: Whenever the user explicitly instructs to "push package" or similar, ONLY push the pre-compiled deployment packages (binaries, .env.example, templates, service files) and NOT the source code (`.pas` files) to the repository `https://github.com/thaidelphi/internet-authen`.
+  - **Process**: Copy the necessary package files into `/var/www/api/package_send`, then `git add`, `git commit`, and `git push` from inside that directory.
