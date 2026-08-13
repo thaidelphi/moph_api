@@ -977,12 +977,11 @@
 
         window.addEventListener('DOMContentLoaded', function () {
             // Feature Flags from Backend
-            const featLocal = {{ FEAT_LOCAL }
-        };
-        const featThaID = {{ FEAT_THAID }};
-        const featProviderID = {{ FEAT_PROVIDERID }};
-        const featGoogle = {{ FEAT_GOOGLE }};
-        window.featPopup = {{ POPUP_ENABLED }};
+            const featLocal = {{FEAT_LOCAL}};
+            const featThaID = {{FEAT_THAID}};
+            const featProviderID = {{FEAT_PROVIDERID}};
+            const featGoogle = {{FEAT_GOOGLE}};
+            window.featPopup = {{POPUP_ENABLED}};
 
         if (featLocal) {
             document.getElementById('loginForm').style.display = 'block';
