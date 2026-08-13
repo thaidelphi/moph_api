@@ -37,9 +37,9 @@ fpc -iV
 
 หากคุณใช้เซิร์ฟเวอร์ฐานข้อมูลแยกต่างหาก สามารถข้ามขั้นตอนนี้ได้
 ```bash
-sudo apt install -y mysql-server
-sudo systemctl start mysql
-sudo systemctl enable mysql
+sudo apt install -y mariadb-server
+sudo systemctl start mariadb
+sudo systemctl enable mariadb
 ```
 
 **สร้างผู้ใช้และฐานข้อมูลสำหรับ RADIUS:**
