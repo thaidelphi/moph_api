@@ -306,8 +306,19 @@
         }
 
         function openLogoutWindow() {
-            // ทริคเปิดหน้าต่างเปล่ารอก่อนขณะมี User Gesture เพื่อไม่ให้โดนบล็อก
-            window.open("about:blank", "LogoutWindow", "width=400,height=350,toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes");
+            // ตรวจสอบว่าเป็นอุปกรณ์มือถือหรือแท็บเล็ต (iPad/iPhone/Android) หรือไม่
+            // หากใช่ให้ข้ามการเปิดป๊อปอัปเนื่องจาก iOS CNA และ Mobile Browser ไม่รองรับ window.open และอาจทำให้หน้าค้าง
+            var isMobileOrTablet = /Mobi|Android|iPad|iPhone|iPod|Tablet|Touch/i.test(navigator.userAgent)
+                || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); // iPad ใหม่ที่ userAgent เป็น MacIntel
+            
+            if (!isMobileOrTablet) {
+                try {
+                    // ทริคเปิดหน้าต่างเปล่ารอก่อนขณะมี User Gesture เพื่อไม่ให้โดนบล็อก
+                    window.open("about:blank", "LogoutWindow", "width=400,height=350,toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes");
+                } catch (e) {
+                    console.warn("Popup window blocked or not supported:", e);
+                }
+            }
         }
 
         function validateForm() {

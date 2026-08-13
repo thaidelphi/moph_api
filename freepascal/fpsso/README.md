@@ -181,3 +181,5 @@ ADMIN_PASSWORD=your_admin_password
 SSO_AUTO_APPROVE=true
 APP_PORT=8080
 ```
+การดู Log ของโปรแกรมที่รันอยู่แล้ว
+sudo journalctl -u fpsso -f

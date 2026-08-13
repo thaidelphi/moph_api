@@ -5,7 +5,7 @@ unit HttpServer;
 interface
 
 uses
-  Classes, SysUtils, fphttpserver, HTTPDefs, Router;
+  Classes, SysUtils, fphttpserver, HTTPDefs, Router, Config, opensslsockets;
 
 type
   TSSOServer = class(TFPHttpServer)
@@ -46,7 +46,19 @@ begin
   try
     Server.Port := Port;
     Server.Threaded := True;
-    Writeln('Starting FreePascal SSO Server on port ', Port, '...');
+    
+    if AppCfg.UseSSL and FileExists(AppCfg.SSLCert) and FileExists(AppCfg.SSLKey) then
+    begin
+      Server.UseSSL := True;
+      Server.CertificateData.Certificate.FileName := AppCfg.SSLCert;
+      Server.CertificateData.PrivateKey.FileName := AppCfg.SSLKey;
+      Writeln('Starting FreePascal SSO Server (HTTPS) on port ', Port, '...');
+    end
+    else
+    begin
+      Writeln('Starting FreePascal SSO Server (HTTP) on port ', Port, '...');
+    end;
+    
     Server.Active := True;
   finally
     Server.Free;

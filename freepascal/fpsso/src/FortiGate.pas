@@ -57,7 +57,7 @@ begin
 
   // HTML Encode ค่าทั้งหมดที่จะฝังใน HTML เพื่อป้องกัน XSS
   HtmlContent := '<!DOCTYPE html><html lang="th"><head><meta charset="utf-8">' + LineEnding +
-    '    <link rel="stylesheet" href="/assets/css/fonts.css">' + LineEnding +
+    '    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">' + LineEnding +
     '    <title>กำลังเชื่อมต่อระบบเครือข่าย...</title>' + LineEnding +
     '    <style>' + LineEnding +
     '        body { font-family: "Sarabun", sans-serif; background-color: #f4f7f6; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }' + LineEnding +
@@ -130,7 +130,7 @@ var
   HtmlContent: string;
 begin
   HtmlContent := '<!DOCTYPE html><html lang="th"><head><meta charset="utf-8">' + LineEnding +
-    '    <link rel="stylesheet" href="/assets/css/fonts.css">' + LineEnding +
+    '    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">' + LineEnding +
     '    <title>สถานะการเชื่อมต่อ</title>' + LineEnding +
     '    <style>' + LineEnding +
     '        body { font-family: "Sarabun", sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; text-align: center; }' + LineEnding +

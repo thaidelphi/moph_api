@@ -31,9 +31,9 @@ var
   Conn: TMySQL80Connection;
   Trans: TSQLTransaction;
   Query: TSQLQuery;
-  TmpPass: string;
+  Attr, Val: string;
 begin
-  IsActive := False;
+  IsActive := True; // Default to true so unknown users get "Wrong password" instead of "Pending"
   Result := '';
   Conn := TMySQL80Connection.Create(nil);
   Trans := TSQLTransaction.Create(nil);
@@ -52,18 +52,52 @@ begin
       on E: Exception do Exit;
     end;
     
+    // 1. Check in radcheck first (for manual users or approved SSO users)
+    Query.SQL.Text := 'SELECT attribute, value FROM radcheck WHERE username = :u AND attribute IN (''Cleartext-Password'', ''MD5-Password'', ''Suspended-Password'') LIMIT 1';
+    Query.Params.ParamByName('u').AsString := Username;
+    Query.Open;
+    
+    if not Query.EOF then
+    begin
+      Attr := Query.FieldByName('attribute').AsString;
+      Val := Query.FieldByName('value').AsString;
+      Query.Close;
+      
+      if Attr = 'Suspended-Password' then
+      begin
+        IsActive := False; // User is suspended
+        Exit;
+      end;
+      
+      if (Attr = 'Cleartext-Password') and (Val = Password) then
+      begin
+        Result := Password;
+        Exit;
+      end;
+      
+      if (Attr = 'MD5-Password') and (LowerCase(Val) = LowerCase(MD5Print(MD5String(Password)))) then
+      begin
+        Result := Password;
+        Exit;
+      end;
+    end
+    else
+      Query.Close;
+      
+    // 2. If not found or wrong password, check if they exist in radcheck_mirror as pending
     Query.SQL.Text := 'SELECT tmp_passwd, active FROM radcheck_mirror WHERE username = :u LIMIT 1';
     Query.Params.ParamByName('u').AsString := Username;
     Query.Open;
     
     if not Query.EOF then
     begin
-      TmpPass := Query.FieldByName('tmp_passwd').AsString;
-      IsActive := (Query.FieldByName('active').AsString = 'Y');
-      
-      if TmpPass = Password then
+      if Query.FieldByName('active').AsString = 'N' then
       begin
-        Result := TmpPass;
+        IsActive := False; // Pending approval
+      end
+      else if Query.FieldByName('tmp_passwd').AsString = Password then
+      begin
+        Result := Password; // Match in mirror
       end;
     end;
     Query.Close;
