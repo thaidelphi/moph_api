@@ -121,8 +121,20 @@ sudo systemctl start fpsso
 ```
 
 **ติดตั้ง fpradius:**
+โปรแกรม `fp-radius` มีคำสั่งช่วยติดตั้ง Service และ Database ในตัว คุณสามารถใช้คำสั่งต่อไปนี้ได้เลย:
 ```bash
-sudo cp /var/www/api/freepascal/fp-radius/fpradius.service /etc/systemd/system/
+cd /var/www/api/freepascal/fp-radius
+# สั่งติดตั้ง Systemd Service อัตโนมัติ
+sudo ./fpradius --installservice
+
+# (แถม) หากต้องการสร้าง Database และตารางอัตโนมัติ ให้ใช้:
+# ./fpradius --init-database
+
+# (แถม) หากต้องการรันวิซาร์ดตั้งค่าทีละขั้นตอน:
+# ./fpradius --setup-wizard
+```
+หลังจากติดตั้ง Service เสร็จ ให้สั่งให้ทำงาน:
+```bash
 sudo systemctl daemon-reload
 sudo systemctl enable fpradius
 sudo systemctl start fpradius
