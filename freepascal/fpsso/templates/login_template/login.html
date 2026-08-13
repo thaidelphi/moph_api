@@ -856,16 +856,6 @@
             const urlParams = new URLSearchParams(window.location.search);
             const error = urlParams.get('error');
             if (error) {
-                // ปิด Popup ที่แอบเปิดรอไว้กรณีเข้าสู่ระบบไม่สำเร็จ
-                try {
-                    if (!isMobileOrTablet) {
-                        try {
-                            // เปิดแท็บสถานะ Logout รอไว้เลย โดยอาศัยจังหวะที่ผู้ใช้คลิก (User Gesture) เพื่อไม่ให้โดนบล็อก
-                            window.open("/sso/status", "_blank");
-                        } catch (e) {
-                            console.warn("New tab blocked or not supported:", e);
-                        }
-                    }
                     var popup = window.open("", "LogoutWindow");
                     if (popup) popup.close();
                 } catch(e) {}
@@ -884,8 +874,16 @@
         }
 
         function openLogoutWindow() {
-            // ทริคเปิดหน้าต่างเปล่ารอก่อนขณะมี User Gesture เพื่อไม่ให้โดนบล็อก
-            window.open("about:blank", "LogoutWindow", "width=400,height=350,toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes");
+            var isMobileOrTablet = /Mobi|Android|iPad|iPhone|iPod|Tablet|Touch/i.test(navigator.userAgent)
+                || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); 
+            if (!isMobileOrTablet) {
+                try {
+                    // เปิดแท็บสถานะ Logout รอไว้เลย โดยอาศัยจังหวะที่ผู้ใช้คลิก (User Gesture) เพื่อไม่ให้โดนบล็อก
+                    window.open("/sso/status", "_blank");
+                } catch (e) {
+                    console.warn("New tab blocked or not supported:", e);
+                }
+            }
         }
 
         function validateForm() {

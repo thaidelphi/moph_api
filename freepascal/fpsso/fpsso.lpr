@@ -105,6 +105,9 @@ begin
     
     Res.Code := 200;
     Res.ContentType := 'text/html; charset=utf-8';
+    Res.SetCustomHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    Res.SetCustomHeader('Pragma', 'no-cache');
+    Res.SetCustomHeader('Expires', '0');
     Res.Content := HtmlContent;
     Res.SendContent;
   end
