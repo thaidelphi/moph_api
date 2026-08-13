@@ -94,6 +94,7 @@ var
   JSON: TJSONObject;
   AccessToken, PID, FullName, Email, PlainPass: string;
   Data: TSessionData;
+  TargetUsername, ExistingUser: string;
 begin
   if not HasFeature('providerid') then
   begin
@@ -205,8 +206,19 @@ begin
         Exit;
       end;
 
+      // ค้นหาว่ามี User ในระบบ (Username) ที่ใช้อีเมลนี้หรือไม่
+      // ถ้ามี ให้ใช้ Username ของเขาล็อกอิน (ผูกบัญชีอัตโนมัติ)
+      // ถ้าไม่มี ให้ใช้ PID เป็น Username
+      TargetUsername := PID;
+      if Email <> '' then
+      begin
+        ExistingUser := FindUsernameByEmail(Email);
+        if ExistingUser <> '' then
+          TargetUsername := ExistingUser;
+      end;
+
       // บันทึกหรืออัปเดตข้อมูลผู้ใช้ใน radcheck_mirror และขอ tmp_passwd
-      PlainPass := SSORadiusAuth(PID, IsActive, Email, FullName);
+      PlainPass := SSORadiusAuth(TargetUsername, IsActive, Email, FullName);
 
       if not IsActive then
       begin
@@ -224,14 +236,14 @@ begin
         end;
         
         // อัปเดต Session ด้วยข้อมูลผู้ใช้และ Credential
-        Data.Username := PID;
+        Data.Username := TargetUsername;
         Data.FullName := FullName;
         Data.PlainPass := PlainPass;
         Data.AuthMethod := 'PROVIDERID';
         SessionManager.UpdateSession(SessionID, Data);
 
         // บันทึก Log การล็อกอิน
-        LogAuthEvent(PID, 'LOGIN', GetClientIP(Req), 'PROVIDERID');
+        LogAuthEvent(TargetUsername, 'LOGIN', GetClientIP(Req), 'PROVIDERID');
 
         Redirect(Res, '/sso/fortigate/handshake');
       end
