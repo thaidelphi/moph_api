@@ -249,7 +249,22 @@ end;
 procedure HandleStatusPage(Req: TRequest; Res: TResponse);
 var
   HtmlContent: TStringList;
+  SessionID, UserDisplayName: string;
+  Data: TSessionData;
 begin
+  SessionID := Req.CookieFields.Values['SSOSESSID'];
+  if (SessionID <> '') and SessionManager.GetSession(SessionID, Data) then
+  begin
+    if Data.FullName <> '' then
+      UserDisplayName := Data.FullName
+    else if Data.Username <> '' then
+      UserDisplayName := Data.Username
+    else
+      UserDisplayName := 'ผู้ใช้งานทั่วไป';
+  end
+  else
+    UserDisplayName := 'ผู้ใช้งานทั่วไป';
+
   HtmlContent := TStringList.Create;
   try
     if FileExists('templates/status.html') then
@@ -271,12 +286,14 @@ begin
         '</head><body>' + LineEnding +
         '    <div class="box">' + LineEnding +
         '        <div class="success-icon">✔️</div>' + LineEnding +
-        '        <h2>เชื่อมต่อสำเร็จ</h2>' + LineEnding +
-        '        <p>คุณสามารถใช้งานอินเทอร์เน็ตได้แล้ว<br><small>(อย่าปิดหน้าต่างนี้หากต้องการ Logout)</small></p>' + LineEnding +
+        '        <h2>ยินดีต้อนรับ, {{USER_DISPLAY_NAME}}</h2>' + LineEnding +
+        '        <p>เชื่อมต่อสำเร็จ! คุณสามารถใช้งานอินเทอร์เน็ตได้แล้ว<br><small>(อย่าปิดหน้าต่างนี้หากต้องการ Logout)</small></p>' + LineEnding +
         '        <a href="/sso/auth/logout" class="btn-logout">Logout ออกจากระบบ</a>' + LineEnding +
         '    </div>' + LineEnding +
         '</body></html>';
     end;
+    
+    HtmlContent.Text := StringReplace(HtmlContent.Text, '{{USER_DISPLAY_NAME}}', HtmlEncode(UserDisplayName), [rfReplaceAll]);
 
     Res.Code := 200;
     Res.ContentType := 'text/html; charset=utf-8';
