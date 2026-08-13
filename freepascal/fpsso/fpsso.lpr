@@ -40,9 +40,9 @@ var
   MagicToken, SessionID: string;
   Data: TSessionData;
 begin
-  // Handle FortiGate 'magic' token
+  // Handle FortiGate 'magic' and 'post' tokens
   MagicToken := Req.QueryFields.Values['magic'];
-  if MagicToken <> '' then
+  if (MagicToken <> '') or (Req.QueryFields.Values['post'] <> '') then
   begin
     SessionID := Req.CookieFields.Values['SSOSESSID'];
     if (SessionID = '') or not SessionManager.GetSession(SessionID, Data) then
@@ -51,7 +51,12 @@ begin
       SessionManager.GetSession(SessionID, Data);
     end;
     
-    Data.Magic := MagicToken;
+    if MagicToken <> '' then
+      Data.Magic := MagicToken;
+      
+    if Req.QueryFields.Values['post'] <> '' then
+      Data.PostUrl := Req.QueryFields.Values['post'];
+      
     SessionManager.UpdateSession(SessionID, Data);
     
     with Res.Cookies.Add do
@@ -87,6 +92,7 @@ begin
       HtmlContent := StringReplace(HtmlContent, '{{FEAT_THAID}}', 'true', [rfReplaceAll]);
       HtmlContent := StringReplace(HtmlContent, '{{FEAT_PROVIDERID}}', 'true', [rfReplaceAll]);
       HtmlContent := StringReplace(HtmlContent, '{{FEAT_GOOGLE}}', 'true', [rfReplaceAll]);
+      HtmlContent := StringReplace(HtmlContent, '{{POPUP_ENABLED}}', 'true', [rfReplaceAll]);
     end
     else
     begin
@@ -94,6 +100,7 @@ begin
       HtmlContent := StringReplace(HtmlContent, '{{FEAT_THAID}}', BoolToStr(HasFeature('thaid'), 'true', 'false'), [rfReplaceAll]);
       HtmlContent := StringReplace(HtmlContent, '{{FEAT_PROVIDERID}}', BoolToStr(HasFeature('providerid'), 'true', 'false'), [rfReplaceAll]);
       HtmlContent := StringReplace(HtmlContent, '{{FEAT_GOOGLE}}', BoolToStr(HasFeature('google'), 'true', 'false'), [rfReplaceAll]);
+      HtmlContent := StringReplace(HtmlContent, '{{POPUP_ENABLED}}', BoolToStr(AppCfg.EnableLogoutPopup, 'true', 'false'), [rfReplaceAll]);
     end;  
     
     Res.Code := 200;

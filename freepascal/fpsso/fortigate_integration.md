@@ -41,7 +41,8 @@
 
 **การตั้งค่าข้อยกเว้น (Exempt Destinations) สำหรับหน้าเว็บ SSO**
 1. **สร้าง Address Object:** ไปที่เมนู **Policy & Objects** > **Addresses** > สร้าง Address Object สำหรับเซิร์ฟเวอร์ (เช่น ตั้งชื่อว่า `SSO-Server` โดยกำหนดค่า IP เป็น `172.16.62.30/32`)
-2. **เพิ่มข้อยกเว้น:** กลับมาที่หน้าตั้งค่า Captive Portal ของ Interface เมื่อสักครู่ ตรงหัวข้อ **Exempt destinations/services** ให้กดปุ่ม `+` แล้วเลือก Address Object `SSO-Server` ที่เพิ่งสร้างเข้าไป (สามารถระบุ Service เพิ่มเติม เช่น HTTP/HTTPS ได้)
+2. **เพิ่มข้อยกเว้น:** กลับมาที่หน้าตั้งค่า Captive Portal ของ Interface เมื่อสักครู่ ตรงหัวข้อ **Exempt destinations/services** ให้กดปุ่ม `+` แล้วเลือก Address Object `SSO-Server` ที่เพิ่งสร้างเข้าไป 
+   > ⚠️ **คำเตือนที่สำคัญมาก:** ในช่อง Exempt destinations/services **ห้ามใส่ Service `HTTP`, `HTTPS` หรือ `ALL` ลงไปเด็ดขาด!** ให้ใส่แค่เฉพาะ Address/IP ปลายทางเท่านั้น หากคุณเผลอใส่ Service HTTP/HTTPS ลงไป FortiGate จะเข้าใจว่า "อนุญาตให้เข้าเว็บได้ทุกเว็บโดยไม่ต้องล็อกอิน" และหน้า Captive Portal จะไม่ยอมเด้งขึ้นมาเลย!
 3. กด **Apply / OK** เพื่อบันทึก
 
 *(หมายเหตุ: การตั้งค่าส่วนนี้จะบังคับให้ FortiGate อนุญาตให้ผู้ใช้งานที่เพิ่งเกาะ WiFi สามารถเข้าถึงหน้าเว็บ Authentication ที่ 172.16.62.30 ได้แม้จะยังไม่ได้ล็อกอินก็ตาม)*

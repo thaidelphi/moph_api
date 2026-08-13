@@ -268,8 +268,8 @@
             <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
             <p style="text-align: center; margin-bottom: 10px; font-size: 14px; color: #666;">หรือเข้าสู่ระบบผ่าน</p>
             
-            <a href="/sso/auth/thaid" onclick="openLogoutWindow(); showLoading();" style="display: block; width: 100%; padding: 12px; background: #004d99; color: white; text-align: center; border-radius: 8px; text-decoration: none; margin-bottom: 10px; font-weight: bold;">เข้าสู่ระบบด้วย ThaID</a>
-            <a href="/sso/auth/providerid" onclick="openLogoutWindow(); showLoading();" style="display: block; width: 100%; padding: 12px; background: #17a2b8; color: white; text-align: center; border-radius: 8px; text-decoration: none; font-weight: bold;">เข้าสู่ระบบด้วย MOPH ID (หมอพร้อม)</a>
+            <a href="/sso/auth/thaid" onclick="if (typeof featPopup !== 'undefined' && featPopup) openLogoutWindow(); showLoading();" style="display: block; width: 100%; padding: 12px; background: #004d99; color: white; text-align: center; border-radius: 8px; text-decoration: none; margin-bottom: 10px; font-weight: bold;">เข้าสู่ระบบด้วย ThaID</a>
+            <a href="/sso/auth/providerid" onclick="if (typeof featPopup !== 'undefined' && featPopup) openLogoutWindow(); showLoading();" style="display: block; width: 100%; padding: 12px; background: #17a2b8; color: white; text-align: center; border-radius: 8px; text-decoration: none; font-weight: bold;">เข้าสู่ระบบด้วย MOPH ID (หมอพร้อม)</a>
             
         </form>
 
@@ -310,13 +310,14 @@
             // หากใช่ให้ข้ามการเปิดป๊อปอัปเนื่องจาก iOS CNA และ Mobile Browser ไม่รองรับ window.open และอาจทำให้หน้าค้าง
             var isMobileOrTablet = /Mobi|Android|iPad|iPhone|iPod|Tablet|Touch/i.test(navigator.userAgent)
                 || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); // iPad ใหม่ที่ userAgent เป็น MacIntel
+            if (typeof featPopup !== 'undefined' && !featPopup) return;
             
             if (!isMobileOrTablet) {
                 try {
-                    // ทริคเปิดหน้าต่างเปล่ารอก่อนขณะมี User Gesture เพื่อไม่ให้โดนบล็อก
-                    window.open("about:blank", "LogoutWindow", "width=400,height=350,toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes");
+                    // เปิดแท็บสถานะ Logout รอไว้เลย โดยอาศัยจังหวะที่ผู้ใช้คลิก (User Gesture) เพื่อไม่ให้โดนบล็อก
+                    window.open("/sso/status", "_blank");
                 } catch (e) {
-                    console.warn("Popup window blocked or not supported:", e);
+                    console.warn("New tab blocked or not supported:", e);
                 }
             }
         }

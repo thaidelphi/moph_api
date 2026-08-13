@@ -35,10 +35,15 @@ type
     
     MophIDURL: string;
     
+    // FortiGate Settings
     FortiGateAuthURL: string;
     FortiGateLogoutURL: string;
+    FortiGateApiToken: string;
+    FortiGateApiUrl: string;
     
+    // System Settings
     LoginTemplatePath: string;
+    EnableLogoutPopup: Boolean;
     
     AdminUser: string;
     AdminPass: string;
@@ -91,7 +96,8 @@ begin
           Value := Copy(Value, 2, Length(Value) - 2);
         end;
 
-        if (Key = 'DB_HOST') then AppCfg.DBHost := Value
+        if (Key = 'ENABLE_LOGOUT_POPUP') then AppCfg.EnableLogoutPopup := LowerCase(Value) = 'true'
+        else if (Key = 'DB_HOST') then AppCfg.DBHost := Value
         else if (Key = 'DB_USER') or (Key = 'DB_USERNAME') then AppCfg.DBUser := Value
         else if (Key = 'DB_PASS') or (Key = 'DB_PASSWORD') then AppCfg.DBPass := Value
         else if (Key = 'DB_NAME') or (Key = 'DB_DATABASE') then AppCfg.DBName := Value
@@ -118,6 +124,8 @@ begin
         else if (Key = 'MOPH_ID_URL') then AppCfg.MophIDURL := Value
         else if (Key = 'FORTIGATE_AUTH_URL') then AppCfg.FortiGateAuthURL := Value
         else if (Key = 'FORTIGATE_LOGOUT_URL') then AppCfg.FortiGateLogoutURL := Value
+        else if (Key = 'FORTIGATE_API_TOKEN') then AppCfg.FortiGateApiToken := Value
+        else if (Key = 'FORTIGATE_API_URL') then AppCfg.FortiGateApiUrl := Value
         else if (Key = 'LOGIN_TEMPLATE_PATH') then AppCfg.LoginTemplatePath := Value
         
         else if (Key = 'ADMIN_USERNAME') then AppCfg.AdminUser := Value
@@ -147,6 +155,7 @@ initialization
   AppCfg.DBPass := '';
   AppCfg.DBName := 'radius';
   AppCfg.LoginTemplatePath := ExtractFilePath(ParamStr(0)) + 'templates/login.html';
+  AppCfg.EnableLogoutPopup := True; // เปิดใช้งานเป็นค่าเริ่มต้น
   AppCfg.AdminUser := 'admin';
   AppCfg.AdminPass := 'password';
   AppCfg.UseSSL := False;

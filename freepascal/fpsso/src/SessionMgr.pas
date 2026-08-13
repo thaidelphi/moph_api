@@ -15,6 +15,7 @@ type
     // FortiGate handshake data
     Magic: string;
     RedirUrl: string;
+    PostUrl: string;
 
     // Auto-login credential (ล้างหลัง Handshake สำเร็จเพื่อความปลอดภัย)
     PlainPass: string;
@@ -90,6 +91,7 @@ begin
   Data.Email := '';
   Data.Magic := '';
   Data.RedirUrl := '';
+  Data.PostUrl := '';
   Data.PlainPass := '';
   Data.OAuthState := '';   // เริ่มต้น OAuthState เป็นว่าง
   Data.CreatedAt := Now;
