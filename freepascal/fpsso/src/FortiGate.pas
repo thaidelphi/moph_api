@@ -87,15 +87,10 @@ begin
   if (Length(BaseUrl) > 0) and (BaseUrl[Length(BaseUrl)] = '/') then
     SetLength(BaseUrl, Length(BaseUrl) - 1);
 
-  // 4. กำหนด URL ปลายทางหลังล็อกอินสำเร็จ (อ่านจาก .env เช่น POST_LOGIN_REDIRECT_URL หรือค่าเริ่มต้น /sso/status)
+  // 4. กำหนด URL ปลายทางหลังล็อกอินสำเร็จ (อ่านจาก .env เช่น POST_LOGIN_REDIRECT_URL ถ้าเป็นค่าว่างให้ไปที่ /sso/status เสมอ)
   RedirUrl := Trim(AppCfg.PostLoginRedirectURL);
   if RedirUrl = '' then
-  begin
-    if Data.RedirUrl <> '' then
-      RedirUrl := Data.RedirUrl
-    else
-      RedirUrl := '/sso/status';
-  end;
+    RedirUrl := '/sso/status';
 
   // หากเป็น Relative path ให้แปลงเป็น Full Absolute URL เพื่อส่งให้ FortiGate (4Tredir)
   if (Pos('http://', LowerCase(RedirUrl)) <> 1) and (Pos('https://', LowerCase(RedirUrl)) <> 1) then
