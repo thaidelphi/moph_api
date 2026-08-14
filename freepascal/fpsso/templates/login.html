@@ -231,8 +231,9 @@
             
             <!-- พารามิเตอร์ลับของ FortiGate ที่จำเป็นสำหรับกระบวนการตรวจสอบสิทธิ์ -->
             <!-- We might get these from URL query params, but in fpsso we can ignore them as we manage session -->
-            <input type="hidden" name="magic" value="">
-            <input type="hidden" name="redir" value="">
+            <input type="hidden" name="magic" id="login_magic" value="">
+            <input type="hidden" name="post" id="login_post" value="">
+            <input type="hidden" name="redir" id="login_redir" value="">
 
             <!-- ข้อมูลบัญชีผู้ใช้งาน -->
             <div class="form-group">
@@ -281,6 +282,13 @@
     <script>
         window.addEventListener('load', function() {
             const urlParams = new URLSearchParams(window.location.search);
+            
+            // ดึงค่า magic, post, redir จาก URL เก็บลงใน Form ทันที เพื่อไม่ให้สูญหาย
+            if (urlParams.get('magic') && document.getElementById('login_magic')) document.getElementById('login_magic').value = urlParams.get('magic');
+            if (urlParams.get('post') && document.getElementById('login_post')) document.getElementById('login_post').value = urlParams.get('post');
+            if (urlParams.get('redir') && document.getElementById('login_redir')) document.getElementById('login_redir').value = urlParams.get('redir');
+            if (urlParams.get('url') && document.getElementById('login_redir')) document.getElementById('login_redir').value = urlParams.get('url');
+
             const error = urlParams.get('error');
             if (error) {
                 // ปิด Popup ที่แอบเปิดรอไว้กรณีเข้าสู่ระบบไม่สำเร็จ

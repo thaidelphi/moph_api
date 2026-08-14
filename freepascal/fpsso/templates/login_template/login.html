@@ -715,6 +715,9 @@
 
                 <form id="loginForm" method="POST" action="/sso/auth/login" onsubmit="return validateForm()"
                     style="display: none;">
+                    <input type="hidden" name="magic" id="login_magic" value="">
+                    <input type="hidden" name="post" id="login_post" value="">
+                    <input type="hidden" name="redir" id="login_redir" value="">
                     <div class="form-group">
                         <label for="username" class="form-label" id="txt-label_username"></label>
                         <div class="input-wrapper">
@@ -925,6 +928,13 @@
     <script>
         window.addEventListener('load', function () {
             const urlParams = new URLSearchParams(window.location.search);
+            
+            // ดึงค่า magic, post, redir จาก URL เก็บลงใน Form ทันที เพื่อไม่ให้สูญหาย
+            if (urlParams.get('magic') && document.getElementById('login_magic')) document.getElementById('login_magic').value = urlParams.get('magic');
+            if (urlParams.get('post') && document.getElementById('login_post')) document.getElementById('login_post').value = urlParams.get('post');
+            if (urlParams.get('redir') && document.getElementById('login_redir')) document.getElementById('login_redir').value = urlParams.get('redir');
+            if (urlParams.get('url') && document.getElementById('login_redir')) document.getElementById('login_redir').value = urlParams.get('url');
+
             const error = urlParams.get('error');
             if (error) {
                 try {

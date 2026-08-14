@@ -68,6 +68,23 @@ begin
     Data.Username := Username;
     Data.PlainPass := PlainPass;
     Data.AuthMethod := 'LOCAL';
+    
+    // ดึงค่า magic, post, redir ที่ส่งมาจาก Form เพิ่มเติม (ป้องกันกรณี Session หลุดหรือ Restart ระบบ)
+    if Req.ContentFields.Values['magic'] <> '' then
+      Data.Magic := Req.ContentFields.Values['magic']
+    else if Req.QueryFields.Values['magic'] <> '' then
+      Data.Magic := Req.QueryFields.Values['magic'];
+
+    if Req.ContentFields.Values['post'] <> '' then
+      Data.PostUrl := Req.ContentFields.Values['post']
+    else if Req.QueryFields.Values['post'] <> '' then
+      Data.PostUrl := Req.QueryFields.Values['post'];
+
+    if Req.ContentFields.Values['redir'] <> '' then
+      Data.RedirUrl := Req.ContentFields.Values['redir']
+    else if Req.QueryFields.Values['redir'] <> '' then
+      Data.RedirUrl := Req.QueryFields.Values['redir'];
+      
     SessionManager.UpdateSession(SessionID, Data);
     
     // บันทึก Log การล็อกอิน
