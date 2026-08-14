@@ -72,6 +72,16 @@ begin
       Expires := Now + 1; // 1 day
       HttpOnly := True;
     end;
+  end
+  else
+  begin
+    // หากไม่ได้ถูก FortiGate ส่งมา (ไม่มี magic token) และผู้ใช้ล็อกอินอยู่แล้ว ให้พาไปหน้าสถานะ /sso/status ทันที
+    SessionID := Req.CookieFields.Values['SSOSESSID'];
+    if (SessionID <> '') and SessionManager.GetSession(SessionID, Data) and (Data.Username <> '') then
+    begin
+      Redirect(Res, '/sso/status');
+      Exit;
+    end;
   end;
 
   // ตรวจสอบ login.html ในโฟลเดอร์ templates/login_template ก่อน

@@ -87,8 +87,15 @@ begin
   if (Length(BaseUrl) > 0) and (BaseUrl[Length(BaseUrl)] = '/') then
     SetLength(BaseUrl, Length(BaseUrl) - 1);
 
-  // 4. กำหนด URL ปลายทางตามที่ FortiGate หรือ Client ส่งมา (หากไม่มีให้เว้นว่างเพื่อให้ FortiGate จัดการ Redirect เองตามระบบ)
+  // 4. กำหนด URL ปลายทางหลังล็อกอินสำเร็จ (หากไม่ได้ระบุมาให้พาไปหน้าสถานะ /sso/status)
   RedirUrl := Data.RedirUrl;
+  if RedirUrl = '' then
+  begin
+    if BaseUrl <> '' then
+      RedirUrl := BaseUrl + '/sso/status'
+    else
+      RedirUrl := '/sso/status';
+  end;
 
   // HTML Encode ค่าทั้งหมดที่จะฝังใน HTML เพื่อป้องกัน XSS
   HtmlContent := '<!DOCTYPE html><html lang="th"><head><meta charset="utf-8">' + LineEnding +
