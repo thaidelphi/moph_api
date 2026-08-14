@@ -331,18 +331,22 @@ end;
 procedure HandleStatusPage(Req: TRequest; Res: TResponse);
 var
   HtmlContent: TStringList;
-  SessionID, UserDisplayName: string;
+  SessionID, UserDisplayName, StatusPath: string;
   Data: TSessionData;
 begin
   SessionID := Req.CookieFields.Values['SSOSESSID'];
+  WriteLn('HandleStatusPage: SessionID="', SessionID, '"');
   
   // ตรวจสอบว่ามี Session ที่ล็อกอินสำเร็จแล้วจริงหรือไม่ (ป้องกันการเปิดหน้าสถานะโดยยังไม่ได้ล็อกอิน)
   if (SessionID = '') or not SessionManager.GetSession(SessionID, Data) or (Data.Username = '') then
   begin
+    WriteLn('HandleStatusPage: Session invalid or username empty -> redirecting to /sso/');
     // หากยังไม่ได้ล็อกอินหรือ Session ไม่ถูกต้อง ให้เด้งกลับไปหน้าหลัก
     Redirect(Res, '/sso/');
     Exit;
   end;
+
+  WriteLn('HandleStatusPage: Displaying status for user "', Data.Username, '" (FullName="', Data.FullName, '")');
 
   if Data.FullName <> '' then
     UserDisplayName := Data.FullName
@@ -351,7 +355,10 @@ begin
 
   HtmlContent := TStringList.Create;
   try
-    if FileExists('templates/status.html') then
+    StatusPath := ExtractFilePath(ParamStr(0)) + 'templates/status.html';
+    if FileExists(StatusPath) then
+      HtmlContent.LoadFromFile(StatusPath, TEncoding.UTF8)
+    else if FileExists('templates/status.html') then
       HtmlContent.LoadFromFile('templates/status.html', TEncoding.UTF8)
     else
     begin

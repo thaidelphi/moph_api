@@ -1,18 +1,15 @@
 <!DOCTYPE html>
 <html lang="th">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Basic Login</title>
 </head>
-
 <body>
 
     <h2>Login (Basic)</h2>
 
-    <div id="errorBox"
-        style="display: none; color: red; border: 1px solid red; padding: 10px; margin-bottom: 10px; width: fit-content;">
+    <div id="errorBox" style="display: none; color: red; border: 1px solid red; padding: 10px; margin-bottom: 10px; width: fit-content;">
         <strong>Error:</strong> <span id="errorText"></span>
     </div>
 
@@ -34,52 +31,44 @@
         <hr>
         <p>Or login with:</p>
         <ul style="list-style: none; padding: 0;">
-            <li id="btn-thaid" style="display: none; margin-bottom: 5px;"><a href="/sso/auth/thaid"
-                    style="display:inline-block; padding:8px 16px; background:#1890ff; color:#fff; text-decoration:none; border-radius:4px;">Login
-                    with ThaID</a></li>
-            <li id="btn-providerid" style="display: none; margin-bottom: 5px;"><a href="/sso/auth/providerid"
-                    style="display:inline-block; padding:8px 16px; background:#52c41a; color:#fff; text-decoration:none; border-radius:4px;">Login
-                    with Provider ID</a></li>
-            <li id="btn-google" style="display: none; margin-bottom: 5px;"><a href="/sso/auth/google"
-                    style="display:inline-block; padding:8px 16px; background:#db4437; color:#fff; text-decoration:none; border-radius:4px;">Login
-                    with Google</a></li>
+            <li id="btn-thaid" style="display: none; margin-bottom: 5px;"><a href="/sso/auth/thaid" style="display:inline-block; padding:8px 16px; background:#1890ff; color:#fff; text-decoration:none; border-radius:4px;">Login with ThaID</a></li>
+            <li id="btn-providerid" style="display: none; margin-bottom: 5px;"><a href="/sso/auth/providerid" style="display:inline-block; padding:8px 16px; background:#52c41a; color:#fff; text-decoration:none; border-radius:4px;">Login with Provider ID</a></li>
+            <li id="btn-google" style="display: none; margin-bottom: 5px;"><a href="/sso/auth/google" style="display:inline-block; padding:8px 16px; background:#db4437; color:#fff; text-decoration:none; border-radius:4px;">Login with Google</a></li>
         </ul>
     </div>
 
     <script>
-        window.addEventListener('load', function () {
+        window.addEventListener('load', function() {
             const urlParams = new URLSearchParams(window.location.search);
             const error = urlParams.get('error');
             if (error) {
                 document.getElementById('errorBox').style.display = 'block';
                 document.getElementById('errorText').innerText = decodeURIComponent(error);
             }
-
+            
             // Feature Flags from Backend
             // อธิบาย: ตัวแปร {{...}} เหล่านี้คือ Template Variables ที่จะถูก Backend 
             // (ไฟล์ HttpServer.pas) ทำการแทนที่ด้วยค่าจริง (true หรือ false) ก่อนส่งหน้าเว็บมาให้
             // เพื่อใช้บอกให้ Javascript รู้ว่าผู้ดูแลระบบเปิดให้ล็อกอินช่องทางไหนบ้าง
-            const featLocal = {{ FEAT_LOCAL }
-        };
-        const featThaID = {{ FEAT_THAID }};
-        const featProviderID = {{ FEAT_PROVIDERID }};
-        // Google auth is disabled by default for now
-        const featGoogle = {{ FEAT_GOOGLE }};
-        window.featPopup = {{ POPUP_ENABLED }};
-
-        if (featLocal) {
-            document.getElementById('form-local').style.display = 'block';
-        }
-
-        if (featThaID || featProviderID || featGoogle) {
-            document.getElementById('social-logins').style.display = 'block';
-        }
-
-        if (featThaID) document.getElementById('btn-thaid').style.display = 'block';
-        if (featProviderID) document.getElementById('btn-providerid').style.display = 'block';
-        if (featGoogle) document.getElementById('btn-google').style.display = 'block';
+            const featLocal = {{FEAT_LOCAL}};
+            const featThaID = {{FEAT_THAID}};
+            const featProviderID = {{FEAT_PROVIDERID}};
+            // Google auth is disabled by default for now
+            const featGoogle = {{FEAT_GOOGLE}};
+            window.featPopup = {{POPUP_ENABLED}};
+            
+            if (featLocal) {
+                document.getElementById('form-local').style.display = 'block';
+            }
+            
+            if (featThaID || featProviderID || featGoogle) {
+                document.getElementById('social-logins').style.display = 'block';
+            }
+            
+            if (featThaID) document.getElementById('btn-thaid').style.display = 'block';
+            if (featProviderID) document.getElementById('btn-providerid').style.display = 'block';
+            if (featGoogle) document.getElementById('btn-google').style.display = 'block';
         });
     </script>
 </body>
-
 </html>
