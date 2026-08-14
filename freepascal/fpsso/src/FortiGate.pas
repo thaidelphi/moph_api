@@ -38,7 +38,7 @@ procedure HandleFortiGateHandshake(Req: TRequest; Res: TResponse);
 var
   SessionID: string;
   Data: TSessionData;
-  HtmlContent, TargetUrl, RedirUrl: string;
+  HtmlContent, TargetUrl, RedirUrl, Proto, HostHeader, BaseUrl: string;
 begin
   SessionID := Req.CookieFields.Values['SSOSESSID'];
 
@@ -60,10 +60,35 @@ begin
   if TargetUrl = '' then
     TargetUrl := AppCfg.FortiGateAuthURL;
 
-  // 4. กำหนด URL ปลายทางหลังล็อกอินสำเร็จ (ไม่ส่งกลับไปที่ /fgtauth ซ้ำ เพื่อป้องกัน ERR_EMPTY_RESPONSE)
+  // หา Base URL ของเซิร์ฟเวอร์ปัจจุบัน (เช่น https://auth.kpo.go.th)
+  Proto := Req.GetCustomHeader('X-Forwarded-Proto');
+  if Proto = '' then
+  begin
+    if (Length(Req.URL) >= 5) and (LowerCase(Copy(Req.URL, 1, 5)) = 'https') then
+      Proto := 'https'
+    else
+      Proto := 'http';
+  end;
+
+  HostHeader := Req.GetCustomHeader('X-Forwarded-Host');
+  if HostHeader = '' then
+    HostHeader := Req.Host;
+  if HostHeader = '' then
+    HostHeader := 'auth.kpo.go.th';
+
+  BaseUrl := Proto + '://' + HostHeader;
+
+  // 4. กำหนด URL ปลายทางหลังล็อกอินสำเร็จ (ต้องเป็น Absolute URL เสมอ เพื่อป้องกัน FortiGate นำไปต่อกับ IP ตนเอง)
   RedirUrl := Data.RedirUrl;
   if RedirUrl = '' then
-    RedirUrl := '/sso/status';
+    RedirUrl := BaseUrl + '/sso/status'
+  else if (Pos('http://', LowerCase(RedirUrl)) <> 1) and (Pos('https://', LowerCase(RedirUrl)) <> 1) then
+  begin
+    if (Length(RedirUrl) > 0) and (RedirUrl[1] = '/') then
+      RedirUrl := BaseUrl + RedirUrl
+    else
+      RedirUrl := BaseUrl + '/' + RedirUrl;
+  end;
 
   // HTML Encode ค่าทั้งหมดที่จะฝังใน HTML เพื่อป้องกัน XSS
   HtmlContent := '<!DOCTYPE html><html lang="th"><head><meta charset="utf-8">' + LineEnding +
