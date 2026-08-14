@@ -60,34 +60,51 @@ begin
   if TargetUrl = '' then
     TargetUrl := AppCfg.FortiGateAuthURL;
 
-  // หา Base URL ของเซิร์ฟเวอร์ปัจจุบัน (เช่น https://auth.kpo.go.th)
-  Proto := Req.GetCustomHeader('X-Forwarded-Proto');
-  if Proto = '' then
+  // หา Base URL ของระบบจาก .env (APP_URL) หรือตรวจจับแบบไดนามิกจาก Request Header
+  BaseUrl := Trim(AppCfg.AppURL);
+  if BaseUrl = '' then
   begin
-    if (Length(Req.URL) >= 5) and (LowerCase(Copy(Req.URL, 1, 5)) = 'https') then
-      Proto := 'https'
+    Proto := Req.GetCustomHeader('X-Forwarded-Proto');
+    if Proto = '' then
+    begin
+      if (Length(Req.URL) >= 5) and (LowerCase(Copy(Req.URL, 1, 5)) = 'https') then
+        Proto := 'https'
+      else
+        Proto := 'http';
+    end;
+
+    HostHeader := Req.GetCustomHeader('X-Forwarded-Host');
+    if HostHeader = '' then
+      HostHeader := Req.Host;
+
+    if HostHeader <> '' then
+      BaseUrl := Proto + '://' + HostHeader
     else
-      Proto := 'http';
+      BaseUrl := '';
   end;
 
-  HostHeader := Req.GetCustomHeader('X-Forwarded-Host');
-  if HostHeader = '' then
-    HostHeader := Req.Host;
-  if HostHeader = '' then
-    HostHeader := 'auth.kpo.go.th';
-
-  BaseUrl := Proto + '://' + HostHeader;
+  // ตัดเครื่องหมาย slash ท้ายสุดออกหากมี
+  if (Length(BaseUrl) > 0) and (BaseUrl[Length(BaseUrl)] = '/') then
+    SetLength(BaseUrl, Length(BaseUrl) - 1);
 
   // 4. กำหนด URL ปลายทางหลังล็อกอินสำเร็จ (ต้องเป็น Absolute URL เสมอ เพื่อป้องกัน FortiGate นำไปต่อกับ IP ตนเอง)
   RedirUrl := Data.RedirUrl;
   if RedirUrl = '' then
-    RedirUrl := BaseUrl + '/sso/status'
+  begin
+    if BaseUrl <> '' then
+      RedirUrl := BaseUrl + '/sso/status'
+    else
+      RedirUrl := '/sso/status';
+  end
   else if (Pos('http://', LowerCase(RedirUrl)) <> 1) and (Pos('https://', LowerCase(RedirUrl)) <> 1) then
   begin
-    if (Length(RedirUrl) > 0) and (RedirUrl[1] = '/') then
-      RedirUrl := BaseUrl + RedirUrl
-    else
-      RedirUrl := BaseUrl + '/' + RedirUrl;
+    if BaseUrl <> '' then
+    begin
+      if (Length(RedirUrl) > 0) and (RedirUrl[1] = '/') then
+        RedirUrl := BaseUrl + RedirUrl
+      else
+        RedirUrl := BaseUrl + '/' + RedirUrl;
+    end;
   end;
 
   // HTML Encode ค่าทั้งหมดที่จะฝังใน HTML เพื่อป้องกัน XSS

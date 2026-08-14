@@ -54,6 +54,7 @@ type
     
     SSOAutoApprove: Boolean;
     AppPort: Word;
+    AppURL: string;          // Base URL ของระบบ (เช่น https://api1.kpo.go.th) กำหนดจาก .env
     LicenseKeyPath: string;  // path ไปยังไฟล์ license.key
   end;
 
@@ -135,6 +136,7 @@ begin
         else if (Key = 'SSL_KEY') then AppCfg.SSLKey := Value
         else if (Key = 'SSO_AUTO_APPROVE') then AppCfg.SSOAutoApprove := (LowerCase(Value) = 'true') or (Value = '1')
         else if (Key = 'APP_PORT') then AppCfg.AppPort := StrToIntDef(Value, 8080)
+        else if (Key = 'APP_URL') or (Key = 'BASE_URL') then AppCfg.AppURL := Value
         else if (Key = 'LICENSE_KEY') then AppCfg.LicenseKeyPath := Value;
       end;
     end;
