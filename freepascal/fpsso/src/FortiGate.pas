@@ -87,25 +87,8 @@ begin
   if (Length(BaseUrl) > 0) and (BaseUrl[Length(BaseUrl)] = '/') then
     SetLength(BaseUrl, Length(BaseUrl) - 1);
 
-  // 4. กำหนด URL ปลายทางหลังล็อกอินสำเร็จ (ต้องเป็น Absolute URL เสมอ เพื่อป้องกัน FortiGate นำไปต่อกับ IP ตนเอง)
+  // 4. กำหนด URL ปลายทางตามที่ FortiGate หรือ Client ส่งมา (หากไม่มีให้เว้นว่างเพื่อให้ FortiGate จัดการ Redirect เองตามระบบ)
   RedirUrl := Data.RedirUrl;
-  if RedirUrl = '' then
-  begin
-    if BaseUrl <> '' then
-      RedirUrl := BaseUrl + '/sso/status'
-    else
-      RedirUrl := '/sso/status';
-  end
-  else if (Pos('http://', LowerCase(RedirUrl)) <> 1) and (Pos('https://', LowerCase(RedirUrl)) <> 1) then
-  begin
-    if BaseUrl <> '' then
-    begin
-      if (Length(RedirUrl) > 0) and (RedirUrl[1] = '/') then
-        RedirUrl := BaseUrl + RedirUrl
-      else
-        RedirUrl := BaseUrl + '/' + RedirUrl;
-    end;
-  end;
 
   // HTML Encode ค่าทั้งหมดที่จะฝังใน HTML เพื่อป้องกัน XSS
   HtmlContent := '<!DOCTYPE html><html lang="th"><head><meta charset="utf-8">' + LineEnding +
@@ -127,24 +110,17 @@ begin
     '        <h2>กำลังอนุญาตสิทธิ์เข้าใช้งานอินเทอร์เน็ต</h2>' + LineEnding +
     '        <p>กรุณารอสักครู่ ระบบกำลังลงทะเบียนอุปกรณ์ของท่านกับทาง FortiGate...</p>' + LineEnding +
     '    </div>' + LineEnding +
-    '    <iframe name="fortigate_target_frame" id="fortigate_target_frame" style="display:none; width:0; height:0; border:0;"></iframe>' + LineEnding +
-    '    <form id="fortigate_form" target="fortigate_target_frame" action="' + HtmlEncode(TargetUrl) + '" method="post" style="display: none;">' + LineEnding +
+    '    <form id="fortigate_form" action="' + HtmlEncode(TargetUrl) + '" method="post" style="display: none;">' + LineEnding +
     '        <input type="hidden" name="username" value="' + HtmlEncode(Data.Username) + '">' + LineEnding +
     '        <input type="hidden" name="password" value="' + HtmlEncode(Data.PlainPass) + '">' + LineEnding +
     '        <input type="hidden" name="magic" value="' + HtmlEncode(Data.Magic) + '">' + LineEnding +
     '        <input type="hidden" name="4Tredir" value="' + HtmlEncode(RedirUrl) + '">' + LineEnding +
-    '        <input type="hidden" name="answer" value="1">' + LineEnding +
     '    </form>' + LineEnding +
     '    <script>' + LineEnding +
     '        window.addEventListener("load", function() {' + LineEnding +
-    '            try {' + LineEnding +
-    '                document.getElementById("fortigate_form").submit();' + LineEnding +
-    '            } catch(e) {' + LineEnding +
-    '                console.error("FortiGate submit error:", e);' + LineEnding +
-    '            }' + LineEnding +
     '            setTimeout(function() {' + LineEnding +
-    '                window.location.href = "' + HtmlEncode(RedirUrl) + '";' + LineEnding +
-    '            }, 1200);' + LineEnding +
+    '                document.getElementById("fortigate_form").submit();' + LineEnding +
+    '            }, 300);' + LineEnding +
     '        });' + LineEnding +
     '    </script>' + LineEnding +
     '</body>' + LineEnding +
