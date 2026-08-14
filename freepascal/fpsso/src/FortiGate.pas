@@ -126,23 +126,20 @@ begin
     '        <h2>กำลังอนุญาตสิทธิ์เข้าใช้งานอินเทอร์เน็ต</h2>' + LineEnding +
     '        <p>กรุณารอสักครู่ ระบบกำลังลงทะเบียนอุปกรณ์ของท่านกับทาง FortiGate...</p>' + LineEnding +
     '    </div>' + LineEnding +
-    '    <iframe name="fortigate_target_frame" id="fortigate_target_frame" style="display:none; width:0; height:0; border:0;"></iframe>' + LineEnding +
-    '    <form id="fortigate_form" target="fortigate_target_frame" action="' + HtmlEncode(TargetUrl) + '" method="post" style="display: none;">' + LineEnding +
+    '    <form id="fortigate_form" action="' + HtmlEncode(TargetUrl) + '" method="post" style="display: none;">' + LineEnding +
     '        <input type="hidden" name="username" value="' + HtmlEncode(Data.Username) + '">' + LineEnding +
     '        <input type="hidden" name="password" value="' + HtmlEncode(Data.PlainPass) + '">' + LineEnding +
     '        <input type="hidden" name="magic" value="' + HtmlEncode(Data.Magic) + '">' + LineEnding +
     '        <input type="hidden" name="4Tredir" value="' + HtmlEncode(RedirUrl) + '">' + LineEnding +
+    '        <input type="hidden" name="redir" value="' + HtmlEncode(RedirUrl) + '">' + LineEnding +
+    '        <input type="hidden" name="url" value="' + HtmlEncode(RedirUrl) + '">' + LineEnding +
+    '        <input type="hidden" name="answer" value="1">' + LineEnding +
     '    </form>' + LineEnding +
     '    <script>' + LineEnding +
     '        window.addEventListener("load", function() {' + LineEnding +
-    '            try {' + LineEnding +
-    '                document.getElementById("fortigate_form").submit();' + LineEnding +
-    '            } catch(e) {' + LineEnding +
-    '                console.error("FortiGate submit error:", e);' + LineEnding +
-    '            }' + LineEnding +
     '            setTimeout(function() {' + LineEnding +
-    '                window.location.replace("' + HtmlEncode(RedirUrl) + '");' + LineEnding +
-    '            }, 1200);' + LineEnding +
+    '                document.getElementById("fortigate_form").submit();' + LineEnding +
+    '            }, 300);' + LineEnding +
     '        });' + LineEnding +
     '    </script>' + LineEnding +
     '</body>' + LineEnding +
