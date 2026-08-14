@@ -106,6 +106,18 @@ begin
 
   WriteLn('FortiGate Handshake for user: ', Data.Username, ' | TargetUrl: ', TargetUrl, ' | Magic: ', Data.Magic, ' | RedirUrl: ', RedirUrl);
 
+  // หากไม่มี Magic Token จาก FortiGate (เกิดจากผู้ใช้พิมพ์ URL /sso/ เข้ามาตรงๆ โดยไม่ได้ผ่าน Captive Portal redirect)
+  if Data.Magic = '' then
+  begin
+    // ล้าง PlainPass ออกจาก Session เพื่อความปลอดภัย
+    Data.PlainPass := '';
+    SessionManager.UpdateSession(SessionID, Data);
+    
+    // พาผู้ใช้ไปยังหน้าปลายทางโดยตรง ไม่ส่งไป FortiGate /fgtauth เพราะจะทำให้เกิด ERR_EMPTY_RESPONSE เมื่อไม่มี Magic
+    Redirect(Res, RedirUrl);
+    Exit;
+  end;
+
   // HTML Encode ค่าทั้งหมดที่จะฝังใน HTML เพื่อป้องกัน XSS
   HtmlContent := '<!DOCTYPE html><html lang="th"><head><meta charset="utf-8">' + LineEnding +
     '    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">' + LineEnding +
