@@ -950,8 +950,8 @@
                 || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
             if (!isMobileOrTablet) {
                 try {
-                    // เปิดแท็บสถานะ Logout รอไว้เลย โดยอาศัยจังหวะที่ผู้ใช้คลิก (User Gesture) เพื่อไม่ให้โดนบล็อก
-                    window.open("/sso/status", "_blank");
+                    // เปิดหน้าต่างสถานะ Logout โดยตั้งชื่อว่า LogoutWindow เพื่อให้สามารถปิดได้เมื่อเกิดข้อผิดพลาด
+                    window.open("/sso/status", "LogoutWindow");
                 } catch (e) {
                     console.warn("New tab blocked or not supported:", e);
                 }

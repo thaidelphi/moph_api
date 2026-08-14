@@ -259,17 +259,19 @@ var
   Data: TSessionData;
 begin
   SessionID := Req.CookieFields.Values['SSOSESSID'];
-  if (SessionID <> '') and SessionManager.GetSession(SessionID, Data) then
+  
+  // ตรวจสอบว่ามี Session ที่ล็อกอินสำเร็จแล้วจริงหรือไม่ (ป้องกันการเปิดหน้าสถานะโดยยังไม่ได้ล็อกอิน)
+  if (SessionID = '') or not SessionManager.GetSession(SessionID, Data) or (Data.Username = '') then
   begin
-    if Data.FullName <> '' then
-      UserDisplayName := Data.FullName
-    else if Data.Username <> '' then
-      UserDisplayName := Data.Username
-    else
-      UserDisplayName := 'ผู้ใช้งานทั่วไป';
-  end
+    // หากยังไม่ได้ล็อกอินหรือ Session ไม่ถูกต้อง ให้เด้งกลับไปหน้าหลัก
+    Redirect(Res, '/sso/');
+    Exit;
+  end;
+
+  if Data.FullName <> '' then
+    UserDisplayName := Data.FullName
   else
-    UserDisplayName := 'ผู้ใช้งานทั่วไป';
+    UserDisplayName := Data.Username;
 
   HtmlContent := TStringList.Create;
   try
