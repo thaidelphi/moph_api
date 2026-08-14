@@ -56,6 +56,11 @@ begin
       
     if Req.QueryFields.Values['post'] <> '' then
       Data.PostUrl := Req.QueryFields.Values['post'];
+
+    if Req.QueryFields.Values['redir'] <> '' then
+      Data.RedirUrl := Req.QueryFields.Values['redir']
+    else if Req.QueryFields.Values['url'] <> '' then
+      Data.RedirUrl := Req.QueryFields.Values['url'];
       
     SessionManager.UpdateSession(SessionID, Data);
     

@@ -38,7 +38,7 @@ procedure HandleFortiGateHandshake(Req: TRequest; Res: TResponse);
 var
   SessionID: string;
   Data: TSessionData;
-  HtmlContent, TargetUrl: string;
+  HtmlContent, TargetUrl, RedirUrl: string;
 begin
   SessionID := Req.CookieFields.Values['SSOSESSID'];
 
@@ -59,6 +59,11 @@ begin
   TargetUrl := Data.PostUrl;
   if TargetUrl = '' then
     TargetUrl := AppCfg.FortiGateAuthURL;
+
+  // 4. กำหนด URL ปลายทางหลังล็อกอินสำเร็จ (ไม่ส่งกลับไปที่ /fgtauth ซ้ำ เพื่อป้องกัน ERR_EMPTY_RESPONSE)
+  RedirUrl := Data.RedirUrl;
+  if RedirUrl = '' then
+    RedirUrl := '/sso/status';
 
   // HTML Encode ค่าทั้งหมดที่จะฝังใน HTML เพื่อป้องกัน XSS
   HtmlContent := '<!DOCTYPE html><html lang="th"><head><meta charset="utf-8">' + LineEnding +
@@ -84,7 +89,7 @@ begin
     '        <input type="hidden" name="username" value="' + HtmlEncode(Data.Username) + '">' + LineEnding +
     '        <input type="hidden" name="password" value="' + HtmlEncode(Data.PlainPass) + '">' + LineEnding +
     '        <input type="hidden" name="magic" value="' + HtmlEncode(Data.Magic) + '">' + LineEnding +
-    '        <input type="hidden" name="4Tredir" value="' + HtmlEncode(Data.PostUrl) + '">' + LineEnding +
+    '        <input type="hidden" name="4Tredir" value="' + HtmlEncode(RedirUrl) + '">' + LineEnding +
     '    </form>' + LineEnding +
     '    <script>' + LineEnding +
     '        window.addEventListener("load", function() {' + LineEnding +
