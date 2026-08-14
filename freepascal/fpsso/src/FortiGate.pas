@@ -87,14 +87,26 @@ begin
   if (Length(BaseUrl) > 0) and (BaseUrl[Length(BaseUrl)] = '/') then
     SetLength(BaseUrl, Length(BaseUrl) - 1);
 
-  // 4. กำหนด URL ปลายทางหลังล็อกอินสำเร็จ (หากไม่ได้ระบุมาให้พาไปหน้าสถานะ /sso/status)
-  RedirUrl := Data.RedirUrl;
+  // 4. กำหนด URL ปลายทางหลังล็อกอินสำเร็จ (อ่านจาก .env เช่น POST_LOGIN_REDIRECT_URL หรือค่าเริ่มต้น /sso/status)
+  RedirUrl := Trim(AppCfg.PostLoginRedirectURL);
   if RedirUrl = '' then
   begin
-    if BaseUrl <> '' then
-      RedirUrl := BaseUrl + '/sso/status'
+    if Data.RedirUrl <> '' then
+      RedirUrl := Data.RedirUrl
     else
       RedirUrl := '/sso/status';
+  end;
+
+  // หากเป็น Relative path ให้แปลงเป็น Full Absolute URL เพื่อส่งให้ FortiGate (4Tredir)
+  if (Pos('http://', LowerCase(RedirUrl)) <> 1) and (Pos('https://', LowerCase(RedirUrl)) <> 1) then
+  begin
+    if BaseUrl <> '' then
+    begin
+      if (Length(RedirUrl) > 0) and (RedirUrl[1] = '/') then
+        RedirUrl := BaseUrl + RedirUrl
+      else
+        RedirUrl := BaseUrl + '/' + RedirUrl;
+    end;
   end;
 
   // HTML Encode ค่าทั้งหมดที่จะฝังใน HTML เพื่อป้องกัน XSS
@@ -117,7 +129,8 @@ begin
     '        <h2>กำลังอนุญาตสิทธิ์เข้าใช้งานอินเทอร์เน็ต</h2>' + LineEnding +
     '        <p>กรุณารอสักครู่ ระบบกำลังลงทะเบียนอุปกรณ์ของท่านกับทาง FortiGate...</p>' + LineEnding +
     '    </div>' + LineEnding +
-    '    <form id="fortigate_form" action="' + HtmlEncode(TargetUrl) + '" method="post" style="display: none;">' + LineEnding +
+    '    <iframe name="fortigate_target_frame" id="fortigate_target_frame" style="display:none; width:0; height:0; border:0;"></iframe>' + LineEnding +
+    '    <form id="fortigate_form" target="fortigate_target_frame" action="' + HtmlEncode(TargetUrl) + '" method="post" style="display: none;">' + LineEnding +
     '        <input type="hidden" name="username" value="' + HtmlEncode(Data.Username) + '">' + LineEnding +
     '        <input type="hidden" name="password" value="' + HtmlEncode(Data.PlainPass) + '">' + LineEnding +
     '        <input type="hidden" name="magic" value="' + HtmlEncode(Data.Magic) + '">' + LineEnding +
@@ -125,9 +138,14 @@ begin
     '    </form>' + LineEnding +
     '    <script>' + LineEnding +
     '        window.addEventListener("load", function() {' + LineEnding +
-    '            setTimeout(function() {' + LineEnding +
+    '            try {' + LineEnding +
     '                document.getElementById("fortigate_form").submit();' + LineEnding +
-    '            }, 300);' + LineEnding +
+    '            } catch(e) {' + LineEnding +
+    '                console.error("FortiGate submit error:", e);' + LineEnding +
+    '            }' + LineEnding +
+    '            setTimeout(function() {' + LineEnding +
+    '                window.location.href = "' + HtmlEncode(RedirUrl) + '";' + LineEnding +
+    '            }, 800);' + LineEnding +
     '        });' + LineEnding +
     '    </script>' + LineEnding +
     '</body>' + LineEnding +
