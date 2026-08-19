@@ -12,7 +12,9 @@ procedure HandleFortiGateHandshake(Req: TRequest; Res: TResponse);
 
 implementation
 
+
 { ฟังก์ชัน HTML Encode ป้องกัน XSS จากค่าที่ฝังใน HTML Attribute }
+
 function HtmlEncode(const S: string): string;
 var
   I: Integer;
@@ -74,10 +76,6 @@ var
   SessionID: string;
   Data: TSessionData;
   TargetUrl, RedirUrl, Proto, HostHeader, BaseUrl: string;
-  Http: TFPHttpClient;
-  PostData, PostBody: string;
-  PostStream: TStringStream;
-  ResponseStream: TStringStream;
 begin
   SessionID := Req.CookieFields.Values['SSOSESSID'];
   if SessionID = '' then
@@ -195,45 +193,9 @@ begin
     Exit;
   end;
 
-  // ===== SERVER-SIDE POST ไปยัง FortiGate =====
-  // fpsso ส่ง POST แทนเบราว์เซอร์เพื่อหลีกเลี่ยงปัญหา Self-Signed Certificate
-  // ที่ทำให้เบราว์เซอร์ค้างเมื่อต้องเชื่อมต่อ https://192.168.200.1:1003 โดยตรง
-  // FortiGate ใช้ field usermac ใน POST body เพื่อระบุ device ที่จะ Authorize
-  PostData := 'username=' + EncodeFormParam(Data.Username) +
-              '&password=' + EncodeFormParam(Data.PlainPass) +
-              '&magic=' + EncodeFormParam(Data.Magic) +
-              '&redir=' + EncodeFormParam(RedirUrl);
-
-  // แนบ usermac เพื่อให้ FortiGate ระบุ device ได้ถูกต้อง
-  if Data.UserMac <> '' then
-    PostData := PostData + '&usermac=' + EncodeFormParam(Data.UserMac);
-
-  // ล้าง PlainPass ออกจาก Session ก่อน POST เพื่อความปลอดภัย
+  // ล้าง PlainPass ออกจาก Session ก่อน render HTML เพื่อความปลอดภัย
   Data.PlainPass := '';
   SessionManager.UpdateSession(SessionID, Data);
-
-  Http := TFPHttpClient.Create(nil);
-  PostStream := TStringStream.Create(PostData);
-  ResponseStream := TStringStream.Create('');
-  try
-    try
-      Http.AllowRedirect := False;   // ไม่ follow redirect
-      Http.ConnectTimeout := 5000;   // timeout 5 วินาที
-      Http.IOTimeout := 8000;
-      // ข้าม SSL Certificate verification สำหรับ Self-Signed Cert ของ FortiGate
-      Http.AddHeader('Content-Type', 'application/x-www-form-urlencoded');
-      Http.RequestBody := PostStream;
-      Http.Post(TargetUrl, ResponseStream);
-      WriteLn('FortiGate Server-Side POST done. HTTP Code: ', Http.ResponseStatusCode);
-    except
-      on E: Exception do
-        WriteLn('FortiGate Server-Side POST error (ignored): ', E.Message);
-    end;
-  finally
-    Http.Free;
-    PostStream.Free;
-    ResponseStream.Free;
-  end;
 
   // re-set cookie ใน Response
   with Res.Cookies.Add do
@@ -245,9 +207,50 @@ begin
     HttpOnly := True;
   end;
 
-  // Redirect ผู้ใช้ไป /sso/status ทันทีโดยไม่รอ FortiGate
-  Redirect(Res, RedirUrl);
+  // ===== Client-Side Form Submit + JavaScript Timeout Redirect =====
+  // 1. Form auto-submit ไปยัง FortiGate (เพื่อ Authorize device ออกเน็ต)
+  // 2. JavaScript timeout redirect ไป /sso/status หลัง 1.5 วินาที
+  //    เพราะ Chrome ไม่ follow redirect จาก FortiGate self-signed cert ทำให้ browser ค้าง
+  //    แต่ FortiGate ได้รับ POST และ Authorize device ไปแล้ว
+  Res.Code := 200;
+  Res.ContentType := 'text/html; charset=utf-8';
+  Res.Content :=
+    '<!DOCTYPE html><html lang="th"><head><meta charset="utf-8">' +
+    '<link href="/assets/fonts/sarabun.css" rel="stylesheet">' +
+    '<title>กำลังเชื่อมต่อ...</title>' +
+    '<style>' +
+    'body{font-family:"Sarabun",sans-serif;background:#f4f7f6;margin:0;display:flex;justify-content:center;align-items:center;height:100vh;}' +
+    '.box{text-align:center;background:#fff;padding:40px;border-radius:12px;box-shadow:0 4px 15px rgba(0,0,0,.05);max-width:400px;width:100%;}' +
+    '.box img{width:80px;margin-bottom:20px;}' +
+    '.spinner{border:4px solid rgba(0,0,0,.1);width:50px;height:50px;border-radius:50%;border-left-color:#007bff;animation:spin 1s linear infinite;margin:0 auto 20px;}' +
+    '@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}' +
+    'h2{color:#333;font-size:18px;margin-bottom:8px;}p{color:#666;font-size:14px;}' +
+    '</style></head><body>' +
+    '<div class="box">' +
+    '<img src="/images/logo_moph.png" alt="Logo">' +
+    '<div class="spinner"></div>' +
+    '<h2>กำลังอนุญาตสิทธิ์เข้าใช้งานอินเทอร์เน็ต</h2>' +
+    '<p>กรุณารอสักครู่...</p>' +
+    '</div>' +
+    // Form ส่งข้อมูลไปยัง FortiGate (hidden, auto-submit)
+    '<form id="fg" action="' + HtmlEncode(TargetUrl) + '" method="post" style="display:none" target="_blank">' +
+    '<input name="username" value="' + HtmlEncode(Data.Username) + '">' +
+    '<input name="password" value="' + HtmlEncode(Data.PlainPass) + '">' +
+    '<input name="magic" value="' + HtmlEncode(Data.Magic) + '">' +
+    '<input name="redir" value="' + HtmlEncode(RedirUrl) + '">' +
+    '</form>' +
+    '<script>' +
+    // ส่ง form ไปยัง FortiGate ผ่าน hidden tab (ไม่ block browser)
+    // แล้ว redirect browser ไป /sso/status หลัง 1500ms
+    'window.addEventListener("load",function(){' +
+    '  document.getElementById("fg").submit();' +
+    '  setTimeout(function(){window.location.href=' + QuotedStr(RedirUrl) + ';},1500);' +
+    '});' +
+    '</script>' +
+    '</body></html>';
+  Res.SendContent;
 end;
+
 
 
 
