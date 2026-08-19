@@ -21,6 +21,7 @@
 ## 4. RADIUS & Password Synchronization Rules (กฎเหล็ก RADIUS)
 - **Dual Password Sync (Cleartext + MD5)**: สำหรับทุกช่องทางการล็อกอิน (Local, ThaID, ProviderID, Google) ฟังก์ชันการสร้าง/อัปเดตผู้ใช้ใน `RadiusDB.pas` จะต้องล้างข้อมูลเดิมที่ซ้ำซ้อน และบันทึกรหัสผ่านลงตาราง `radcheck` **ทั้งแบบ `Cleartext-Password` และ `MD5-Password`** เสมอ เพราะ FortiGate ตรวจสอบสิทธิ์ผ่าน FreeRADIUS / `fpradius` ด้วย `Cleartext-Password` หากมีเฉพาะ MD5 จะทำให้ผู้ใช้ ThaID ล็อกอินผ่านแต่ไฟร์วอลล์ไม่อนุญาตให้ออกเน็ต
 - **radcheck_cleartext Sync**: ต้องซิงค์รหัสผ่านลงตาราง `radcheck_cleartext` ควบคู่กันเสมอ
+- **Transaction & Connection Lifecycle**: ใน `fp-radius` (เช่น `RadiusDB.pas`), ทุกฟังก์ชันที่ Query (`CheckUserPassword`, `LogAccessAttempt`, `LogAccounting`) จะต้องมีคำสั่ง `Query.Close` และ `Commit`/`Rollback` Transaction เสมอ พร้อมทั้งมีระบบ Auto-reconnect หาก Connection กับ MySQL ขาดหาย เพื่อป้องกันไม่ให้ Transaction ค้างจนกระทบต่อการตรวจสิทธิ์และทำให้ FortiGate ได้รับ `Auth=Failed`
 
 ## 5. Database & Configuration Changes
 - **Database Migrations**: ทุกครั้งที่มีการแก้ไขหรือเพิ่มตารางฐานข้อมูล ให้ทำระบบ Auto-migration (`CREATE TABLE IF NOT EXISTS` หรือ ALTER) ในโค้ดแอปพลิเคชันเสมอ

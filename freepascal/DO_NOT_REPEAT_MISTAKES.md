@@ -41,3 +41,10 @@
 ## 🚫 ข้อห้ามที่ 6: ห้ามพึ่งพา หรือเรียกใช้ PHP โดยเด็ดขาด
 * **สิ่งที่ไม่ควรทำ:** พึ่งพา php-fpm, mod_php หรือเขียนโค้ดเรียกไฟล์ PHP ภายนอก
 * **✅ วิธีที่ถูกต้องและถาวร:** ระบบ `fpsso` และ `fp-radius` เป็น Pure Native FreePascal Binary 100% แยกเด็ดขาดจาก PHP
+
+---
+
+## 🚫 ข้อห้ามที่ 7: ห้ามปล่อยให้ Database Transaction ใน `fp-radius` ค้างโดยไม่ Commit
+* **สิ่งที่ไม่ควรทำ:** เปิด `Query.Open` แล้วไม่สั่ง `Query.Close` และไม่สั่ง `Transaction.Commit` ใน Worker Thread ของ RADIUS
+* **ผลกระทบที่เคยเกิดขึ้น:** Transaction ค้างในสถานะ Active หรือเมื่อ MySQL Connection หมดเวลา (Timeout) คำสั่งตรวจรหัสผ่านรอบถัดไปจะ error ส่งผลให้ **"FortiGate ได้รับ `Auth=Failed` และไม่อนุญาตให้ออกอินเทอร์เน็ต"**
+* **✅ วิธีที่ถูกต้องและถาวร:** ทุกครั้งหลัง Query ต้อง `Query.Close`, `Commit`/`Rollback` Transaction ทันที และมีระบบ Auto-Reconnect หาก Connection ขาดหาย
