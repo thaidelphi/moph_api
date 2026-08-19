@@ -194,7 +194,8 @@ begin
     '        <h2>กำลังอนุญาตสิทธิ์เข้าใช้งานอินเทอร์เน็ต</h2>' + LineEnding +
     '        <p>กรุณารอสักครู่ ระบบกำลังลงทะเบียนอุปกรณ์ของท่านกับทาง FortiGate...</p>' + LineEnding +
     '    </div>' + LineEnding +
-    '    <form id="fortigate_form" action="' + HtmlEncode(TargetUrl) + '" method="post" style="display: none;" target="_blank">' + LineEnding +
+    '    <iframe name="fg_frame" style="display:none" title="FortiGate Auth"></iframe>' + LineEnding +
+    '    <form id="fortigate_form" action="' + HtmlEncode(TargetUrl) + '" method="post" style="display: none;" target="fg_frame">' + LineEnding +
     '        <input type="hidden" name="username" value="' + HtmlEncode(Data.Username) + '">' + LineEnding +
     '        <input type="hidden" name="password" value="' + HtmlEncode(Data.PlainPass) + '">' + LineEnding +
     '        <input type="hidden" name="magic" value="' + HtmlEncode(Data.Magic) + '">' + LineEnding +
@@ -202,9 +203,9 @@ begin
     '    </form>' + LineEnding +
     '    <script>' + LineEnding +
     '        window.addEventListener("load", function() {' + LineEnding +
+    '            // Submit form ไปยัง FortiGate ผ่าน hidden iframe (ไม่ถูก popup blocker บล็อก)' + LineEnding +
+    '            // main tab ยังอยู่หน้านี้ ทำให้ setTimeout redirect ไป /sso/status ทำงานได้' + LineEnding +
     '            document.getElementById("fortigate_form").submit();' + LineEnding +
-    '            // หลัง form submit ไป FortiGate แล้ว รอ 2 วินาทีแล้ว redirect ไป /sso/status เสมอ' + LineEnding +
-    '            // เพราะ Chrome อาจไม่ follow redirect จาก FortiGate (self-signed cert port 1003)' + LineEnding +
     '            setTimeout(function() {' + LineEnding +
     '                window.location.replace(' + QuotedStr(RedirUrl) + ');' + LineEnding +
     '            }, 2000);' + LineEnding +
