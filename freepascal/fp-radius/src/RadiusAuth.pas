@@ -21,7 +21,7 @@ begin
   
   LogMsg(1, 'Auth Request from ' + NasIP + ' for user: ' + Username);
   
-  Accepted := CheckUserPassword(Conn, Username, Password);
+  Accepted := CheckUserPassword(Conn, Username, Password, Cfg.SSOAutoApprove);
   
   if Accepted then
   begin

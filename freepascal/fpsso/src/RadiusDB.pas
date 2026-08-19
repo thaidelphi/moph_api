@@ -343,7 +343,7 @@ var
   Conn: TMySQL80Connection;
   Trans: TSQLTransaction;
   Query: TSQLQuery;
-  Attr, Val: string;
+  Attr, Val, ActiveStr: string;
 begin
   IsActive := True; // Default to true so unknown users get "Wrong password" instead of "Pending"
   Result := '';
@@ -358,37 +358,57 @@ begin
     Conn.CharSet := 'utf8mb4';
     Conn.Transaction := Trans;
     Query.DataBase := Conn;
-    
+
     try
       Conn.Connected := True;
       Conn.ExecuteDirect('SET NAMES utf8mb4;');
     except
       on E: Exception do Exit;
     end;
-    
+
+    // 0. SSO_AUTO_APPROVE=false: ตรวจ radcheck_mirror.active ก่อนเสมอ
+    //    ถ้า active='N' ให้ Block ทันทีโดยไม่สนใจ password
+    if not AppCfg.SSOAutoApprove then
+    begin
+      Query.SQL.Text := 'SELECT active FROM radcheck_mirror WHERE username = :u ORDER BY id DESC LIMIT 1';
+      Query.Params.ParamByName('u').AsString := Username;
+      Query.Open;
+      if not Query.EOF then
+      begin
+        ActiveStr := UpperCase(Trim(Query.FieldByName('active').AsString));
+        if ActiveStr = 'N' then
+        begin
+          Query.Close;
+          IsActive := False; // ยังรอ admin approve
+          Exit;
+        end;
+      end;
+      Query.Close;
+    end;
+
     // 1. Check in radcheck first (for manual users or approved SSO users)
     Query.SQL.Text := 'SELECT attribute, value FROM radcheck WHERE username = :u AND attribute IN (''Cleartext-Password'', ''MD5-Password'', ''Suspended-Password'') LIMIT 1';
     Query.Params.ParamByName('u').AsString := Username;
     Query.Open;
-    
+
     if not Query.EOF then
     begin
       Attr := Query.FieldByName('attribute').AsString;
       Val := Query.FieldByName('value').AsString;
       Query.Close;
-      
+
       if Attr = 'Suspended-Password' then
       begin
         IsActive := False; // User is suspended
         Exit;
       end;
-      
+
       if (Attr = 'Cleartext-Password') and (Val = Password) then
       begin
         Result := Password;
         Exit;
       end;
-      
+
       if (Attr = 'MD5-Password') and (LowerCase(Val) = LowerCase(MD5Print(MD5String(Password)))) then
       begin
         Result := Password;
@@ -397,12 +417,12 @@ begin
     end
     else
       Query.Close;
-      
+
     // 2. If not found or wrong password, check if they exist in radcheck_mirror as pending
     Query.SQL.Text := 'SELECT tmp_passwd, active FROM radcheck_mirror WHERE username = :u ORDER BY id DESC LIMIT 1';
     Query.Params.ParamByName('u').AsString := Username;
     Query.Open;
-    
+
     if not Query.EOF then
     begin
       if Query.FieldByName('active').AsString = 'N' then
@@ -415,7 +435,7 @@ begin
       end;
     end;
     Query.Close;
-    
+
   finally
     Query.Free;
     Trans.Free;

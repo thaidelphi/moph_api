@@ -24,6 +24,9 @@ type
     // Logging
     LogFile    : string;
     LogLevel   : Integer;     // 0=Error, 1=Info, 2=Debug
+
+    // SSO Settings
+    SSOAutoApprove : Boolean; // true=อนุญาต OAuth user เข้าใช้ได้เลยโดยไม่สนใจ active
   end;
 
 // โหลดค่าจากไฟล์ .env
@@ -54,6 +57,7 @@ begin
   Result.SharedSecret := 'testing123';
   Result.LogFile := '/var/log/fp-radius.log';
   Result.LogLevel := 1;
+  Result.SSOAutoApprove := True; // default: อนุญาตเข้าใช้ได้เลย
 
   if not FileExists(EnvPath) then
   begin
@@ -90,7 +94,8 @@ begin
         else if Key = 'RADIUS_ACCT_PORT' then Result.AcctPort := StrToIntDef(Value, 1813)
         else if Key = 'RADIUS_SECRET' then Result.SharedSecret := Value
         else if Key = 'RADIUS_LOG_FILE' then Result.LogFile := Value
-        else if Key = 'RADIUS_LOG_LEVEL' then Result.LogLevel := StrToIntDef(Value, 1);
+        else if Key = 'RADIUS_LOG_LEVEL' then Result.LogLevel := StrToIntDef(Value, 1)
+        else if Key = 'SSO_AUTO_APPROVE' then Result.SSOAutoApprove := (LowerCase(Value) = 'true');
       end;
     end;
   finally

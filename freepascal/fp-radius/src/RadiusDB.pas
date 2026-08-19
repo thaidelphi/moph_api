@@ -9,7 +9,7 @@ uses
 
 function DBConnect(const Cfg: TRadiusConfig; out Conn: TMySQL80Connection): Boolean;
 procedure DBDisconnect(var Conn: TMySQL80Connection);
-function CheckUserPassword(Conn: TMySQL80Connection; const Username, Password: string): Boolean;
+function CheckUserPassword(Conn: TMySQL80Connection; const Username, Password: string; SSOAutoApprove: Boolean = True): Boolean;
 procedure LogAccessAttempt(Conn: TMySQL80Connection; const Username, NasIP: string; Accepted: Boolean; const Timestamp: TDateTime);
 procedure LogAccounting(Conn: TMySQL80Connection; const SessionID, Username, NasIP: string; StatusType: Integer; SessionTime: LongWord);
 
@@ -94,7 +94,7 @@ begin
   end;
 end;
 
-function CheckUserPassword(Conn: TMySQL80Connection; const Username, Password: string): Boolean;
+function CheckUserPassword(Conn: TMySQL80Connection; const Username, Password: string; SSOAutoApprove: Boolean = True): Boolean;
 var
   Query: TSQLQuery;
   DBPass, ActiveStr: string;
@@ -135,18 +135,28 @@ begin
 
     if IsOAuthUser then
     begin
-      // ThaID/OAuth user (username เลขล้วน): ตรวจแค่ว่า user มีอยู่ใน radcheck_mirror ก็ Accept ทันที
-      // เหตุผล: fpsso คัดกรอง active/inactive ก่อนถึงหน้า handshake แล้ว
-      // SSO_AUTO_APPROVE=true: ไม่สนใจ active=Y/N เลย
-      // SSO_AUTO_APPROVE=false: fpsso บล็อก user ที่ inactive ไว้ก่อนแล้ว จึงไม่มี RADIUS request เข้ามา
-      Query.SQL.Text := 'SELECT COUNT(*) as cnt FROM radcheck_mirror WHERE username = :u';
+      // ThaID/OAuth user (username เลขล้วน):
+      // SSO_AUTO_APPROVE=true: ตรวจแค่ว่า user มีอยู่ใน radcheck_mirror ก็ Accept
+      // SSO_AUTO_APPROVE=false: ตรวจ active ด้วย ถ้า active=N ให้ Reject
+      Query.SQL.Text := 'SELECT active FROM radcheck_mirror WHERE username = :u LIMIT 1';
       Query.Params.ParamByName('u').AsString := Username;
       Query.Open;
       if not Query.EOF then
-        Result := (Query.FieldByName('cnt').AsInteger > 0);
-      Query.Close;
-      if Result then
-        LogMsg(1, 'ThaID/OAuth Accept: ' + Username + ' (exists in radcheck_mirror)')
+      begin
+        ActiveStr := UpperCase(Trim(Query.FieldByName('active').AsString));
+        if (not SSOAutoApprove) and (ActiveStr = 'N') then
+        begin
+          Query.Close;
+          LogMsg(1, 'ThaID/OAuth Reject: ' + Username + ' (active=N, SSOAutoApprove=false)');
+          Result := False;
+        end
+        else
+        begin
+          Query.Close;
+          Result := True;
+          LogMsg(1, 'ThaID/OAuth Accept: ' + Username + ' (active=' + ActiveStr + ')');
+        end;
+      end
       else
       begin
         // ไม่พบใน radcheck_mirror เลย → fallback ตรวจ Cleartext-Password
@@ -162,6 +172,26 @@ begin
     else
     begin
       // Local user: ตรวจสอบ Cleartext-Password หรือ MD5-Password จาก radcheck ปกติ
+      // SSO_AUTO_APPROVE=false: ตรวจ radcheck_mirror.active ก่อน ถ้า active=N ให้ Reject ทันที
+      if not SSOAutoApprove then
+      begin
+        Query.SQL.Text := 'SELECT active FROM radcheck_mirror WHERE username = :u ORDER BY id DESC LIMIT 1';
+        Query.Params.ParamByName('u').AsString := Username;
+        Query.Open;
+        if not Query.EOF then
+        begin
+          ActiveStr := UpperCase(Trim(Query.FieldByName('active').AsString));
+          if ActiveStr = 'N' then
+          begin
+            Query.Close;
+            LogMsg(1, 'Local User Reject: ' + Username + ' (active=N, SSOAutoApprove=false)');
+            Exit; // Result ยังเป็น False
+          end;
+        end;
+        Query.Close;
+      end;
+
+      // ตรวจสอบ Password จาก radcheck
       Query.SQL.Text := 'SELECT attribute, value FROM radcheck WHERE username = :u';
       Query.Params.ParamByName('u').AsString := Username;
       Query.Open;
