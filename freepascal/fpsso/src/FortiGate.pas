@@ -203,12 +203,6 @@ begin
     '    <script>' + LineEnding +
     '        window.addEventListener("load", function() {' + LineEnding +
     '            document.getElementById("fortigate_form").submit();' + LineEnding +
-    '            // Redirect ไป /sso/status หลัง 2 วินาที' + LineEnding +
-    '            // เพราะ Chrome อาจไม่ follow redirect จาก FortiGate (self-signed cert)' + LineEnding +
-    '            // แต่ FortiGate ได้รับ POST และ Authorize internet ไปแล้ว' + LineEnding +
-    '            setTimeout(function() {' + LineEnding +
-    '                window.location.replace(' + QuotedStr(RedirUrl) + ');' + LineEnding +
-    '            }, 2000);' + LineEnding +
     '        });' + LineEnding +
     '    </script>' + LineEnding +
     '</body>' + LineEnding +
