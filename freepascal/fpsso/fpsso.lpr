@@ -1,10 +1,12 @@
 program fpsso;
 
 {$mode objfpc}{$H+}
+{$codepage utf8}
 
 uses
   {$IFDEF UNIX}
   cthreads,
+  cwstring,
   {$ENDIF}
   Classes, SysUtils, Process,
   Config, SessionMgr, Router, HttpServer, HTTPDefs,

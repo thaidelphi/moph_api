@@ -1,6 +1,7 @@
 unit AuthLocal;
 
 {$mode objfpc}{$H+}
+{$codepage utf8}
 
 interface
 

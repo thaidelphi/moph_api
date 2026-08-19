@@ -1,6 +1,7 @@
 unit AuthProviderID;
 
 {$mode objfpc}{$H+}
+{$codepage utf8}
 
 interface
 

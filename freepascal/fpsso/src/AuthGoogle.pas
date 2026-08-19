@@ -1,6 +1,7 @@
 unit AuthGoogle;
 
 {$mode objfpc}{$H+}
+{$codepage utf8}
 
 interface
 

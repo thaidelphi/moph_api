@@ -1,6 +1,7 @@
 unit RadiusDB;
 
 {$mode objfpc}{$H+}
+{$codepage utf8}
 
 interface
 

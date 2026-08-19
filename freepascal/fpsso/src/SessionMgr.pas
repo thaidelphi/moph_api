@@ -1,6 +1,7 @@
 unit SessionMgr;
 
 {$mode objfpc}{$H+}
+{$codepage utf8}
 
 interface
 
