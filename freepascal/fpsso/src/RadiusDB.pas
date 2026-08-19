@@ -314,9 +314,14 @@ begin
         Query.Params.ParamByName('u').AsString := Username;
         Query.ExecSQL;
         
-        // Also update radcheck if it exists there (local users)
+        // อัปเดตรหัสผ่านในตาราง radcheck สำหรับ FreeRADIUS ทั้งแบบ Cleartext และ MD5-Password
         Query.SQL.Text := 'UPDATE radcheck SET value = :pw WHERE username = :u AND attribute = ''Cleartext-Password''';
         Query.Params.ParamByName('pw').AsString := NewPassword;
+        Query.Params.ParamByName('u').AsString := Username;
+        Query.ExecSQL;
+
+        Query.SQL.Text := 'UPDATE radcheck SET value = :md5pw WHERE username = :u AND attribute = ''MD5-Password''';
+        Query.Params.ParamByName('md5pw').AsString := LowerCase(MD5Print(MD5String(NewPassword)));
         Query.Params.ParamByName('u').AsString := Username;
         Query.ExecSQL;
       end;
