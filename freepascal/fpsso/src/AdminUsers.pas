@@ -62,6 +62,7 @@ begin
     Conn.UserName := AppCfg.DBUser;
     Conn.Password := AppCfg.DBPass;
     Conn.DatabaseName := AppCfg.DBName;
+    Conn.CharSet := 'utf8mb4';
     Conn.Transaction := Trans;
     Conn.Connected := True;
     Result := True;

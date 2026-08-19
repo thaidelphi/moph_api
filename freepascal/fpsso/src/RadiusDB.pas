@@ -45,6 +45,7 @@ begin
     Conn.UserName := AppCfg.DBUser;
     Conn.Password := AppCfg.DBPass;
     Conn.DatabaseName := AppCfg.DBName;
+    Conn.CharSet := 'utf8mb4';
     Conn.Transaction := Trans;
     Query.DataBase := Conn;
     
@@ -118,6 +119,7 @@ begin
     Conn.UserName := AppCfg.DBUser;
     Conn.Password := AppCfg.DBPass;
     Conn.DatabaseName := AppCfg.DBName;
+    Conn.CharSet := 'utf8mb4';
     Conn.Transaction := Trans;
     Query.DataBase := Conn;
     
@@ -157,6 +159,7 @@ begin
     Conn.UserName := AppCfg.DBUser;
     Conn.Password := AppCfg.DBPass;
     Conn.DatabaseName := AppCfg.DBName;
+    Conn.CharSet := 'utf8mb4';
     Conn.Transaction := Trans;
     Query.DataBase := Conn;
     
@@ -198,6 +201,7 @@ begin
     Conn.UserName := AppCfg.DBUser;
     Conn.Password := AppCfg.DBPass;
     Conn.DatabaseName := AppCfg.DBName;
+    Conn.CharSet := 'utf8mb4';
     Conn.Transaction := Trans;
     Query.DataBase := Conn;
     
@@ -232,6 +236,7 @@ begin
     Conn.UserName := AppCfg.DBUser;
     Conn.Password := AppCfg.DBPass;
     Conn.DatabaseName := AppCfg.DBName;
+    Conn.CharSet := 'utf8mb4';
     Conn.Transaction := Trans;
     Query.DataBase := Conn;
     
@@ -294,6 +299,7 @@ begin
     Conn.UserName := AppCfg.DBUser;
     Conn.Password := AppCfg.DBPass;
     Conn.DatabaseName := AppCfg.DBName;
+    Conn.CharSet := 'utf8mb4';
     Conn.Transaction := Trans;
     Query.DataBase := Conn;
     
@@ -377,6 +383,7 @@ begin
     Conn.UserName := AppCfg.DBUser;
     Conn.Password := AppCfg.DBPass;
     Conn.DatabaseName := AppCfg.DBName;
+    Conn.CharSet := 'utf8mb4';
     Conn.Transaction := Trans;
     Query.DataBase := Conn;
     
