@@ -91,7 +91,7 @@ begin
     SessionManager.UpdateSession(SessionID, Data);
     
     // บันทึก Log การล็อกอิน
-    LogAuthEvent(Username, 'LOGIN', GetClientIP(Req), 'LOCAL');
+    LogAuthEvent(Username, 'LOGIN', GetClientIP(Req), 'LOCAL', Data.FullName, Data.UserMac, Copy(Req.UserAgent, 1, 255));
     
     // Set or refresh cookie
     with Res.Cookies.Add do

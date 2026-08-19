@@ -11,6 +11,7 @@ uses
 procedure HandleAdminHtml(Req: TRequest; Res: TResponse);
 procedure HandleApiUsers(Req: TRequest; Res: TResponse);
 procedure HandleApiLicense(Req: TRequest; Res: TResponse);
+procedure HandleApiLogs(Req: TRequest; Res: TResponse);
 
 implementation
 
@@ -432,11 +433,87 @@ begin
   end;
 end;
 
+// -------------------------------------------------------------
+// API: Logs (/api/logs)
+// -------------------------------------------------------------
+procedure HandleApiLogs(Req: TRequest; Res: TResponse);
+var
+  Conn: TMySQL80Connection;
+  Trans: TSQLTransaction;
+  Query: TSQLQuery;
+  RootObj: TJSONObject;
+  LogsArr: TJSONArray;
+  ItemObj: TJSONObject;
+  LimitStr, MethodFilter, Search: string;
+begin
+  if not CheckBasicAuth(Req, Res) then Exit;
+
+  if not GetDBConn(Conn, Trans) then
+  begin
+    SendJSONErrorMsg(Res, 'Database connection failed');
+    Exit;
+  end;
+
+  Query := TSQLQuery.Create(nil);
+  try
+    Query.DataBase := Conn;
+    Query.Transaction := Trans;
+
+    LimitStr := Req.QueryFields.Values['limit'];
+    if (LimitStr = '') or (StrToIntDef(LimitStr, 0) <= 0) then
+      LimitStr := '100';
+
+    MethodFilter := Req.QueryFields.Values['method'];
+    Search := Req.QueryFields.Values['q'];
+
+    Query.SQL.Text := 'SELECT id, username, fullname, event_type, ip_address, mac_address, user_agent, auth_method, event_time ' +
+                      'FROM login_history WHERE 1=1 ';
+
+    if MethodFilter <> '' then
+      Query.SQL.Text := Query.SQL.Text + 'AND auth_method = ' + QuotedStr(MethodFilter) + ' ';
+
+    if Search <> '' then
+      Query.SQL.Text := Query.SQL.Text + 'AND (username LIKE ' + QuotedStr('%' + Search + '%') + ' OR fullname LIKE ' + QuotedStr('%' + Search + '%') + ') ';
+
+    Query.SQL.Text := Query.SQL.Text + 'ORDER BY id DESC LIMIT ' + IntToStr(StrToIntDef(LimitStr, 100));
+    Query.Open;
+
+    LogsArr := TJSONArray.Create;
+    while not Query.EOF do
+    begin
+      ItemObj := TJSONObject.Create;
+      ItemObj.Add('id', Query.FieldByName('id').AsInteger);
+      ItemObj.Add('username', Query.FieldByName('username').AsString);
+      ItemObj.Add('fullname', Query.FieldByName('fullname').AsString);
+      ItemObj.Add('event_type', Query.FieldByName('event_type').AsString);
+      ItemObj.Add('ip_address', Query.FieldByName('ip_address').AsString);
+      ItemObj.Add('mac_address', Query.FieldByName('mac_address').AsString);
+      ItemObj.Add('user_agent', Query.FieldByName('user_agent').AsString);
+      ItemObj.Add('auth_method', Query.FieldByName('auth_method').AsString);
+      ItemObj.Add('event_time', FormatDateTime('yyyy-mm-dd hh:nn:ss', Query.FieldByName('event_time').AsDateTime));
+      LogsArr.Add(ItemObj);
+      Query.Next;
+    end;
+
+    RootObj := TJSONObject.Create;
+    RootObj.Add('success', True);
+    RootObj.Add('count', LogsArr.Count);
+    RootObj.Add('logs', LogsArr);
+
+    SendJSONResponse(Res, RootObj);
+  finally
+    Query.Free;
+    Trans.Free;
+    Conn.Free;
+  end;
+end;
+
 initialization
   RegisterRoute('GET', '/admin', @HandleAdminHtml);
   RegisterRoute('GET', '/api/users', @HandleApiUsers);
   RegisterRoute('POST', '/api/users', @HandleApiUsers);
   RegisterRoute('GET', '/api/license', @HandleApiLicense);
   RegisterRoute('POST', '/api/license', @HandleApiLicense);
+  RegisterRoute('GET', '/api/logs', @HandleApiLogs);
 
 end.

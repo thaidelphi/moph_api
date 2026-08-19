@@ -307,7 +307,7 @@ begin
         SessionManager.UpdateSession(SessionID, Data);
 
         // บันทึก Log การล็อกอิน
-        LogAuthEvent(PID, 'LOGIN', GetClientIP(Req), 'THAID');
+        LogAuthEvent(PID, 'LOGIN', GetClientIP(Req), 'THAID', FullName, Data.UserMac, Copy(Req.UserAgent, 1, 255));
 
         // ตั้งค่า Cookie Session ซ้ำบนโดเมนปัจจุบัน
         with Res.Cookies.Add do

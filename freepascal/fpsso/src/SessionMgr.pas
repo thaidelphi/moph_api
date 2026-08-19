@@ -18,6 +18,8 @@ type
     Magic: string;
     RedirUrl: string;
     PostUrl: string;
+    UserMac: string;
+    ClientIP: string;
 
     // Auto-login credential (ล้างหลัง Handshake สำเร็จเพื่อความปลอดภัย)
     PlainPass: string;

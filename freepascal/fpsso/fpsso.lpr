@@ -61,6 +61,14 @@ begin
       Data.RedirUrl := Req.QueryFields.Values['redir']
     else if Req.QueryFields.Values['url'] <> '' then
       Data.RedirUrl := Req.QueryFields.Values['url'];
+
+    if Req.QueryFields.Values['usermac'] <> '' then
+      Data.UserMac := Req.QueryFields.Values['usermac'];
+      
+    if Req.QueryFields.Values['userip'] <> '' then
+      Data.ClientIP := Req.QueryFields.Values['userip']
+    else
+      Data.ClientIP := GetClientIP(Req);
       
     SessionManager.UpdateSession(SessionID, Data);
     

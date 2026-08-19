@@ -249,7 +249,7 @@ begin
         SessionManager.UpdateSession(SessionID, Data);
 
         // บันทึก Log การล็อกอิน
-        LogAuthEvent(TargetUsername, 'LOGIN', GetClientIP(Req), 'PROVIDERID');
+        LogAuthEvent(TargetUsername, 'LOGIN', GetClientIP(Req), 'PROVIDERID', FullName, Data.UserMac, Copy(Req.UserAgent, 1, 255));
 
         // ตั้งค่า Cookie Session ซ้ำบนโดเมนปัจจุบัน
         with Res.Cookies.Add do
