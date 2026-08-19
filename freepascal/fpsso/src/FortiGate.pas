@@ -6,15 +6,13 @@ unit FortiGate;
 interface
 
 uses
-  Classes, SysUtils, HTTPDefs, fpHTTP, Router, SessionMgr, Config, fphttpclient, fpjson, jsonparser, RadiusDB, URIParser;
+  Classes, SysUtils, HTTPDefs, fpHTTP, Router, SessionMgr, Config, fphttpclient, fpjson, jsonparser, RadiusDB;
 
 procedure HandleFortiGateHandshake(Req: TRequest; Res: TResponse);
 
 implementation
 
-
 { ฟังก์ชัน HTML Encode ป้องกัน XSS จากค่าที่ฝังใน HTML Attribute }
-
 function HtmlEncode(const S: string): string;
 var
   I: Integer;
@@ -36,25 +34,6 @@ begin
   end;
 end;
 
-{ URL-encode string สำหรับ application/x-www-form-urlencoded }
-function EncodeFormParam(const S: string): string;
-var
-  I: Integer;
-  C: Char;
-begin
-  Result := '';
-  for I := 1 to Length(S) do
-  begin
-    C := S[I];
-    if C in ['A'..'Z', 'a'..'z', '0'..'9', '-', '_', '.', '~'] then
-      Result := Result + C
-    else if C = ' ' then
-      Result := Result + '+'
-    else
-      Result := Result + '%' + IntToHex(Ord(C), 2);
-  end;
-end;
-
 // ฟังก์ชันช่วยปรับแต่ง URL ของ FortiGate ให้ถูกต้องตามโปรโตคอลและพอร์ต
 function SanitizeFortiGateUrl(const AUrl: string): string;
 var
@@ -69,13 +48,12 @@ begin
   Result := Url;
 end;
 
-{ Handler: Handshake — fpsso ทำ Server-Side POST ไปยัง FortiGate แทนเบราว์เซอร์
-  เพื่อแก้ปัญหา Self-Signed Certificate บน port 1003 ทำให้เบราว์เซอร์ค้าง }
+{ Handler: หน้า Handshake ที่ Auto-submit ข้อมูลกลับไปยัง FortiGate }
 procedure HandleFortiGateHandshake(Req: TRequest; Res: TResponse);
 var
   SessionID: string;
   Data: TSessionData;
-  TargetUrl, RedirUrl, Proto, HostHeader, BaseUrl: string;
+  HtmlContent, TargetUrl, RedirUrl, Proto, HostHeader, BaseUrl: string;
 begin
   SessionID := Req.CookieFields.Values['SSOSESSID'];
   if SessionID = '' then
@@ -184,20 +162,53 @@ begin
 
   WriteLn('FortiGate Handshake for user: ', Data.Username, ' | TargetUrl: ', TargetUrl, ' | Magic: ', Data.Magic, ' | RedirUrl: ', RedirUrl);
 
-  // หากไม่มี Magic Token จาก FortiGate ให้ Redirect ไป /sso/status โดยตรง
+  // หากไม่มี Magic Token จาก FortiGate (เกิดจากผู้ใช้พิมพ์ URL /sso/ เข้ามาตรงๆ โดยไม่ได้ผ่าน Captive Portal redirect)
   if Data.Magic = '' then
   begin
+    // ล้าง PlainPass ออกจาก Session เพื่อความปลอดภัย
     Data.PlainPass := '';
     SessionManager.UpdateSession(SessionID, Data);
+    
+    // พาผู้ใช้ไปยังหน้าปลายทางโดยตรง ไม่ส่งไป FortiGate /fgtauth เพราะจะทำให้เกิด ERR_EMPTY_RESPONSE เมื่อไม่มี Magic
     Redirect(Res, RedirUrl);
     Exit;
   end;
 
-  // ล้าง PlainPass ออกจาก Session ก่อน render HTML เพื่อความปลอดภัย
-  Data.PlainPass := '';
-  SessionManager.UpdateSession(SessionID, Data);
+  // HTML Encode ค่าทั้งหมดที่จะฝังใน HTML เพื่อป้องกัน XSS
+  HtmlContent := '<!DOCTYPE html><html lang="th"><head><meta charset="utf-8">' + LineEnding +
+    '    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">' + LineEnding +
+    '    <title>กำลังเชื่อมต่อระบบเครือข่าย...</title>' + LineEnding +
+    '    <style>' + LineEnding +
+    '        body { font-family: "Sarabun", sans-serif; background-color: #f4f7f6; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }' + LineEnding +
+    '        .loading-box { text-align: center; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); max-width: 400px; width: 100%; }' + LineEnding +
+    '        .loading-box img { width: 80px; margin-bottom: 20px; }' + LineEnding +
+    '        .spinner { border: 4px solid rgba(0, 0, 0, 0.1); width: 50px; height: 50px; border-radius: 50%; border-left-color: #007bff; animation: spin 1s linear infinite; margin: 0 auto 20px auto; }' + LineEnding +
+    '        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }' + LineEnding +
+    '        h2 { color: #333; margin-bottom: 10px; font-size: 18px; }' + LineEnding +
+    '        p { color: #666; font-size: 14px; }' + LineEnding +
+    '    </style>' + LineEnding +
+    '</head><body>' + LineEnding +
+    '    <div class="loading-box">' + LineEnding +
+    '        <img src="/images/logo_moph.png" alt="Logo">' + LineEnding +
+    '        <div class="spinner"></div>' + LineEnding +
+    '        <h2>กำลังอนุญาตสิทธิ์เข้าใช้งานอินเทอร์เน็ต</h2>' + LineEnding +
+    '        <p>กรุณารอสักครู่ ระบบกำลังลงทะเบียนอุปกรณ์ของท่านกับทาง FortiGate...</p>' + LineEnding +
+    '    </div>' + LineEnding +
+    '    <form id="fortigate_form" action="' + HtmlEncode(TargetUrl) + '" method="post" style="display: none;">' + LineEnding +
+    '        <input type="hidden" name="username" value="' + HtmlEncode(Data.Username) + '">' + LineEnding +
+    '        <input type="hidden" name="password" value="' + HtmlEncode(Data.PlainPass) + '">' + LineEnding +
+    '        <input type="hidden" name="magic" value="' + HtmlEncode(Data.Magic) + '">' + LineEnding +
+    '        <input type="hidden" name="redir" value="' + HtmlEncode(RedirUrl) + '">' + LineEnding +
+    '    </form>' + LineEnding +
+    '    <script>' + LineEnding +
+    '        window.addEventListener("load", function() {' + LineEnding +
+    '            document.getElementById("fortigate_form").submit();' + LineEnding +
+    '        });' + LineEnding +
+    '    </script>' + LineEnding +
+    '</body>' + LineEnding +
+    '</html>';
 
-  // re-set cookie ใน Response
+  // re-set cookie ใน response ของ Handshake
   with Res.Cookies.Add do
   begin
     Name := 'SSOSESSID';
@@ -207,52 +218,15 @@ begin
     HttpOnly := True;
   end;
 
-  // ===== Client-Side Form Submit + JavaScript Timeout Redirect =====
-  // 1. Form auto-submit ไปยัง FortiGate (เพื่อ Authorize device ออกเน็ต)
-  // 2. JavaScript timeout redirect ไป /sso/status หลัง 1.5 วินาที
-  //    เพราะ Chrome ไม่ follow redirect จาก FortiGate self-signed cert ทำให้ browser ค้าง
-  //    แต่ FortiGate ได้รับ POST และ Authorize device ไปแล้ว
+  // ล้าง PlainPass ออกจาก Session ทันทีหลังจากฝังใน Form แล้ว เพื่อความปลอดภัย
+  Data.PlainPass := '';
+  SessionManager.UpdateSession(SessionID, Data);
+
   Res.Code := 200;
   Res.ContentType := 'text/html; charset=utf-8';
-  Res.Content :=
-    '<!DOCTYPE html><html lang="th"><head><meta charset="utf-8">' +
-    '<link href="/assets/fonts/sarabun.css" rel="stylesheet">' +
-    '<title>กำลังเชื่อมต่อ...</title>' +
-    '<style>' +
-    'body{font-family:"Sarabun",sans-serif;background:#f4f7f6;margin:0;display:flex;justify-content:center;align-items:center;height:100vh;}' +
-    '.box{text-align:center;background:#fff;padding:40px;border-radius:12px;box-shadow:0 4px 15px rgba(0,0,0,.05);max-width:400px;width:100%;}' +
-    '.box img{width:80px;margin-bottom:20px;}' +
-    '.spinner{border:4px solid rgba(0,0,0,.1);width:50px;height:50px;border-radius:50%;border-left-color:#007bff;animation:spin 1s linear infinite;margin:0 auto 20px;}' +
-    '@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}' +
-    'h2{color:#333;font-size:18px;margin-bottom:8px;}p{color:#666;font-size:14px;}' +
-    '</style></head><body>' +
-    '<div class="box">' +
-    '<img src="/images/logo_moph.png" alt="Logo">' +
-    '<div class="spinner"></div>' +
-    '<h2>กำลังอนุญาตสิทธิ์เข้าใช้งานอินเทอร์เน็ต</h2>' +
-    '<p>กรุณารอสักครู่...</p>' +
-    '</div>' +
-    // Form ส่งข้อมูลไปยัง FortiGate (hidden, auto-submit)
-    '<form id="fg" action="' + HtmlEncode(TargetUrl) + '" method="post" style="display:none" target="_blank">' +
-    '<input name="username" value="' + HtmlEncode(Data.Username) + '">' +
-    '<input name="password" value="' + HtmlEncode(Data.PlainPass) + '">' +
-    '<input name="magic" value="' + HtmlEncode(Data.Magic) + '">' +
-    '<input name="redir" value="' + HtmlEncode(RedirUrl) + '">' +
-    '</form>' +
-    '<script>' +
-    // ส่ง form ไปยัง FortiGate ผ่าน hidden tab (ไม่ block browser)
-    // แล้ว redirect browser ไป /sso/status หลัง 1500ms
-    'window.addEventListener("load",function(){' +
-    '  document.getElementById("fg").submit();' +
-    '  setTimeout(function(){window.location.href=' + QuotedStr(RedirUrl) + ';},1500);' +
-    '});' +
-    '</script>' +
-    '</body></html>';
+  Res.Content := HtmlContent;
   Res.SendContent;
 end;
-
-
-
 
 // ฟังก์ชันช่วยสร้าง URL สำหรับส่งคำสั่ง Logout ไปยัง FortiGate อย่างถูกต้อง
 function BuildFortiGateLogoutUrl(const PostUrl, Magic, ConfiguredLogoutUrl: string): string;
