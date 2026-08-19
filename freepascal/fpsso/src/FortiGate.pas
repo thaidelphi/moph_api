@@ -176,7 +176,42 @@ begin
   Res.SendContent;
 end;
 
-{ Handler: Logout — ลบ Session และเตะผ่าน FortiGate REST API (ถ้ามี Token) }
+// ฟังก์ชันช่วยสร้าง URL สำหรับส่งคำสั่ง Logout ไปยัง FortiGate อย่างถูกต้อง
+function BuildFortiGateLogoutUrl(const PostUrl, Magic, ConfiguredLogoutUrl: string): string;
+var
+  Url: string;
+begin
+  Url := Trim(PostUrl);
+  if Url <> '' then
+    Url := StringReplace(Url, 'fgtauth', 'logout', [rfIgnoreCase])
+  else
+    Url := Trim(ConfiguredLogoutUrl);
+
+  if Url = '' then
+    Url := 'http://192.168.200.1:1000/logout';
+
+  // ตรวจสอบ Port 1000: FortiGate พอร์ต 1000 เป็น HTTP เท่านั้น (ไม่ใช่ HTTPS)
+  if (Pos(':1000', Url) > 0) and (Pos('https://', LowerCase(Url)) = 1) then
+    Url := 'http://' + Copy(Url, 9, Length(Url));
+
+  // ตรวจสอบ Port 1003: FortiGate พอร์ต 1003 เป็น HTTPS
+  if (Pos(':1003', Url) > 0) and (Pos('http://', LowerCase(Url)) = 1) then
+    Url := 'https://' + Copy(Url, 8, Length(Url));
+
+  // ล้าง Query Parameter เก่าออกก่อน ถ้ามี ? อยู่แล้ว
+  if Pos('?', Url) > 0 then
+    Url := Copy(Url, 1, Pos('?', Url) - 1);
+
+  // เติม ? และ Magic Token ถ้ามี
+  if Magic <> '' then
+    Url := Url + '?' + Magic
+  else
+    Url := Url + '?';
+
+  Result := Url;
+end;
+
+{ Handler: Logout — ลบ Session และเตะผ่าน FortiGate REST API (ถ้ามี Token) หรือ Redirect ไปที่ FortiGate Logout URL }
 procedure HandleFortiGateLogout(Req: TRequest; Res: TResponse);
 var
   SessionID: string;
@@ -197,6 +232,11 @@ var
 begin
   SessionID := Req.CookieFields.Values['SSOSESSID'];
   Data.PostUrl := '';
+  Data.Magic := '';
+  Data.Username := '';
+  Data.FullName := '';
+  Data.UserMac := '';
+  Data.AuthMethod := '';
   if SessionID <> '' then
   begin
     SessionManager.GetSession(SessionID, Data);
@@ -312,11 +352,8 @@ begin
     LogAuthEvent(Data.Username, 'LOGOUT', GetClientIP(Req), Data.AuthMethod, Data.FullName, Data.UserMac, Copy(Req.UserAgent, 1, 255));
     
     // ถ้าไม่ได้ตั้งค่า API ไว้ ให้ใช้วิธี Redirect กลับไปที่ FortiGate
-    if Data.PostUrl <> '' then
-      LogoutUrl := StringReplace(Data.PostUrl, 'fgtauth', 'logout?', [rfIgnoreCase])
-    else
-      LogoutUrl := AppCfg.FortiGateLogoutURL;
-      
+    LogoutUrl := BuildFortiGateLogoutUrl(Data.PostUrl, Data.Magic, AppCfg.FortiGateLogoutURL);
+    WriteLn('HandleFortiGateLogout: Redirecting to FortiGate Logout URL: ', LogoutUrl);
     Redirect(Res, LogoutUrl);
   end;
 end;
