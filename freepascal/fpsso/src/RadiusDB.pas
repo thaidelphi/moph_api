@@ -51,6 +51,7 @@ begin
     
     try
       Conn.Connected := True;
+      Conn.ExecuteDirect('SET NAMES utf8mb4;');
       
       // Check if phone column exists
       Query.SQL.Text := 'SHOW COLUMNS FROM radcheck_mirror LIKE ''phone''';
@@ -167,6 +168,7 @@ begin
     
     try
       Conn.Connected := True;
+      Conn.ExecuteDirect('SET NAMES utf8mb4;');
       Query.SQL.Text := 'INSERT INTO login_history (username, fullname, event_type, ip_address, mac_address, user_agent, auth_method, event_time) ' +
                         'VALUES (:u, :f, :e, :ip, :mac, :ua, :m, NOW())';
       Query.Params.ParamByName('u').AsString := Username;
@@ -210,6 +212,7 @@ begin
     
     try
       Conn.Connected := True;
+      Conn.ExecuteDirect('SET NAMES utf8mb4;');
       Query.SQL.Text := 'SELECT fullname, email, phone FROM radcheck_mirror WHERE username = :u ORDER BY id DESC LIMIT 1';
       Query.Params.ParamByName('u').AsString := Username;
       Query.Open;
@@ -252,6 +255,7 @@ begin
     
     try
       Conn.Connected := True;
+      Conn.ExecuteDirect('SET NAMES utf8mb4;');
       Query.SQL.Text := 'SELECT username FROM radcheck_mirror WHERE email = :e LIMIT 1';
       Query.Params.ParamByName('e').AsString := Email;
       Query.Open;
@@ -287,6 +291,7 @@ begin
     
     try
       Conn.Connected := True;
+      Conn.ExecuteDirect('SET NAMES utf8mb4;');
       
       Query.SQL.Text := 'UPDATE radcheck_mirror SET fullname = :f, email = :e, phone = :p WHERE username = :u';
       Query.Params.ParamByName('f').AsString := FullName;
@@ -350,6 +355,7 @@ begin
     
     try
       Conn.Connected := True;
+      Conn.ExecuteDirect('SET NAMES utf8mb4;');
     except
       on E: Exception do Exit;
     end;
@@ -434,6 +440,7 @@ begin
     
     try
       Conn.Connected := True;
+      Conn.ExecuteDirect('SET NAMES utf8mb4;');
     except
       on E: Exception do
       begin

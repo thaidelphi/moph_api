@@ -66,6 +66,7 @@ begin
     Conn.CharSet := 'utf8mb4';
     Conn.Transaction := Trans;
     Conn.Connected := True;
+    Conn.ExecuteDirect('SET NAMES utf8mb4;');
     Result := True;
   except
     Conn.Free;
