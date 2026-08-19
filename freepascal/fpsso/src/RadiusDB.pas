@@ -336,7 +336,7 @@ begin
       Query.Close;
       
     // 2. If not found or wrong password, check if they exist in radcheck_mirror as pending
-    Query.SQL.Text := 'SELECT tmp_passwd, active FROM radcheck_mirror WHERE username = :u LIMIT 1';
+    Query.SQL.Text := 'SELECT tmp_passwd, active FROM radcheck_mirror WHERE username = :u ORDER BY id DESC LIMIT 1';
     Query.Params.ParamByName('u').AsString := Username;
     Query.Open;
     
@@ -399,21 +399,28 @@ begin
       end;
     end;
     
-    // 1. ตรวจสอบว่ามี tmp_passwd ใน radcheck_mirror หรือไม่
-    Query.SQL.Text := 'SELECT tmp_passwd, active FROM radcheck_mirror WHERE username = :u LIMIT 1';
+    // 1. ตรวจสอบว่ามี tmp_passwd ใน radcheck_mirror หรือไม่ (ดึงรายการล่าสุด)
+    Query.SQL.Text := 'SELECT tmp_passwd, active FROM radcheck_mirror WHERE username = :u ORDER BY id DESC LIMIT 1';
     Query.Params.ParamByName('u').AsString := Username;
     Query.Open;
     
     if not Query.EOF then
     begin
       Result := Query.FieldByName('tmp_passwd').AsString;
-      IsActive := (Query.FieldByName('active').AsString = 'Y');
+      ActiveStr := UpperCase(Trim(Query.FieldByName('active').AsString));
+      if AppCfg.SSOAutoApprove then
+        IsActive := (ActiveStr <> 'N')
+      else
+        IsActive := (ActiveStr = 'Y');
       Query.Close;
       
       if Result <> '' then
       begin
-        // อัปเดตข้อมูล email และ fullname ใน radcheck_mirror
-        Query.SQL.Text := 'UPDATE radcheck_mirror SET email = :e, fullname = :f WHERE username = :u';
+        // อัปเดตข้อมูล email, fullname และ active ใน radcheck_mirror
+        if IsActive then
+          Query.SQL.Text := 'UPDATE radcheck_mirror SET email = :e, fullname = :f, active = ''Y'' WHERE username = :u'
+        else
+          Query.SQL.Text := 'UPDATE radcheck_mirror SET email = :e, fullname = :f WHERE username = :u';
         Query.Params.ParamByName('e').AsString := Email;
         Query.Params.ParamByName('f').AsString := Fullname;
         Query.Params.ParamByName('u').AsString := Username;
