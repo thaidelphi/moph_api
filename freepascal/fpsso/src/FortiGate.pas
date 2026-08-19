@@ -269,23 +269,57 @@ var
   HtmlContent: TStringList;
 begin
   SessionID := Req.CookieFields.Values['SSOSESSID'];
+  if SessionID = '' then
+    SessionID := Req.QueryFields.Values['sid'];
+
   Data.PostUrl := '';
   Data.Magic := '';
   Data.Username := '';
   Data.FullName := '';
   Data.UserMac := '';
   Data.AuthMethod := '';
-  if SessionID <> '' then
+
+  if (SessionID <> '') and SessionManager.GetSession(SessionID, Data) then
   begin
-    SessionManager.GetSession(SessionID, Data);
     SessionManager.DeleteSession(SessionID);
-    with Res.Cookies.Add do
-    begin
-      Name := 'SSOSESSID';
-      Value := '';
-      Path := '/';
-      Expires := Now - 1; // หมดอายุ Cookie ทันที
-    end;
+  end
+  else
+  begin
+    // ค้นหา Session จาก Client IP เผื่อกรณี Cookie ข้ามโดเมนหลุด
+    SessionManager.FindSessionByIP(GetClientIP(Req), SessionID, Data);
+    if SessionID <> '' then
+      SessionManager.DeleteSession(SessionID);
+  end;
+
+  // กู้คืนค่า Magic, PostUrl, UserMac จาก Cookie หากใน Session ว่างเปล่า
+  if (Data.Magic = '') and (Req.CookieFields.Values['FGT_MAGIC'] <> '') then
+    Data.Magic := Req.CookieFields.Values['FGT_MAGIC'];
+  if (Data.PostUrl = '') and (Req.CookieFields.Values['FGT_POST'] <> '') then
+    Data.PostUrl := Req.CookieFields.Values['FGT_POST'];
+  if (Data.UserMac = '') and (Req.CookieFields.Values['FGT_MAC'] <> '') then
+    Data.UserMac := Req.CookieFields.Values['FGT_MAC'];
+
+  // ล้าง Cookie Session ทั้งหมด
+  with Res.Cookies.Add do
+  begin
+    Name := 'SSOSESSID';
+    Value := '';
+    Path := '/';
+    Expires := Now - 1; // หมดอายุ Cookie ทันที
+  end;
+  with Res.Cookies.Add do
+  begin
+    Name := 'FGT_MAGIC';
+    Value := '';
+    Path := '/';
+    Expires := Now - 1;
+  end;
+  with Res.Cookies.Add do
+  begin
+    Name := 'FGT_POST';
+    Value := '';
+    Path := '/';
+    Expires := Now - 1;
   end;
 
   // หากมีการตั้งค่า FortiGate API ให้ยิง API เพื่อสั่งเตะ IP
