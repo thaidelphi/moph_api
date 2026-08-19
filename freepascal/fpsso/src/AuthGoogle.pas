@@ -59,13 +59,15 @@ begin
     Exit;
   end;
 
-  StateStr := GenerateStateToken;
   SessionID := Req.CookieFields.Values['SSOSESSID'];
   if (SessionID = '') or not SessionManager.GetSession(SessionID, Data) then
   begin
     SessionID := SessionManager.CreateSession;
     SessionManager.GetSession(SessionID, Data);
   end;
+
+  // สร้าง State Token โดยแนบ SessionID ไว้ข้างหน้า เพื่อให้สามารถกู้คืน Session ได้เมื่อ redirect ข้ามโดเมน
+  StateStr := SessionID + '_' + GenerateStateToken;
   
   // เก็บ State ไว้ใน Session เพื่อ verify ใน Callback
   Data.OAuthState := StateStr;
@@ -77,6 +79,7 @@ begin
     Name := 'SSOSESSID';
     Value := SessionID;
     Path := '/';
+    Expires := Now + 1;
     HttpOnly := True;
   end;
   
@@ -118,6 +121,17 @@ begin
   ReturnedState := Req.QueryFields.Values['state'];
   
   SessionID := Req.CookieFields.Values['SSOSESSID'];
+  if (SessionID = '') or not SessionManager.GetSession(SessionID, Data) then
+  begin
+    // หากไม่พบ Cookie (เช่น redirect ข้าม domain หรือ scheme) ให้กู้คืน SessionID จาก State
+    if (ReturnedState <> '') and (Pos('_', ReturnedState) > 0) then
+    begin
+      SessionID := Copy(ReturnedState, 1, Pos('_', ReturnedState) - 1);
+      if not SessionManager.GetSession(SessionID, Data) then
+        SessionID := '';
+    end;
+  end;
+
   if (SessionID = '') or not SessionManager.GetSession(SessionID, Data) then
   begin
     Redirect(Res, '/sso/?error=session_expired');
@@ -246,6 +260,16 @@ begin
 
         // บันทึก Log การล็อกอิน
         LogAuthEvent(TargetUsername, 'LOGIN', GetClientIP(Req), 'GOOGLE');
+
+        // ตั้งค่า Cookie Session ซ้ำบนโดเมนปัจจุบัน
+        with Res.Cookies.Add do
+        begin
+          Name := 'SSOSESSID';
+          Value := SessionID;
+          Path := '/';
+          Expires := Now + 1;
+          HttpOnly := True;
+        end;
 
         Redirect(Res, '/sso/fortigate/handshake');
       end

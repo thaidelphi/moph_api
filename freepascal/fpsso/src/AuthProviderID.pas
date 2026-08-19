@@ -51,14 +51,15 @@ begin
     Exit;
   end;
 
-  // สร้าง State Token และบันทึกลง Session เพื่อตรวจสอบ CSRF ในขั้นตอน Callback
-  State := GenerateStateToken;
   SessionID := Req.CookieFields.Values['SSOSESSID'];
   if (SessionID = '') or not SessionManager.GetSession(SessionID, Data) then
   begin
     SessionID := SessionManager.CreateSession;
     SessionManager.GetSession(SessionID, Data);
   end;
+
+  // สร้าง State Token โดยแนบ SessionID ไว้ข้างหน้า เพื่อให้สามารถกู้คืน Session ได้เมื่อ redirect ข้ามโดเมน
+  State := SessionID + '_' + GenerateStateToken;
 
   // เก็บ State ไว้ใน Session เพื่อ verify ใน Callback
   Data.OAuthState := State;
@@ -114,13 +115,18 @@ begin
 
   // ตรวจสอบ State Token เพื่อป้องกัน CSRF Attack
   SessionID := Req.CookieFields.Values['SSOSESSID'];
-  if SessionID = '' then
+  if (SessionID = '') or not SessionManager.GetSession(SessionID, Data) then
   begin
-    Redirect(Res, '/sso/?error=session');
-    Exit;
+    // หากไม่พบ Cookie (เช่น redirect ข้าม domain หรือ scheme) ให้กู้คืน SessionID จาก State
+    if (State <> '') and (Pos('_', State) > 0) then
+    begin
+      SessionID := Copy(State, 1, Pos('_', State) - 1);
+      if not SessionManager.GetSession(SessionID, Data) then
+        SessionID := '';
+    end;
   end;
 
-  if not SessionManager.GetSession(SessionID, Data) then
+  if (SessionID = '') or not SessionManager.GetSession(SessionID, Data) then
   begin
     Redirect(Res, '/sso/?error=session');
     Exit;
@@ -244,6 +250,16 @@ begin
 
         // บันทึก Log การล็อกอิน
         LogAuthEvent(TargetUsername, 'LOGIN', GetClientIP(Req), 'PROVIDERID');
+
+        // ตั้งค่า Cookie Session ซ้ำบนโดเมนปัจจุบัน
+        with Res.Cookies.Add do
+        begin
+          Name := 'SSOSESSID';
+          Value := SessionID;
+          Path := '/';
+          Expires := Now + 1;
+          HttpOnly := True;
+        end;
 
         Redirect(Res, '/sso/fortigate/handshake');
       end
