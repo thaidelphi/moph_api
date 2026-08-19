@@ -45,13 +45,17 @@ begin
   if Url = '' then
     Url := 'http://192.168.200.1:1000/fgtauth';
 
+  // แปลง Port 1003 เป็น Port 1000 แบบ HTTP เสมอ เพื่อป้องกันเบราว์เซอร์บล็อก iframe จากปัญหา SSL Self-Signed
+  if Pos(':1003', Url) > 0 then
+  begin
+    Url := StringReplace(Url, ':1003', ':1000', [rfReplaceAll]);
+    if Pos('https://', LowerCase(Url)) = 1 then
+      Url := 'http://' + Copy(Url, 9, Length(Url));
+  end;
+
   // ตรวจสอบ Port 1000: FortiGate พอร์ต 1000 เป็น HTTP เท่านั้น (ไม่ใช่ HTTPS)
   if (Pos(':1000', Url) > 0) and (Pos('https://', LowerCase(Url)) = 1) then
     Url := 'http://' + Copy(Url, 9, Length(Url));
-
-  // ตรวจสอบ Port 1003: FortiGate พอร์ต 1003 เป็น HTTPS
-  if (Pos(':1003', Url) > 0) and (Pos('http://', LowerCase(Url)) = 1) then
-    Url := 'https://' + Copy(Url, 8, Length(Url));
 
   Result := Url;
 end;
@@ -233,13 +237,17 @@ begin
   if Url = '' then
     Url := 'http://192.168.200.1:1000/logout';
 
+  // แปลง Port 1003 เป็น Port 1000 แบบ HTTP เสมอ
+  if Pos(':1003', Url) > 0 then
+  begin
+    Url := StringReplace(Url, ':1003', ':1000', [rfReplaceAll]);
+    if Pos('https://', LowerCase(Url)) = 1 then
+      Url := 'http://' + Copy(Url, 9, Length(Url));
+  end;
+
   // ตรวจสอบ Port 1000: FortiGate พอร์ต 1000 เป็น HTTP เท่านั้น (ไม่ใช่ HTTPS)
   if (Pos(':1000', Url) > 0) and (Pos('https://', LowerCase(Url)) = 1) then
     Url := 'http://' + Copy(Url, 9, Length(Url));
-
-  // ตรวจสอบ Port 1003: FortiGate พอร์ต 1003 เป็น HTTPS
-  if (Pos(':1003', Url) > 0) and (Pos('http://', LowerCase(Url)) = 1) then
-    Url := 'https://' + Copy(Url, 8, Length(Url));
 
   // ล้าง Query Parameter เก่าออกก่อน ถ้ามี ? อยู่แล้ว
   if Pos('?', Url) > 0 then
