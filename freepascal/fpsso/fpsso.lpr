@@ -82,6 +82,42 @@ begin
       Expires := Now + 1; // 1 day
       HttpOnly := True;
     end;
+
+    if Data.Magic <> '' then
+    begin
+      with Res.Cookies.Add do
+      begin
+        Name := 'FGT_MAGIC';
+        Value := Data.Magic;
+        Path := '/';
+        Expires := Now + 1;
+        HttpOnly := True;
+      end;
+    end;
+
+    if Data.PostUrl <> '' then
+    begin
+      with Res.Cookies.Add do
+      begin
+        Name := 'FGT_POST';
+        Value := Data.PostUrl;
+        Path := '/';
+        Expires := Now + 1;
+        HttpOnly := True;
+      end;
+    end;
+
+    if Data.UserMac <> '' then
+    begin
+      with Res.Cookies.Add do
+      begin
+        Name := 'FGT_MAC';
+        Value := Data.UserMac;
+        Path := '/';
+        Expires := Now + 1;
+        HttpOnly := True;
+      end;
+    end;
   end
   else
   begin

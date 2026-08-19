@@ -67,6 +67,30 @@ begin
     SessionManager.GetSession(SessionID, Data);
   end;
 
+  // กู้คืนค่า FortiGate Magic Token, PostUrl, UserMac จาก Query Param หรือ Cookie
+  if Req.QueryFields.Values['magic'] <> '' then
+    Data.Magic := Req.QueryFields.Values['magic']
+  else if (Data.Magic = '') and (Req.CookieFields.Values['FGT_MAGIC'] <> '') then
+    Data.Magic := Req.CookieFields.Values['FGT_MAGIC'];
+
+  if Req.QueryFields.Values['post'] <> '' then
+    Data.PostUrl := Req.QueryFields.Values['post']
+  else if (Data.PostUrl = '') and (Req.CookieFields.Values['FGT_POST'] <> '') then
+    Data.PostUrl := Req.CookieFields.Values['FGT_POST'];
+
+  if Req.QueryFields.Values['redir'] <> '' then
+    Data.RedirUrl := Req.QueryFields.Values['redir'];
+
+  if Req.QueryFields.Values['usermac'] <> '' then
+    Data.UserMac := Req.QueryFields.Values['usermac']
+  else if (Data.UserMac = '') and (Req.CookieFields.Values['FGT_MAC'] <> '') then
+    Data.UserMac := Req.CookieFields.Values['FGT_MAC'];
+
+  if Req.QueryFields.Values['userip'] <> '' then
+    Data.ClientIP := Req.QueryFields.Values['userip']
+  else if Data.ClientIP = '' then
+    Data.ClientIP := GetClientIP(Req);
+
   // สร้าง State Token โดยแนบ SessionID ไว้ข้างหน้า เพื่อให้สามารถกู้คืน Session ได้เมื่อ redirect ข้ามโดเมน
   StateStr := SessionID + '_' + GenerateStateToken;
   

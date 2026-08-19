@@ -995,6 +995,18 @@
         if (featThaID) document.getElementById('btn-thaid').style.display = 'flex';
         if (featGoogle) document.getElementById('btn-google').style.display = 'flex';
         if (featProviderID) document.getElementById('btn-providerid').style.display = 'flex';
+
+        // ส่งต่อ Query string (เช่น magic, post, usermac) ไปยังปุ่ม SSO ทุกปุ่ม
+        var qs = window.location.search;
+        if (qs) {
+            ['btn-thaid', 'btn-google', 'btn-providerid'].forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el && el.getAttribute('href')) {
+                    var base = el.getAttribute('href').split('?')[0];
+                    el.setAttribute('href', base + qs);
+                }
+            });
+        }
         });
     </script>
 

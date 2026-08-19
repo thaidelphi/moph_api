@@ -498,10 +498,30 @@ begin
           Query.Params.ParamByName('e').AsString := Email;
         Query.Params.ParamByName('u').AsString := Username;
         Query.ExecSQL;
-
-        // ซิงค์ข้อมูลลง radcheck_cleartext เพื่อใช้กับ RADIUS (ทำเฉพาะกรณีที่ active = 'Y' เท่านั้น)
+        // ซิงค์ข้อมูลลง radcheck (MD5-Password) และ radcheck_cleartext เพื่อให้ RADIUS ตรวจสอบรหัสผ่านได้ตรงกัน
         if IsActive then
         begin
+          MD5Pass := MD5Print(MD5String(Result));
+          Query.SQL.Text := 'SELECT COUNT(*) as cnt FROM radcheck WHERE username = :u AND attribute = ''MD5-Password''';
+          Query.Params.ParamByName('u').AsString := Username;
+          Query.Open;
+          if Query.FieldByName('cnt').AsInteger > 0 then
+          begin
+            Query.Close;
+            Query.SQL.Text := 'UPDATE radcheck SET op = '':='', value = :v WHERE username = :u AND attribute = ''MD5-Password''';
+            Query.Params.ParamByName('v').AsString := MD5Pass;
+            Query.Params.ParamByName('u').AsString := Username;
+            Query.ExecSQL;
+          end
+          else
+          begin
+            Query.Close;
+            Query.SQL.Text := 'INSERT INTO radcheck (username, attribute, op, value) VALUES (:u, ''MD5-Password'', '':='', :v)';
+            Query.Params.ParamByName('u').AsString := Username;
+            Query.Params.ParamByName('v').AsString := MD5Pass;
+            Query.ExecSQL;
+          end;
+
           Query.SQL.Text := 'SELECT COUNT(*) as cnt FROM radcheck_cleartext WHERE username = :u';
           Query.Params.ParamByName('u').AsString := Username;
           Query.Open;

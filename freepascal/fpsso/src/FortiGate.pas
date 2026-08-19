@@ -56,6 +56,14 @@ begin
     Exit;
   end;
 
+  // กู้คืนค่า FortiGate Magic Token, PostUrl, UserMac จาก Cookie หากใน Session ว่างเปล่า
+  if (Data.Magic = '') and (Req.CookieFields.Values['FGT_MAGIC'] <> '') then
+    Data.Magic := Req.CookieFields.Values['FGT_MAGIC'];
+  if (Data.PostUrl = '') and (Req.CookieFields.Values['FGT_POST'] <> '') then
+    Data.PostUrl := Req.CookieFields.Values['FGT_POST'];
+  if (Data.UserMac = '') and (Req.CookieFields.Values['FGT_MAC'] <> '') then
+    Data.UserMac := Req.CookieFields.Values['FGT_MAC'];
+
   // 3. เตรียม URL ของ FortiGate (ดึงแบบ Dynamic ถ้ามี, ถ้าไม่มีใช้ค่าจาก .env)
   TargetUrl := Data.PostUrl;
   if TargetUrl = '' then
