@@ -473,12 +473,15 @@ begin
     begin
       Result := Query.FieldByName('tmp_passwd').AsString;
       ActiveStr := UpperCase(Trim(Query.FieldByName('active').AsString));
+      Query.Close;
+
+      // SSO_AUTO_APPROVE=true: user ผ่าน OAuth แล้วให้เข้าใช้ได้เลย
+      // SSO_AUTO_APPROVE=false: ต้องให้ admin set active=Y ก่อน
       if AppCfg.SSOAutoApprove then
-        IsActive := (ActiveStr <> 'N')
+        IsActive := True
       else
         IsActive := (ActiveStr = 'Y');
-      Query.Close;
-      
+
       if Result <> '' then
       begin
         // อัปเดตข้อมูล fullname, address, email และ active ใน radcheck_mirror
@@ -503,7 +506,8 @@ begin
           Query.Params.ParamByName('e').AsString := Email;
         Query.Params.ParamByName('u').AsString := Username;
         Query.ExecSQL;
-        // ซิงค์ข้อมูลลง radcheck (ทั้ง Cleartext-Password และ MD5-Password) และ radcheck_cleartext เพื่อให้ RADIUS ตรวจสอบรหัสผ่านได้ตรงกัน
+
+        // ซิงค์ข้อมูลลง radcheck (ทั้ง Cleartext-Password และ MD5-Password) และ radcheck_cleartext
         if IsActive then
         begin
           MD5Pass := MD5Print(MD5String(Result));
