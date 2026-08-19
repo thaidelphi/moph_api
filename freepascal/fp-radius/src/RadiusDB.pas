@@ -97,11 +97,13 @@ end;
 function CheckUserPassword(Conn: TMySQL80Connection; const Username, Password: string): Boolean;
 var
   Query: TSQLQuery;
-  DBPass: string;
+  DBPass, ActiveStr: string;
+  IsOAuthUser: Boolean;
+  I: Integer;
 begin
   Result := False;
   if not Assigned(Conn) then Exit;
-  
+
   if not Conn.Connected then
   begin
     try
@@ -115,41 +117,83 @@ begin
     end;
   end;
 
+  // ตรวจสอบว่า username เป็นตัวเลขล้วน (ThaID, ProviderID = เลขบัตรประชาชน)
+  // ถ้าใช่ → ตรวจแค่ว่า active ใน radcheck_mirror ไม่ใช่ N ก็ Accept ทันที
+  // เพราะการยืนยันตัวตนผ่าน ThaID OAuth แล้ว FortiGate แค่ต้องการ Accept
+  IsOAuthUser := (Length(Username) >= 8);
+  if IsOAuthUser then
+    for I := 1 to Length(Username) do
+      if not (Username[I] in ['0'..'9']) then
+      begin
+        IsOAuthUser := False;
+        Break;
+      end;
+
   Query := TSQLQuery.Create(nil);
   try
     Query.DataBase := Conn;
-    
-    // ตรวจสอบจากตาราง radcheck ปกติ
-    Query.SQL.Text := 'SELECT attribute, value FROM radcheck WHERE username = :u';
-    Query.Params.ParamByName('u').AsString := Username;
-    Query.Open;
-    
-    while not Query.EOF do
+
+    if IsOAuthUser then
     begin
-      if Query.FieldByName('attribute').AsString = 'Cleartext-Password' then
+      // ThaID/OAuth user: ตรวจแค่ radcheck_mirror ว่า active ไม่ใช่ N
+      Query.SQL.Text := 'SELECT active FROM radcheck_mirror WHERE username = :u LIMIT 1';
+      Query.Params.ParamByName('u').AsString := Username;
+      Query.Open;
+      if not Query.EOF then
       begin
-        if Query.FieldByName('value').AsString = Password then
-        begin
-          Result := True;
-          Break;
-        end;
+        ActiveStr := UpperCase(Trim(Query.FieldByName('active').AsString));
+        Result := (ActiveStr <> 'N');
+        if Result then
+          LogMsg(1, 'ThaID/OAuth Accept: ' + Username + ' (active=' + ActiveStr + ')')
+        else
+          LogMsg(1, 'ThaID/OAuth Reject: ' + Username + ' (active=N)');
       end
-      else if Query.FieldByName('attribute').AsString = 'MD5-Password' then
+      else
       begin
-        DBPass := Query.FieldByName('value').AsString;
-        if LowerCase(DBPass) = LowerCase(MD5Print(MD5String(Password))) then
-        begin
-          Result := True;
-          Break;
-        end;
+        // ไม่พบใน radcheck_mirror → fallback ตรวจ Cleartext-Password
+        LogMsg(1, Username + ' not in radcheck_mirror, fallback to radcheck');
+        Query.Close;
+        Query.SQL.Text := 'SELECT value FROM radcheck WHERE username = :u AND attribute = ''Cleartext-Password'' LIMIT 1';
+        Query.Params.ParamByName('u').AsString := Username;
+        Query.Open;
+        if not Query.EOF then
+          Result := (Query.FieldByName('value').AsString = Password);
       end;
-      Query.Next;
+      Query.Close;
+    end
+    else
+    begin
+      // Local user: ตรวจสอบ Cleartext-Password หรือ MD5-Password จาก radcheck ปกติ
+      Query.SQL.Text := 'SELECT attribute, value FROM radcheck WHERE username = :u';
+      Query.Params.ParamByName('u').AsString := Username;
+      Query.Open;
+      while not Query.EOF do
+      begin
+        if Query.FieldByName('attribute').AsString = 'Cleartext-Password' then
+        begin
+          if Query.FieldByName('value').AsString = Password then
+          begin
+            Result := True;
+            Break;
+          end;
+        end
+        else if Query.FieldByName('attribute').AsString = 'MD5-Password' then
+        begin
+          DBPass := Query.FieldByName('value').AsString;
+          if LowerCase(DBPass) = LowerCase(MD5Print(MD5String(Password))) then
+          begin
+            Result := True;
+            Break;
+          end;
+        end;
+        Query.Next;
+      end;
+      Query.Close;
     end;
-    
-    Query.Close;
+
     if Assigned(Conn.Transaction) and Conn.Transaction.Active then
       (Conn.Transaction as TSQLTransaction).Commit;
-      
+
   except
     on E: Exception do
     begin
@@ -160,6 +204,7 @@ begin
   end;
   Query.Free;
 end;
+
 
 procedure LogAccessAttempt(Conn: TMySQL80Connection; const Username, NasIP: string; Accepted: Boolean; const Timestamp: TDateTime);
 var
