@@ -45,6 +45,7 @@ type
     
     function CreateSession: string;
     function GetSession(const SessionID: string; out Data: TSessionData): Boolean;
+    function FindSessionByIP(const ClientIP: string; out FoundSessionID: string; out Data: TSessionData): Boolean;
     procedure UpdateSession(const SessionID: string; const Data: TSessionData);
     procedure DeleteSession(const SessionID: string);
     procedure CleanupExpired(MaxAgeMinutes: Integer);
@@ -125,6 +126,45 @@ begin
       Data := FMap.Data[Idx];
       Data.LastAccessed := Now;
       FMap.Data[Idx] := Data;
+      Result := True;
+    end;
+  finally
+    FLock.Release;
+  end;
+end;
+
+function TSessionManager.FindSessionByIP(const ClientIP: string; out FoundSessionID: string; out Data: TSessionData): Boolean;
+var
+  I, BestIdx: Integer;
+  BestTime: TDateTime;
+begin
+  Result := False;
+  FoundSessionID := '';
+  BestIdx := -1;
+  BestTime := 0;
+
+  if ClientIP = '' then Exit;
+
+  FLock.Acquire;
+  try
+    for I := 0 to FMap.Count - 1 do
+    begin
+      if (FMap.Data[I].ClientIP = ClientIP) and (FMap.Data[I].Username <> '') then
+      begin
+        if (BestIdx = -1) or (FMap.Data[I].LastAccessed > BestTime) then
+        begin
+          BestIdx := I;
+          BestTime := FMap.Data[I].LastAccessed;
+        end;
+      end;
+    end;
+
+    if BestIdx >= 0 then
+    begin
+      FoundSessionID := FMap.Keys[BestIdx];
+      Data := FMap.Data[BestIdx];
+      Data.LastAccessed := Now;
+      FMap.Data[BestIdx] := Data;
       Result := True;
     end;
   finally

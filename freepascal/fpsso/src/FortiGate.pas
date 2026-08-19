@@ -142,6 +142,15 @@ begin
     end;
   end;
 
+  // แนบ SessionID ไปกับ RedirUrl เผื่อกรณีเบราว์เซอร์ทำ Cross-Site redirect จาก FortiGate แล้ว Cookie หลุด
+  if SessionID <> '' then
+  begin
+    if Pos('?', RedirUrl) > 0 then
+      RedirUrl := RedirUrl + '&sid=' + SessionID
+    else
+      RedirUrl := RedirUrl + '?sid=' + SessionID;
+  end;
+
   WriteLn('FortiGate Handshake for user: ', Data.Username, ' | TargetUrl: ', TargetUrl, ' | Magic: ', Data.Magic, ' | RedirUrl: ', RedirUrl);
 
   // หากไม่มี Magic Token จาก FortiGate (เกิดจากผู้ใช้พิมพ์ URL /sso/ เข้ามาตรงๆ โดยไม่ได้ผ่าน Captive Portal redirect)
@@ -395,15 +404,32 @@ var
   Data: TSessionData;
 begin
   SessionID := Req.CookieFields.Values['SSOSESSID'];
+  if SessionID = '' then
+    SessionID := Req.QueryFields.Values['sid'];
+
   WriteLn('HandleStatusPage: SessionID="', SessionID, '"');
   
   // ตรวจสอบว่ามี Session ที่ล็อกอินสำเร็จแล้วจริงหรือไม่ (ป้องกันการเปิดหน้าสถานะโดยยังไม่ได้ล็อกอิน)
   if (SessionID = '') or not SessionManager.GetSession(SessionID, Data) or (Data.Username = '') then
   begin
-    WriteLn('HandleStatusPage: Session invalid or username empty -> redirecting to /sso/');
-    // หากยังไม่ได้ล็อกอินหรือ Session ไม่ถูกต้อง ให้เด้งกลับไปหน้าหลัก
-    Redirect(Res, '/sso/');
-    Exit;
+    // หากไม่พบ Session จาก Cookie/Query ให้ค้นหาจาก IP ของเครื่องลูกข่าย
+    if not SessionManager.FindSessionByIP(GetClientIP(Req), SessionID, Data) then
+    begin
+      WriteLn('HandleStatusPage: Session invalid or username empty -> redirecting to /sso/');
+      // หากยังไม่ได้ล็อกอินหรือ Session ไม่ถูกต้อง ให้เด้งกลับไปหน้าหลัก
+      Redirect(Res, '/sso/');
+      Exit;
+    end;
+  end;
+
+  // re-set cookie เพื่อให้เบราว์เซอร์เก็บ Session ไว้ใช้งานต่อไป
+  with Res.Cookies.Add do
+  begin
+    Name := 'SSOSESSID';
+    Value := SessionID;
+    Path := '/';
+    Expires := Now + 1;
+    HttpOnly := True;
   end;
 
   UserDisplayName := Data.FullName;

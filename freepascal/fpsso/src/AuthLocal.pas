@@ -77,17 +77,26 @@ begin
     if Req.ContentFields.Values['magic'] <> '' then
       Data.Magic := Req.ContentFields.Values['magic']
     else if Req.QueryFields.Values['magic'] <> '' then
-      Data.Magic := Req.QueryFields.Values['magic'];
+      Data.Magic := Req.QueryFields.Values['magic']
+    else if (Data.Magic = '') and (Req.CookieFields.Values['FGT_MAGIC'] <> '') then
+      Data.Magic := Req.CookieFields.Values['FGT_MAGIC'];
 
     if Req.ContentFields.Values['post'] <> '' then
       Data.PostUrl := Req.ContentFields.Values['post']
     else if Req.QueryFields.Values['post'] <> '' then
-      Data.PostUrl := Req.QueryFields.Values['post'];
+      Data.PostUrl := Req.QueryFields.Values['post']
+    else if (Data.PostUrl = '') and (Req.CookieFields.Values['FGT_POST'] <> '') then
+      Data.PostUrl := Req.CookieFields.Values['FGT_POST'];
 
     if Req.ContentFields.Values['redir'] <> '' then
       Data.RedirUrl := Req.ContentFields.Values['redir']
     else if Req.QueryFields.Values['redir'] <> '' then
       Data.RedirUrl := Req.QueryFields.Values['redir'];
+
+    if (Data.UserMac = '') and (Req.CookieFields.Values['FGT_MAC'] <> '') then
+      Data.UserMac := Req.CookieFields.Values['FGT_MAC'];
+
+    Data.ClientIP := GetClientIP(Req);
       
     SessionManager.UpdateSession(SessionID, Data);
     
