@@ -130,12 +130,13 @@ var
   ResponseStr: string;
   JSON: TJSONObject;
   AccessToken: string;
-  PlainPass, PID, FullName, Email: string;
+  PlainPass, PID, FullName, Email, Address: string;
   Data: TSessionData;
   AuthHeader: string;
   IsActive: Boolean;
   PayloadStr: string;
   PayloadJSON: TJSONObject;
+  AddrObj: TJSONObject;
 begin
   if not HasFeature('thaid') then
   begin
@@ -223,6 +224,18 @@ begin
         if FullName = '' then
           FullName := Trim(GetJSONStr(JSON, 'given_name') + ' ' + GetJSONStr(JSON, 'family_name'));
 
+        Address := '';
+        if JSON.Find('address') <> nil then
+        begin
+          if JSON.Find('address').JSONType = jtObject then
+          begin
+            AddrObj := JSON.Objects['address'];
+            Address := GetJSONStr(AddrObj, 'formatted');
+          end
+          else if JSON.Find('address').JSONType = jtString then
+            Address := JSON.Find('address').AsString;
+        end;
+
         Email := GetJSONStr(JSON, 'email');
       finally
         JSON.Free;
@@ -268,8 +281,8 @@ begin
         Exit;
       end;
 
-      // บันทึกหรืออัปเดตข้อมูลผู้ใช้ใน radcheck_mirror และขอ tmp_passwd
-      PlainPass := SSORadiusAuth(PID, IsActive, Email, FullName);
+      // บันทึกหรืออัปเดตข้อมูลผู้ใช้ใน radcheck_mirror (รวมถึงชื่อและที่อยู่) และขอ tmp_passwd
+      PlainPass := SSORadiusAuth(PID, IsActive, Email, FullName, Address);
 
       if not IsActive then
       begin
