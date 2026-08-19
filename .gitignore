@@ -1,3 +1,4 @@
 .env
 api1-kpo.conf
 
+*.key
