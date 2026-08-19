@@ -220,34 +220,36 @@ var
   Url: string;
 begin
   Url := Trim(PostUrl);
-  if Url <> '' then
-    Url := StringReplace(Url, 'fgtauth', 'logout', [rfIgnoreCase])
-  else
-    Url := Trim(ConfiguredLogoutUrl);
-
   if Url = '' then
-    Url := 'http://192.168.200.1:1000/logout';
-
-  // แปลง Port 1003 เป็น Port 1000 แบบ HTTP เสมอ
-  if Pos(':1003', Url) > 0 then
-  begin
-    Url := StringReplace(Url, ':1003', ':1000', [rfReplaceAll]);
-    if Pos('https://', LowerCase(Url)) = 1 then
-      Url := 'http://' + Copy(Url, 9, Length(Url));
-  end;
-
-  // ตรวจสอบ Port 1000: FortiGate พอร์ต 1000 เป็น HTTP เท่านั้น (ไม่ใช่ HTTPS)
-  if (Pos(':1000', Url) > 0) and (Pos('https://', LowerCase(Url)) = 1) then
-    Url := 'http://' + Copy(Url, 9, Length(Url));
+    Url := Trim(ConfiguredLogoutUrl);
+  if Url = '' then
+    Url := 'https://192.168.200.1:1003/logout?';
 
   // ล้าง Query Parameter เก่าออกก่อน ถ้ามี ? อยู่แล้ว
   if Pos('?', Url) > 0 then
     Url := Copy(Url, 1, Pos('?', Url) - 1);
 
-  // เติม ? และ Magic Token ถ้ามี
+  // เปลี่ยน endpoint จาก fgtauth เป็น logout
+  if Pos('/fgtauth', Url) > 0 then
+    Url := StringReplace(Url, '/fgtauth', '/logout', [rfIgnoreCase, rfReplaceAll]);
+
+  // ตรวจสอบ Port 1000: FortiGate พอร์ต 1000 ต้องเป็น HTTP เท่านั้น
+  if (Pos(':1000', Url) > 0) and (Pos('https://', LowerCase(Url)) = 1) then
+    Url := 'http://' + Copy(Url, 9, Length(Url));
+
+  // ตรวจสอบ Port 1003: FortiGate พอร์ต 1003 ต้องเป็น HTTPS เท่านั้น
+  if (Pos(':1003', Url) > 0) and (Pos('http://', LowerCase(Url)) = 1) then
+    Url := 'https://' + Copy(Url, 8, Length(Url));
+
+  // เติม ? และ Magic Token
   if Magic <> '' then
-    Url := Url + '?' + Magic
-  else
+  begin
+    if (Length(Url) > 0) and (Url[Length(Url)] <> '?') and (Url[Length(Url)] <> '&') then
+      Url := Url + '?' + Magic
+    else
+      Url := Url + Magic;
+  end
+  else if Pos('?', Url) = 0 then
     Url := Url + '?';
 
   Result := Url;
