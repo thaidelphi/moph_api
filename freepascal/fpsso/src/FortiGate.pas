@@ -181,12 +181,13 @@ begin
     '        <input type="hidden" name="username" value="' + HtmlEncode(Data.Username) + '">' + LineEnding +
     '        <input type="hidden" name="password" value="' + HtmlEncode(Data.PlainPass) + '">' + LineEnding +
     '        <input type="hidden" name="magic" value="' + HtmlEncode(Data.Magic) + '">' + LineEnding +
-    '        <input type="hidden" name="4Tredir" value="' + HtmlEncode(RedirUrl) + '">' + LineEnding +
     '        <input type="hidden" name="redir" value="' + HtmlEncode(RedirUrl) + '">' + LineEnding +
     '    </form>' + LineEnding +
     '    <script>' + LineEnding +
     '        window.addEventListener("load", function() {' + LineEnding +
-    '            document.getElementById("fortigate_form").submit();' + LineEnding +
+    '            setTimeout(function() {' + LineEnding +
+    '                document.getElementById("fortigate_form").submit();' + LineEnding +
+    '            }, 500);' + LineEnding +
     '        });' + LineEnding +
     '    </script>' + LineEnding +
     '</body>' + LineEnding +
