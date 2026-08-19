@@ -344,7 +344,7 @@ begin
           HttpOnly := True;
         end;
 
-        Redirect(Res, '/sso/fortigate/handshake');
+        Redirect(Res, '/sso/fortigate/handshake?sid=' + SessionID);
       end
       else
         Redirect(Res, '/sso/?error=db');

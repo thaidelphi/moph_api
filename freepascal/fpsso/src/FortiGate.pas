@@ -56,11 +56,28 @@ var
   HtmlContent, TargetUrl, RedirUrl, Proto, HostHeader, BaseUrl: string;
 begin
   SessionID := Req.CookieFields.Values['SSOSESSID'];
+  if SessionID = '' then
+    SessionID := Req.QueryFields.Values['sid'];
 
   if (SessionID = '') or not SessionManager.GetSession(SessionID, Data) then
   begin
-    Redirect(Res, '/sso/?error=session');
-    Exit;
+    // หากไม่พบ Session จาก Cookie หรือ Query ให้อ่านจาก IP ของเครื่องลูกข่าย
+    if not SessionManager.FindSessionByIP(GetClientIP(Req), SessionID, Data) then
+    begin
+      WriteLn('HandleFortiGateHandshake: Session not found for IP: ', GetClientIP(Req));
+      Redirect(Res, '/sso/?error=session');
+      Exit;
+    end;
+  end;
+
+  // re-set cookie เพื่อรักษา Session ไว้
+  with Res.Cookies.Add do
+  begin
+    Name := 'SSOSESSID';
+    Value := SessionID;
+    Path := '/';
+    Expires := Now + 1;
+    HttpOnly := True;
   end;
 
   // ตรวจสอบว่ามีข้อมูลที่จำเป็นครบถ้วน
