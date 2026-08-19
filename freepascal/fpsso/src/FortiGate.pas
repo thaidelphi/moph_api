@@ -438,25 +438,38 @@ var
   HtmlContent: TStringList;
   SessionID, UserDisplayName, StatusPath, FullName, Email, Phone: string;
   Data: TSessionData;
+  FoundValidSession: Boolean;
 begin
-  SessionID := Req.CookieFields.Values['SSOSESSID'];
-  if SessionID = '' then
-    SessionID := Req.QueryFields.Values['sid'];
+  FoundValidSession := False;
 
-  WriteLn('HandleStatusPage: SessionID="', SessionID, '"');
-  
-  // ตรวจสอบว่ามี Session ที่ล็อกอินสำเร็จแล้วจริงหรือไม่ (ป้องกันการเปิดหน้าสถานะโดยยังไม่ได้ล็อกอิน)
-  if (SessionID = '') or not SessionManager.GetSession(SessionID, Data) or (Data.Username = '') then
+  // 1. ตรวจสอบจาก Query Parameter 'sid' ก่อน (เป็น SessionID ล่าสุดที่เพิ่งล็อกอินสำเร็จ)
+  SessionID := Req.QueryFields.Values['sid'];
+  if (SessionID <> '') and SessionManager.GetSession(SessionID, Data) and (Data.Username <> '') then
+    FoundValidSession := True;
+
+  // 2. หากยังไม่พบ ให้ตรวจสอบจาก Cookie 'SSOSESSID'
+  if not FoundValidSession then
   begin
-    // หากไม่พบ Session จาก Cookie/Query ให้ค้นหาจาก IP ของเครื่องลูกข่าย
-    if not SessionManager.FindSessionByIP(GetClientIP(Req), SessionID, Data) then
-    begin
-      WriteLn('HandleStatusPage: Session invalid or username empty -> redirecting to /sso/');
-      // หากยังไม่ได้ล็อกอินหรือ Session ไม่ถูกต้อง ให้เด้งกลับไปหน้าหลัก
-      Redirect(Res, '/sso/');
-      Exit;
-    end;
+    SessionID := Req.CookieFields.Values['SSOSESSID'];
+    if (SessionID <> '') and SessionManager.GetSession(SessionID, Data) and (Data.Username <> '') then
+      FoundValidSession := True;
   end;
+
+  // 3. หากยังไม่พบ ให้ค้นหา Session ที่ใช้งานอยู่จาก Client IP
+  if not FoundValidSession then
+  begin
+    if SessionManager.FindSessionByIP(GetClientIP(Req), SessionID, Data) and (Data.Username <> '') then
+      FoundValidSession := True;
+  end;
+
+  if not FoundValidSession then
+  begin
+    WriteLn('HandleStatusPage: No valid session found -> redirecting to /sso/');
+    Redirect(Res, '/sso/');
+    Exit;
+  end;
+
+  WriteLn('HandleStatusPage: Found valid session "', SessionID, '" for user "', Data.Username, '"');
 
   // re-set cookie เพื่อให้เบราว์เซอร์เก็บ Session ไว้ใช้งานต่อไป
   with Res.Cookies.Add do
