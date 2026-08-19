@@ -177,8 +177,7 @@ begin
     '        <h2>กำลังอนุญาตสิทธิ์เข้าใช้งานอินเทอร์เน็ต</h2>' + LineEnding +
     '        <p>กรุณารอสักครู่ ระบบกำลังลงทะเบียนอุปกรณ์ของท่านกับทาง FortiGate...</p>' + LineEnding +
     '    </div>' + LineEnding +
-    '    <iframe name="fortigate_target_frame" id="fortigate_target_frame" style="display:none; width:0; height:0; border:0;"></iframe>' + LineEnding +
-    '    <form id="fortigate_form" target="fortigate_target_frame" action="' + HtmlEncode(TargetUrl) + '" method="post" style="display: none;">' + LineEnding +
+    '    <form id="fortigate_form" action="' + HtmlEncode(TargetUrl) + '" method="post" style="display: none;">' + LineEnding +
     '        <input type="hidden" name="username" value="' + HtmlEncode(Data.Username) + '">' + LineEnding +
     '        <input type="hidden" name="password" value="' + HtmlEncode(Data.PlainPass) + '">' + LineEnding +
     '        <input type="hidden" name="magic" value="' + HtmlEncode(Data.Magic) + '">' + LineEnding +
@@ -186,14 +185,8 @@ begin
     '        <input type="hidden" name="redir" value="' + HtmlEncode(RedirUrl) + '">' + LineEnding +
     '    </form>' + LineEnding +
     '    <script>' + LineEnding +
-    '        var statusUrl = "' + HtmlEncode(RedirUrl) + '";' + LineEnding +
     '        window.addEventListener("load", function() {' + LineEnding +
-    '            try {' + LineEnding +
-    '                document.getElementById("fortigate_form").submit();' + LineEnding +
-    '            } catch(e) {}' + LineEnding +
-    '            setTimeout(function() {' + LineEnding +
-    '                window.location.replace(statusUrl);' + LineEnding +
-    '            }, 600);' + LineEnding +
+    '            document.getElementById("fortigate_form").submit();' + LineEnding +
     '        });' + LineEnding +
     '    </script>' + LineEnding +
     '</body>' + LineEnding +
