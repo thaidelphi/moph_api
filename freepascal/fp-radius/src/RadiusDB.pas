@@ -100,7 +100,20 @@ var
   DBPass: string;
 begin
   Result := False;
-  if not Assigned(Conn) or not Conn.Connected then Exit;
+  if not Assigned(Conn) then Exit;
+  
+  if not Conn.Connected then
+  begin
+    try
+      Conn.Connected := True;
+    except
+      on E: Exception do
+      begin
+        LogMsg(0, 'DB Reconnect failed in CheckUserPassword: ' + E.Message);
+        Exit;
+      end;
+    end;
+  end;
 
   Query := TSQLQuery.Create(nil);
   try
@@ -133,9 +146,17 @@ begin
       Query.Next;
     end;
     
+    Query.Close;
+    if Assigned(Conn.Transaction) and Conn.Transaction.Active then
+      (Conn.Transaction as TSQLTransaction).Commit;
+      
   except
     on E: Exception do
+    begin
       LogMsg(0, 'Error in CheckUserPassword: ' + E.Message);
+      if Assigned(Conn.Transaction) and Conn.Transaction.Active then
+        (Conn.Transaction as TSQLTransaction).Rollback;
+    end;
   end;
   Query.Free;
 end;
@@ -144,7 +165,15 @@ procedure LogAccessAttempt(Conn: TMySQL80Connection; const Username, NasIP: stri
 var
   Query: TSQLQuery;
 begin
-  if not Assigned(Conn) or not Conn.Connected then Exit;
+  if not Assigned(Conn) then Exit;
+  if not Conn.Connected then
+  begin
+    try
+      Conn.Connected := True;
+    except
+      Exit;
+    end;
+  end;
 
   Query := TSQLQuery.Create(nil);
   try
@@ -157,12 +186,14 @@ begin
     Query.Params.ParamByName('ts').AsDateTime := Timestamp;
     
     Query.ExecSQL;
-    Conn.Transaction.Commit;
+    if Assigned(Conn.Transaction) and Conn.Transaction.Active then
+      (Conn.Transaction as TSQLTransaction).Commit;
   except
     on E: Exception do
     begin
       LogMsg(0, 'Error in LogAccessAttempt: ' + E.Message);
-      Conn.Transaction.Rollback;
+      if Assigned(Conn.Transaction) and Conn.Transaction.Active then
+        (Conn.Transaction as TSQLTransaction).Rollback;
     end;
   end;
   Query.Free;
