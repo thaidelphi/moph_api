@@ -142,15 +142,6 @@ begin
     end;
   end;
 
-  // แนบ SessionID ไปกับ RedirUrl เผื่อกรณีเบราว์เซอร์ทำ Cross-Site redirect จาก FortiGate แล้ว Cookie หลุด
-  if SessionID <> '' then
-  begin
-    if Pos('?', RedirUrl) > 0 then
-      RedirUrl := RedirUrl + '&sid=' + SessionID
-    else
-      RedirUrl := RedirUrl + '?sid=' + SessionID;
-  end;
-
   WriteLn('FortiGate Handshake for user: ', Data.Username, ' | TargetUrl: ', TargetUrl, ' | Magic: ', Data.Magic, ' | RedirUrl: ', RedirUrl);
 
   // หากไม่มี Magic Token จาก FortiGate (เกิดจากผู้ใช้พิมพ์ URL /sso/ เข้ามาตรงๆ โดยไม่ได้ผ่าน Captive Portal redirect)
