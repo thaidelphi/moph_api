@@ -134,6 +134,15 @@ begin
     end;
   end;
 
+  // แนบ SessionID ไปใน RedirUrl เพื่อให้ FortiGate ส่งกลับมายังหน้า Status ได้อย่างแม่นยำ 100%
+  if SessionID <> '' then
+  begin
+    if Pos('?', RedirUrl) > 0 then
+      RedirUrl := RedirUrl + '&sid=' + SessionID
+    else
+      RedirUrl := RedirUrl + '?sid=' + SessionID;
+  end;
+
   WriteLn('FortiGate Handshake for user: ', Data.Username, ' | TargetUrl: ', TargetUrl, ' | Magic: ', Data.Magic, ' | RedirUrl: ', RedirUrl);
 
   // หากไม่มี Magic Token จาก FortiGate (เกิดจากผู้ใช้พิมพ์ URL /sso/ เข้ามาตรงๆ โดยไม่ได้ผ่าน Captive Portal redirect)
