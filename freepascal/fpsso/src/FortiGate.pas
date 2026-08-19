@@ -325,7 +325,7 @@ end;
 procedure HandleStatusPage(Req: TRequest; Res: TResponse);
 var
   HtmlContent: TStringList;
-  SessionID, UserDisplayName, StatusPath: string;
+  SessionID, UserDisplayName, StatusPath, FullName, Email, Phone: string;
   Data: TSessionData;
 begin
   SessionID := Req.CookieFields.Values['SSOSESSID'];
@@ -340,12 +340,25 @@ begin
     Exit;
   end;
 
-  WriteLn('HandleStatusPage: Displaying status for user "', Data.Username, '" (FullName="', Data.FullName, '")');
+  UserDisplayName := Data.FullName;
+  // หากชื่อใน Session เป็นค่าว่างหรือเป็นเครื่องหมาย ? (จากข้อมูลเก่า) ให้ดึงข้อมูลล่าสุดจากฐานข้อมูล
+  if (UserDisplayName = '') or (Pos('?', UserDisplayName) > 0) then
+  begin
+    if GetUserProfile(Data.Username, FullName, Email, Phone) then
+    begin
+      if (FullName <> '') and (Pos('?', FullName) = 0) then
+      begin
+        UserDisplayName := FullName;
+        Data.FullName := FullName;
+        SessionManager.UpdateSession(SessionID, Data);
+      end;
+    end;
+  end;
 
-  if Data.FullName <> '' then
-    UserDisplayName := Data.FullName
-  else
+  if UserDisplayName = '' then
     UserDisplayName := Data.Username;
+
+  WriteLn('HandleStatusPage: Displaying status for user "', Data.Username, '" (FullName="', UserDisplayName, '")');
 
   HtmlContent := TStringList.Create;
   try

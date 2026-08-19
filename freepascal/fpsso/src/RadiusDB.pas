@@ -165,7 +165,7 @@ begin
     
     try
       Conn.Connected := True;
-      Query.SQL.Text := 'SELECT fullname, email, phone FROM radcheck_mirror WHERE username = :u LIMIT 1';
+      Query.SQL.Text := 'SELECT fullname, email, phone FROM radcheck_mirror WHERE username = :u ORDER BY id DESC LIMIT 1';
       Query.Params.ParamByName('u').AsString := Username;
       Query.Open;
       if not Query.EOF then

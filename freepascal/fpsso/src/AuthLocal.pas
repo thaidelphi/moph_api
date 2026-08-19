@@ -16,7 +16,7 @@ var
   SessionID: string;
   Username, Pass: string;
   Data: TSessionData;
-  PlainPass: string;
+  PlainPass, DummyEmail, DummyPhone: string;
   IsActive: Boolean;
 begin
   if Req.Method <> 'POST' then
@@ -68,6 +68,9 @@ begin
     Data.Username := Username;
     Data.PlainPass := PlainPass;
     Data.AuthMethod := 'LOCAL';
+    
+    // ดึงชื่อ-นามสกุลจากฐานข้อมูล
+    GetUserProfile(Username, Data.FullName, DummyEmail, DummyPhone);
     
     // ดึงค่า magic, post, redir ที่ส่งมาจาก Form เพิ่มเติม (ป้องกันกรณี Session หลุดหรือ Restart ระบบ)
     if Req.ContentFields.Values['magic'] <> '' then
