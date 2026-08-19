@@ -43,19 +43,7 @@ begin
   if Url = '' then
     Url := Trim(AppCfg.FortiGateAuthURL);
   if Url = '' then
-    Url := 'http://192.168.200.1:1000/fgtauth';
-
-  // แปลง Port 1003 เป็น Port 1000 แบบ HTTP เสมอ เพื่อป้องกันเบราว์เซอร์บล็อก iframe จากปัญหา SSL Self-Signed
-  if Pos(':1003', Url) > 0 then
-  begin
-    Url := StringReplace(Url, ':1003', ':1000', [rfReplaceAll]);
-    if Pos('https://', LowerCase(Url)) = 1 then
-      Url := 'http://' + Copy(Url, 9, Length(Url));
-  end;
-
-  // ตรวจสอบ Port 1000: FortiGate พอร์ต 1000 เป็น HTTP เท่านั้น (ไม่ใช่ HTTPS)
-  if (Pos(':1000', Url) > 0) and (Pos('https://', LowerCase(Url)) = 1) then
-    Url := 'http://' + Copy(Url, 9, Length(Url));
+    Url := 'https://192.168.200.1:1003/fgtauth';
 
   Result := Url;
 end;
@@ -180,8 +168,7 @@ begin
     '        <h2>กำลังอนุญาตสิทธิ์เข้าใช้งานอินเทอร์เน็ต</h2>' + LineEnding +
     '        <p>กรุณารอสักครู่ ระบบกำลังลงทะเบียนอุปกรณ์ของท่านกับทาง FortiGate...</p>' + LineEnding +
     '    </div>' + LineEnding +
-    '    <iframe name="fortigate_target_frame" id="fortigate_target_frame" style="display:none; width:0; height:0; border:0;"></iframe>' + LineEnding +
-    '    <form id="fortigate_form" target="fortigate_target_frame" action="' + HtmlEncode(TargetUrl) + '" method="post" style="display: none;">' + LineEnding +
+    '    <form id="fortigate_form" action="' + HtmlEncode(TargetUrl) + '" method="post" style="display: none;">' + LineEnding +
     '        <input type="hidden" name="username" value="' + HtmlEncode(Data.Username) + '">' + LineEnding +
     '        <input type="hidden" name="password" value="' + HtmlEncode(Data.PlainPass) + '">' + LineEnding +
     '        <input type="hidden" name="magic" value="' + HtmlEncode(Data.Magic) + '">' + LineEnding +
@@ -189,15 +176,10 @@ begin
     '        <input type="hidden" name="redir" value="' + HtmlEncode(RedirUrl) + '">' + LineEnding +
     '    </form>' + LineEnding +
     '    <script>' + LineEnding +
-    '        var statusUrl = "' + HtmlEncode(RedirUrl) + '";' + LineEnding +
-    '        if (statusUrl.indexOf("?") >= 0) statusUrl += "&sid=' + SessionID + '"; else statusUrl += "?sid=' + SessionID + '";' + LineEnding +
     '        window.addEventListener("load", function() {' + LineEnding +
-    '            try {' + LineEnding +
-    '                document.getElementById("fortigate_form").submit();' + LineEnding +
-    '            } catch(e) {}' + LineEnding +
     '            setTimeout(function() {' + LineEnding +
-    '                window.location.replace(statusUrl);' + LineEnding +
-    '            }, 800);' + LineEnding +
+    '                document.getElementById("fortigate_form").submit();' + LineEnding +
+    '            }, 200);' + LineEnding +
     '        });' + LineEnding +
     '    </script>' + LineEnding +
     '</body>' + LineEnding +
