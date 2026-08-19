@@ -43,9 +43,23 @@
 ---
 
 ### 4. การจัดการ Session (`SessionMgr.pas` และ `Router.pas`)
-* **ลำดับการค้นหา Session ในหน้าสถานะ (`HandleStatusPage`):**
-  1. ค้นหาจาก Query Parameter `sid` (ความสำคัญสูงสุด)
-  2. ค้นหาจาก Cookie `SSOSESSID`
+* **ลำดับการค้นหา Session ในทุกหน้า (`HandleFortiGateHandshake`, `HandleStatusPage`):**
+  1. ค้นหาจาก Cookie `SSOSESSID`
+  2. ค้นหาจาก Query Parameter `sid` (ความสำคัญสูงสุดเมื่อ redirect ข้ามโดเมน)
   3. ค้นหาจาก IP ของเครื่องลูกข่าย (`FindSessionByIP`)
 * **การอ่าน Client IP (`GetClientIP`):**
   * ต้องตัดเอาเฉพาะ IP ตัวแรกใน Header `X-Forwarded-For` เสมอ (คั่นด้วย comma) เพื่อป้องกันปัญหาเมื่อมีหลาย Proxy
+
+---
+
+### 5. กฎกระบวนการหลังการล็อกอินที่เป็นมาตรฐานเดียวกัน 100% (Unified Post-Login Pipeline)
+* **ทุกระบบล็อกอิน (Local User, ThaID, Provider ID, Google) ต้องใช้กระบวนการเดียวกัน โดยยึด Local User เป็นหลัก:**
+  1. **ขั้นตอนที่ 1: ตรวจสอบและบันทึกผู้ใช้ (Verify & Sync)**
+     * ตรวจสอบสิทธิ์สำเร็จ ➡️ ซิงค์รหัสผ่าน (Cleartext+MD5) ลงตาราง `radcheck` ➡️ สร้าง/อัปเดต Session ➡️ Set Cookie `SSOSESSID`
+  2. **ขั้นตอนที่ 2: ส่งต่อเข้า Handshake (Handshake Forwarding)**
+     * ทุกระบบต้อง Redirect ต่อไปยัง `/sso/fortigate/handshake?sid=<SessionID>` เสมอ
+  3. **ขั้นตอนที่ 3: ยืนยันสิทธิ์กับไฟร์วอลล์ (FortiGate Auto-Submit)**
+     * หน้า Handshake ส่งฟอร์ม 4 ฟิลด์มาตรฐาน (`username`, `password`, `magic`, `redir`) ไปยัง `TargetUrl` บนหน้าต่างหลัก
+  4. **ขั้นตอนที่ 4: เปิดหน้าสถานะสำเร็จ (Status Page Presentation)**
+     * นำผู้ใช้เข้าสู่หน้า `/sso/status?sid=<SessionID>` แสดงกล่องสถานะเชื่อมต่อสำเร็จ, ชื่อ-นามสกุล, ปุ่มแก้ไขโปรไฟล์ และปุ่ม Logout
+

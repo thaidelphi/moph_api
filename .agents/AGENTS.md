@@ -12,11 +12,14 @@
 - **Code Commenting in Thai**: ทุกครั้งที่มีการเขียนหรือแก้ไขโค้ด จะต้องเขียน Comment เพื่ออธิบายการทำงานของ Source code ตัวแปร และ Logic ทุกครั้งเป็นภาษาไทย (Always write code comments in Thai to explain the source code, variables, and logic).
 - **Pure FreePascal Standalone**: ระบบ FreePascal (`fpsso` และ `fp-radius`) เป็นระบบ Native Binary แยกเด็ดขาด 100% โดยไม่พึ่งพาและไม่เรียกใช้ PHP ใดๆ ทั้งสิ้น
 
-## 3. FortiGate Handshake & Redirection Rules (กฎสถาปัตยกรรม Handshake ที่ถูกต้อง)
-- **Background Target Submission**: ฟอร์ม Handshake ส่งข้อมูลยืนยันตัวตนไปยัง FortiGate Target URL ในเบื้องหลังผ่าน `<iframe name="fgt_target">` พร้อมสั่งให้ JavaScript นำหน้าต่างหลักเปิดเข้าสู่หน้าสถานะ `window.location.href = nextUrl` (`/sso/status?sid=<SessionID>`) ใน 800ms โดยผู้ใช้จะไม่เห็นหน้า Portal สีขาวของ FortiGate
-- **Standard 4 Form Fields**: ฟอร์มที่ส่งไป FortiGate ต้องส่ง 4 ฟิลด์มาตรฐานเท่านั้น: `username`, `password`, `magic`, `redir` (ห้ามส่งฟิลด์แปลกปลอม หรือใส่ query ยาวเกินไปที่ทำให้ socket หลุด)
+## 3. Unified Post-Login Pipeline Rules (กฎกระบวนการหลังล็อกอินมาตรฐานเดียวกัน 100%)
+- **Standard Authentication Pipeline**: ทุกช่องทางการล็อกอิน (**Local User, ThaID, Provider ID, Google OAuth**) จะต้องส่งผ่านกระบวนการเดียวกันทั้งหมด โดยยึดพฤติกรรมการทำงานของ **Local User** เป็นแม่แบบหลัก:
+  1. **User Sync & Session Creation**: ตรวจสอบสิทธิ์, บันทึกรหัสผ่านทั้ง Cleartext+MD5 ลงตาราง `radcheck`, สร้าง Session ที่มี `Username`, `PlainPass`, `Magic`, `PostUrl`, `UserMac`, `ClientIP` และ Set Cookie `SSOSESSID`
+  2. **Handshake Forwarding**: Redirect ต่อไปยัง `/sso/fortigate/handshake?sid=<SessionID>` (แนบ `sid` ใน query เสมอ)
+  3. **Auto-Submit Handshake Form**: หน้า Handshake ส่งฟอร์ม 4 ฟิลด์มาตรฐาน (`username`, `password`, `magic`, `redir`) ไปยัง `https://192.168.200.1:1003/fgtauth` โดยตรง
+  4. **Post-Login Landing**: เมื่อ FortiGate ตอบรับ จะนำพาผู้ใช้เข้าสู่หน้าสถานะ `/sso/status?sid=<SessionID>` แสดงชื่อ-นามสกุล และปุ่ม Logout
 - **Target URL Integrity**: ยิงเข้า URL และพอร์ตตามที่ FortiGate ส่งมาในพารามิเตอร์ `post` เสมอ (เช่น `https://192.168.200.1:1003/fgtauth`)
-- **Session Propagation in Redirection**: ใน `nextUrl` จะต้องแนบ `?sid=<SessionID>` ต่อท้ายไปด้วยเสมอ เพื่อให้หน้าสถานะ `/sso/status?sid=...` กู้คืน Session ได้ 100% ทันที
+- **Session Propagation**: แนบ `?sid=<SessionID>` ในทุกจุดเชื่อมต่อ (OAuth Callback ➡️ Handshake ➡️ RedirUrl ➡️ Status) เพื่อให้ Session ต่อเนื่อง 100% แม้เบราว์เซอร์จะไม่ส่ง Cookie
 - **Logout URL Integrity**: เมื่อ Logout ต้องชี้ไปที่ `https://192.168.200.1:1003/logout?<magic>` ตามพอร์ต HTTPS ของ FortiGate เสมอ
 
 ## 4. RADIUS & Password Synchronization Rules (กฎเหล็ก RADIUS)
