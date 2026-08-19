@@ -475,7 +475,7 @@ begin
       ActiveStr := UpperCase(Trim(Query.FieldByName('active').AsString));
       Query.Close;
 
-      // SSO_AUTO_APPROVE=true: user ผ่าน OAuth แล้วให้เข้าใช้ได้เลย
+      // SSO_AUTO_APPROVE=true: เข้าใช้ได้เลยโดยไม่สนใจ active แต่ไม่แก้ค่า active ในDB
       // SSO_AUTO_APPROVE=false: ต้องให้ admin set active=Y ก่อน
       if AppCfg.SSOAutoApprove then
         IsActive := True
@@ -484,7 +484,7 @@ begin
 
       if Result <> '' then
       begin
-        // อัปเดตข้อมูล fullname, address, email และ active ใน radcheck_mirror
+        // อัปเดตข้อมูล fullname, address, email ใน radcheck_mirror
         Query.SQL.Text := 'UPDATE radcheck_mirror SET ';
         if Fullname <> '' then
           Query.SQL.Text := Query.SQL.Text + 'fullname = :f, ';
@@ -492,11 +492,16 @@ begin
           Query.SQL.Text := Query.SQL.Text + 'address = :addr, ';
         if Email <> '' then
           Query.SQL.Text := Query.SQL.Text + 'email = :e, ';
-        if IsActive then
+        // SSO_AUTO_APPROVE=true: ไม่แก้ active ในDB ให้คงค่าเดิม (ActiveStr)
+        // SSO_AUTO_APPROVE=false: ปรับ active ตามสิทธิ์
+        if AppCfg.SSOAutoApprove then
+          Query.SQL.Text := Query.SQL.Text + 'active = ''' + ActiveStr + ''' '
+        else if IsActive then
           Query.SQL.Text := Query.SQL.Text + 'active = ''Y'' '
         else
           Query.SQL.Text := Query.SQL.Text + 'active = ''N'' ';
         Query.SQL.Text := Query.SQL.Text + 'WHERE username = :u';
+
 
         if Fullname <> '' then
           Query.Params.ParamByName('f').AsString := Fullname;
