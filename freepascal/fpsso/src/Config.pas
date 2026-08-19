@@ -14,6 +14,7 @@ type
     DBPass: string;
     DBName: string;
     
+    ThaIDApiKey: string;
     ThaIDClientID: string;
     ThaIDSecret: string;
     ThaIDRedirectURI: string;
@@ -104,6 +105,7 @@ begin
         else if (Key = 'DB_PASS') or (Key = 'DB_PASSWORD') then AppCfg.DBPass := Value
         else if (Key = 'DB_NAME') or (Key = 'DB_DATABASE') then AppCfg.DBName := Value
         
+        else if (Key = 'THAID_API_KEY') then AppCfg.ThaIDApiKey := Value
         else if (Key = 'THAID_CLIENT_ID') then AppCfg.ThaIDClientID := Value
         else if (Key = 'THAID_SECRET_ID') then AppCfg.ThaIDSecret := Value
         else if (Key = 'THAID_REDIRECT_URI') then AppCfg.ThaIDRedirectURI := Value

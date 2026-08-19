@@ -192,6 +192,9 @@ begin
     // ตั้งค่า Basic Auth Header สำหรับ Token Request
     AuthHeader := 'Basic ' + EncodeStringBase64(AppCfg.ThaIDClientID + ':' + AppCfg.ThaIDSecret);
     Client.AddHeader('Authorization', AuthHeader);
+    if AppCfg.ThaIDApiKey <> '' then
+      Client.AddHeader('x-api-key', AppCfg.ThaIDApiKey);
+    Client.AddHeader('Content-Type', 'application/x-www-form-urlencoded');
 
     PostData.Add('grant_type=authorization_code');
     PostData.Add('code=' + Code);
@@ -200,55 +203,67 @@ begin
     try
       // ขอ Access Token จาก ThaID Token Endpoint
       ResponseStr := Client.FormPost(AppCfg.ThaIDTokenURL, PostData);
+      Writeln('AuthThaiD Token Response: ', ResponseStr);
+
+      PID := '';
+      FullName := '';
+      Email := '';
+      AccessToken := '';
 
       JSON := GetJSON(ResponseStr) as TJSONObject;
       try
         AccessToken := GetJSONStr(JSON, 'access_token');
+        
+        // 1. ดึงข้อมูลผู้ใช้จาก Root JSON โดยตรง (ThaID API v2 ส่งข้อมูลใน Response Body)
+        PID := GetJSONStr(JSON, 'pid');
+        if PID = '' then
+          PID := GetJSONStr(JSON, 'sub');
+
+        FullName := GetJSONStr(JSON, 'name');
+        if FullName = '' then
+          FullName := Trim(GetJSONStr(JSON, 'given_name') + ' ' + GetJSONStr(JSON, 'family_name'));
+
+        Email := GetJSONStr(JSON, 'email');
       finally
         JSON.Free;
       end;
 
-      if AccessToken = '' then
+      // 2. ถ้าใน Root JSON ยังไม่มี PID ให้ลองถอดรหัสจาก JWT Payload ใน access_token หรือ id_token
+      if (PID = '') and (AccessToken <> '') then
       begin
-        Redirect(Res, '/sso/?error=thaid_token');
-        Exit;
-      end;
-
-      // ถอดรหัส JWT Payload เพื่อดึงข้อมูลผู้ใช้ (ThaID ฝัง user info ใน access_token)
-      PayloadStr := DecodeJWTPayload(AccessToken);
-      PID := '';
-      FullName := '';
-      Email := '';
-
-      if PayloadStr <> '' then
-      begin
-        try
-          PayloadJSON := GetJSON(PayloadStr) as TJSONObject;
+        PayloadStr := DecodeJWTPayload(AccessToken);
+        if PayloadStr <> '' then
+        begin
           try
-            // ThaID ใส่ PID ใน field 'pid' หรือ 'sub'
-            PID := GetJSONStr(PayloadJSON, 'pid');
-            if PID = '' then
-              PID := GetJSONStr(PayloadJSON, 'sub');
+            PayloadJSON := GetJSON(PayloadStr) as TJSONObject;
+            try
+              PID := GetJSONStr(PayloadJSON, 'pid');
+              if PID = '' then
+                PID := GetJSONStr(PayloadJSON, 'sub');
 
-            // ดึงชื่อ-นามสกุล
-            FullName := Trim(GetJSONStr(PayloadJSON, 'given_name') + ' ' + GetJSONStr(PayloadJSON, 'family_name'));
-            if FullName = ' ' then
-              FullName := GetJSONStr(PayloadJSON, 'name');
+              if FullName = '' then
+              begin
+                FullName := Trim(GetJSONStr(PayloadJSON, 'given_name') + ' ' + GetJSONStr(PayloadJSON, 'family_name'));
+                if FullName = ' ' then
+                  FullName := GetJSONStr(PayloadJSON, 'name');
+              end;
 
-            Email := GetJSONStr(PayloadJSON, 'email');
-          finally
-            PayloadJSON.Free;
+              if Email = '' then
+                Email := GetJSONStr(PayloadJSON, 'email');
+            finally
+              PayloadJSON.Free;
+            end;
+          except
+            on E: Exception do
+              Writeln('AuthThaiD: JWT Parse Error: ', E.Message);
           end;
-        except
-          on E: Exception do
-            Writeln('AuthThaiD: JWT Parse Error: ', E.Message);
         end;
       end;
 
       // ตรวจสอบว่าได้ PID จริง
       if PID = '' then
       begin
-        Writeln('AuthThaiD: Cannot extract PID from token. Payload: ', PayloadStr);
+        Writeln('AuthThaiD: Cannot extract PID from response: ', ResponseStr);
         Redirect(Res, '/sso/?error=thaid_no_pid');
         Exit;
       end;
