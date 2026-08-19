@@ -65,6 +65,9 @@ begin
   if BaseUrl = '' then
   begin
     Proto := Req.GetCustomHeader('X-Forwarded-Proto');
+    if Pos(',', Proto) > 0 then
+      Proto := Trim(Copy(Proto, 1, Pos(',', Proto) - 1));
+
     if Proto = '' then
     begin
       if (Length(Req.URL) >= 5) and (LowerCase(Copy(Req.URL, 1, 5)) = 'https') then
@@ -74,8 +77,14 @@ begin
     end;
 
     HostHeader := Req.GetCustomHeader('X-Forwarded-Host');
+    if Pos(',', HostHeader) > 0 then
+      HostHeader := Trim(Copy(HostHeader, 1, Pos(',', HostHeader) - 1));
+
     if HostHeader = '' then
       HostHeader := Req.Host;
+
+    if Pos(',', HostHeader) > 0 then
+      HostHeader := Trim(Copy(HostHeader, 1, Pos(',', HostHeader) - 1));
 
     if HostHeader <> '' then
       BaseUrl := Proto + '://' + HostHeader
