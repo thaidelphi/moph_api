@@ -159,7 +159,7 @@ initialization
   AppCfg.DBPass := '';
   AppCfg.DBName := 'radius';
   AppCfg.LoginTemplatePath := ExtractFilePath(ParamStr(0)) + 'templates/login.html';
-  AppCfg.EnableLogoutPopup := True; // เปิดใช้งานเป็นค่าเริ่มต้น
+  AppCfg.EnableLogoutPopup := False; // ปิดการเปิดป๊อปอัปสถานะเป็นค่าเริ่มต้น เพื่อป้องกันการเปิดแท็บซ้ำซ้อน
   AppCfg.AdminUser := 'admin';
   AppCfg.AdminPass := 'password';
   AppCfg.UseSSL := False;

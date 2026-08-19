@@ -758,7 +758,7 @@
                 <!-- SSO Alternative Logins -->
                 <div class="sso-grid" id="social-logins" style="grid-template-columns: repeat(2, 1fr); display: none;">
                     <!-- ThaID Link -->
-                    <a href="/sso/auth/thaid" onclick="openLogoutWindow(); showLoading();" class="sso-grid-item"
+                    <a href="/sso/auth/thaid" onclick="showLoading();" class="sso-grid-item"
                         id="btn-thaid" style="display: none;">
                         <div class="sso-icon-box thaid-bg">
                             <img src="/images/thaid.png" alt="ThaID Logo">
@@ -767,7 +767,7 @@
                     </a>
 
                     <!-- Google Authentication Option (ลิงก์เข้าสู่ระบบผ่าน Google จริง) -->
-                    <a href="/sso/auth/google" onclick="openLogoutWindow(); showLoading();" class="sso-grid-item"
+                    <a href="/sso/auth/google" onclick="showLoading();" class="sso-grid-item"
                         id="btn-google" style="display: none;">
                         <div class="sso-icon-box google-bg">
                             <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
@@ -792,7 +792,7 @@
                 </div>
 
                 <!-- ProviderID Link - Wide display -->
-                <a href="/sso/auth/providerid" onclick="openLogoutWindow(); showLoading();" class="sso-long-btn"
+                <a href="/sso/auth/providerid" onclick="showLoading();" class="sso-long-btn"
                     id="btn-providerid" style="display: none;">
                     <img src="/images/providerid.png" alt="Provider ID Logo"
                         onerror="this.src='https://moph.id.th/favicon.ico';">
@@ -937,11 +937,6 @@
 
             const error = urlParams.get('error');
             if (error) {
-                try {
-                    var popup = window.open("", "LogoutWindow");
-                    if (popup) popup.close();
-                } catch (e) { }
-
                 document.getElementById('errorBox').style.display = 'flex';
                 let errText = decodeURIComponent(error);
                 if (error === '1' || error === 'db') errText = 'ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง';
@@ -953,19 +948,6 @@
 
         function showLoading() {
             document.getElementById('loadingOverlay').style.display = 'flex';
-        }
-
-        function openLogoutWindow() {
-            var isMobileOrTablet = /Mobi|Android|iPad|iPhone|iPod|Tablet|Touch/i.test(navigator.userAgent)
-                || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-            if (!isMobileOrTablet) {
-                try {
-                    // เปิดหน้าต่างสถานะ Logout โดยตั้งชื่อว่า LogoutWindow เพื่อให้สามารถปิดได้เมื่อเกิดข้อผิดพลาด
-                    window.open("/sso/status", "LogoutWindow");
-                } catch (e) {
-                    console.warn("New tab blocked or not supported:", e);
-                }
-            }
         }
 
         function validateForm() {
@@ -980,7 +962,7 @@
             }
 
             errorBox.style.display = 'none';
-            openLogoutWindow();
+            // แสดง Overlay กำลังโหลด และส่งฟอร์มในหน้าต่างเดิมโดยไม่เปิดแท็บใหม่
             showLoading();
             return true;
         }
