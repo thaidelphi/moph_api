@@ -6,7 +6,7 @@ unit FortiGate;
 interface
 
 uses
-  Classes, SysUtils, HTTPDefs, fpHTTP, Router, SessionMgr, Config, fphttpclient, fpjson, jsonparser, RadiusDB;
+  Classes, SysUtils, HTTPDefs, fpHTTP, Router, SessionMgr, Config, fphttpclient, fpjson, jsonparser, RadiusDB, URIParser;
 
 procedure HandleFortiGateHandshake(Req: TRequest; Res: TResponse);
 
@@ -34,6 +34,25 @@ begin
   end;
 end;
 
+{ URL-encode string สำหรับ application/x-www-form-urlencoded }
+function EncodeFormParam(const S: string): string;
+var
+  I: Integer;
+  C: Char;
+begin
+  Result := '';
+  for I := 1 to Length(S) do
+  begin
+    C := S[I];
+    if C in ['A'..'Z', 'a'..'z', '0'..'9', '-', '_', '.', '~'] then
+      Result := Result + C
+    else if C = ' ' then
+      Result := Result + '+'
+    else
+      Result := Result + '%' + IntToHex(Ord(C), 2);
+  end;
+end;
+
 // ฟังก์ชันช่วยปรับแต่ง URL ของ FortiGate ให้ถูกต้องตามโปรโตคอลและพอร์ต
 function SanitizeFortiGateUrl(const AUrl: string): string;
 var
@@ -48,12 +67,17 @@ begin
   Result := Url;
 end;
 
-{ Handler: หน้า Handshake ที่ Auto-submit ข้อมูลกลับไปยัง FortiGate }
+{ Handler: Handshake — fpsso ทำ Server-Side POST ไปยัง FortiGate แทนเบราว์เซอร์
+  เพื่อแก้ปัญหา Self-Signed Certificate บน port 1003 ทำให้เบราว์เซอร์ค้าง }
 procedure HandleFortiGateHandshake(Req: TRequest; Res: TResponse);
 var
   SessionID: string;
   Data: TSessionData;
-  HtmlContent, TargetUrl, RedirUrl, Proto, HostHeader, BaseUrl: string;
+  TargetUrl, RedirUrl, Proto, HostHeader, BaseUrl: string;
+  Http: TFPHttpClient;
+  PostData, PostBody: string;
+  PostStream: TStringStream;
+  ResponseStream: TStringStream;
 begin
   SessionID := Req.CookieFields.Values['SSOSESSID'];
   if SessionID = '' then
@@ -162,53 +186,56 @@ begin
 
   WriteLn('FortiGate Handshake for user: ', Data.Username, ' | TargetUrl: ', TargetUrl, ' | Magic: ', Data.Magic, ' | RedirUrl: ', RedirUrl);
 
-  // หากไม่มี Magic Token จาก FortiGate (เกิดจากผู้ใช้พิมพ์ URL /sso/ เข้ามาตรงๆ โดยไม่ได้ผ่าน Captive Portal redirect)
+  // หากไม่มี Magic Token จาก FortiGate ให้ Redirect ไป /sso/status โดยตรง
   if Data.Magic = '' then
   begin
-    // ล้าง PlainPass ออกจาก Session เพื่อความปลอดภัย
     Data.PlainPass := '';
     SessionManager.UpdateSession(SessionID, Data);
-    
-    // พาผู้ใช้ไปยังหน้าปลายทางโดยตรง ไม่ส่งไป FortiGate /fgtauth เพราะจะทำให้เกิด ERR_EMPTY_RESPONSE เมื่อไม่มี Magic
     Redirect(Res, RedirUrl);
     Exit;
   end;
 
-  // HTML Encode ค่าทั้งหมดที่จะฝังใน HTML เพื่อป้องกัน XSS
-  HtmlContent := '<!DOCTYPE html><html lang="th"><head><meta charset="utf-8">' + LineEnding +
-    '    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">' + LineEnding +
-    '    <title>กำลังเชื่อมต่อระบบเครือข่าย...</title>' + LineEnding +
-    '    <style>' + LineEnding +
-    '        body { font-family: "Sarabun", sans-serif; background-color: #f4f7f6; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }' + LineEnding +
-    '        .loading-box { text-align: center; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); max-width: 400px; width: 100%; }' + LineEnding +
-    '        .loading-box img { width: 80px; margin-bottom: 20px; }' + LineEnding +
-    '        .spinner { border: 4px solid rgba(0, 0, 0, 0.1); width: 50px; height: 50px; border-radius: 50%; border-left-color: #007bff; animation: spin 1s linear infinite; margin: 0 auto 20px auto; }' + LineEnding +
-    '        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }' + LineEnding +
-    '        h2 { color: #333; margin-bottom: 10px; font-size: 18px; }' + LineEnding +
-    '        p { color: #666; font-size: 14px; }' + LineEnding +
-    '    </style>' + LineEnding +
-    '</head><body>' + LineEnding +
-    '    <div class="loading-box">' + LineEnding +
-    '        <img src="/images/logo_moph.png" alt="Logo">' + LineEnding +
-    '        <div class="spinner"></div>' + LineEnding +
-    '        <h2>กำลังอนุญาตสิทธิ์เข้าใช้งานอินเทอร์เน็ต</h2>' + LineEnding +
-    '        <p>กรุณารอสักครู่ ระบบกำลังลงทะเบียนอุปกรณ์ของท่านกับทาง FortiGate...</p>' + LineEnding +
-    '    </div>' + LineEnding +
-    '    <form id="fortigate_form" action="' + HtmlEncode(TargetUrl) + '" method="post" style="display: none;">' + LineEnding +
-    '        <input type="hidden" name="username" value="' + HtmlEncode(Data.Username) + '">' + LineEnding +
-    '        <input type="hidden" name="password" value="' + HtmlEncode(Data.PlainPass) + '">' + LineEnding +
-    '        <input type="hidden" name="magic" value="' + HtmlEncode(Data.Magic) + '">' + LineEnding +
-    '        <input type="hidden" name="redir" value="' + HtmlEncode(RedirUrl) + '">' + LineEnding +
-    '    </form>' + LineEnding +
-    '    <script>' + LineEnding +
-    '        window.addEventListener("load", function() {' + LineEnding +
-    '            document.getElementById("fortigate_form").submit();' + LineEnding +
-    '        });' + LineEnding +
-    '    </script>' + LineEnding +
-    '</body>' + LineEnding +
-    '</html>';
+  // ===== SERVER-SIDE POST ไปยัง FortiGate =====
+  // fpsso ส่ง POST แทนเบราว์เซอร์เพื่อหลีกเลี่ยงปัญหา Self-Signed Certificate
+  // ที่ทำให้เบราว์เซอร์ค้างเมื่อต้องเชื่อมต่อ https://192.168.200.1:1003 โดยตรง
+  // FortiGate ใช้ field usermac ใน POST body เพื่อระบุ device ที่จะ Authorize
+  PostData := 'username=' + EncodeFormParam(Data.Username) +
+              '&password=' + EncodeFormParam(Data.PlainPass) +
+              '&magic=' + EncodeFormParam(Data.Magic) +
+              '&redir=' + EncodeFormParam(RedirUrl);
 
-  // re-set cookie ใน response ของ Handshake
+  // แนบ usermac เพื่อให้ FortiGate ระบุ device ได้ถูกต้อง
+  if Data.UserMac <> '' then
+    PostData := PostData + '&usermac=' + EncodeFormParam(Data.UserMac);
+
+  // ล้าง PlainPass ออกจาก Session ก่อน POST เพื่อความปลอดภัย
+  Data.PlainPass := '';
+  SessionManager.UpdateSession(SessionID, Data);
+
+  Http := TFPHttpClient.Create(nil);
+  PostStream := TStringStream.Create(PostData);
+  ResponseStream := TStringStream.Create('');
+  try
+    try
+      Http.AllowRedirect := False;   // ไม่ follow redirect
+      Http.ConnectTimeout := 5000;   // timeout 5 วินาที
+      Http.IOTimeout := 8000;
+      // ข้าม SSL Certificate verification สำหรับ Self-Signed Cert ของ FortiGate
+      Http.AddHeader('Content-Type', 'application/x-www-form-urlencoded');
+      Http.RequestBody := PostStream;
+      Http.Post(TargetUrl, ResponseStream);
+      WriteLn('FortiGate Server-Side POST done. HTTP Code: ', Http.ResponseStatusCode);
+    except
+      on E: Exception do
+        WriteLn('FortiGate Server-Side POST error (ignored): ', E.Message);
+    end;
+  finally
+    Http.Free;
+    PostStream.Free;
+    ResponseStream.Free;
+  end;
+
+  // re-set cookie ใน Response
   with Res.Cookies.Add do
   begin
     Name := 'SSOSESSID';
@@ -218,15 +245,11 @@ begin
     HttpOnly := True;
   end;
 
-  // ล้าง PlainPass ออกจาก Session ทันทีหลังจากฝังใน Form แล้ว เพื่อความปลอดภัย
-  Data.PlainPass := '';
-  SessionManager.UpdateSession(SessionID, Data);
-
-  Res.Code := 200;
-  Res.ContentType := 'text/html; charset=utf-8';
-  Res.Content := HtmlContent;
-  Res.SendContent;
+  // Redirect ผู้ใช้ไป /sso/status ทันทีโดยไม่รอ FortiGate
+  Redirect(Res, RedirUrl);
 end;
+
+
 
 // ฟังก์ชันช่วยสร้าง URL สำหรับส่งคำสั่ง Logout ไปยัง FortiGate อย่างถูกต้อง
 function BuildFortiGateLogoutUrl(const PostUrl, Magic, ConfiguredLogoutUrl: string): string;
