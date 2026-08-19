@@ -34,6 +34,28 @@ begin
   end;
 end;
 
+// ฟังก์ชันช่วยปรับแต่ง URL ของ FortiGate ให้ถูกต้องตามโปรโตคอลและพอร์ต
+function SanitizeFortiGateUrl(const AUrl: string): string;
+var
+  Url: string;
+begin
+  Url := Trim(AUrl);
+  if Url = '' then
+    Url := Trim(AppCfg.FortiGateAuthURL);
+  if Url = '' then
+    Url := 'http://192.168.200.1:1000/fgtauth';
+
+  // ตรวจสอบ Port 1000: FortiGate พอร์ต 1000 เป็น HTTP เท่านั้น (ไม่ใช่ HTTPS)
+  if (Pos(':1000', Url) > 0) and (Pos('https://', LowerCase(Url)) = 1) then
+    Url := 'http://' + Copy(Url, 9, Length(Url));
+
+  // ตรวจสอบ Port 1003: FortiGate พอร์ต 1003 เป็น HTTPS
+  if (Pos(':1003', Url) > 0) and (Pos('http://', LowerCase(Url)) = 1) then
+    Url := 'https://' + Copy(Url, 8, Length(Url));
+
+  Result := Url;
+end;
+
 { Handler: หน้า Handshake ที่ Auto-submit ข้อมูลกลับไปยัง FortiGate }
 procedure HandleFortiGateHandshake(Req: TRequest; Res: TResponse);
 var
@@ -65,9 +87,7 @@ begin
     Data.UserMac := Req.CookieFields.Values['FGT_MAC'];
 
   // 3. เตรียม URL ของ FortiGate (ดึงแบบ Dynamic ถ้ามี, ถ้าไม่มีใช้ค่าจาก .env)
-  TargetUrl := Data.PostUrl;
-  if TargetUrl = '' then
-    TargetUrl := AppCfg.FortiGateAuthURL;
+  TargetUrl := SanitizeFortiGateUrl(Data.PostUrl);
 
   // หา Base URL ของระบบจาก .env (APP_URL) หรือตรวจจับแบบไดนามิกจาก Request Header
   BaseUrl := Trim(AppCfg.AppURL);
