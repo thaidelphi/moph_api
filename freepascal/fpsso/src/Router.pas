@@ -72,6 +72,8 @@ end;
 function GetClientIP(Req: TRequest): string;
 begin
   Result := Req.GetCustomHeader('X-Forwarded-For');
+  if Pos(',', Result) > 0 then
+    Result := Trim(Copy(Result, 1, Pos(',', Result) - 1));
   if Result = '' then
     Result := Req.GetCustomHeader('X-Real-IP');
   if Result = '' then

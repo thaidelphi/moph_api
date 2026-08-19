@@ -185,17 +185,29 @@ begin
     '        <input type="hidden" name="redir" value="' + HtmlEncode(RedirUrl) + '">' + LineEnding +
     '    </form>' + LineEnding +
     '    <script>' + LineEnding +
+    '        var statusUrl = "' + HtmlEncode(RedirUrl) + '";' + LineEnding +
+    '        if (statusUrl.indexOf("?") >= 0) statusUrl += "&sid=' + SessionID + '"; else statusUrl += "?sid=' + SessionID + '";' + LineEnding +
     '        window.addEventListener("load", function() {' + LineEnding +
     '            try {' + LineEnding +
     '                document.getElementById("fortigate_form").submit();' + LineEnding +
     '            } catch(e) {}' + LineEnding +
     '            setTimeout(function() {' + LineEnding +
-    '                window.location.replace("' + HtmlEncode(RedirUrl) + '");' + LineEnding +
+    '                window.location.replace(statusUrl);' + LineEnding +
     '            }, 800);' + LineEnding +
     '        });' + LineEnding +
     '    </script>' + LineEnding +
     '</body>' + LineEnding +
     '</html>';
+
+  // re-set cookie ใน response ของ Handshake
+  with Res.Cookies.Add do
+  begin
+    Name := 'SSOSESSID';
+    Value := SessionID;
+    Path := '/';
+    Expires := Now + 1;
+    HttpOnly := True;
+  end;
 
   // ล้าง PlainPass ออกจาก Session ทันทีหลังจากฝังใน Form แล้ว เพื่อความปลอดภัย
   Data.PlainPass := '';
