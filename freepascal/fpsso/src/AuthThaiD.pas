@@ -309,7 +309,9 @@ begin
       // บันทึกหรืออัปเดตข้อมูลผู้ใช้ใน radcheck_mirror (รวมถึงชื่อและที่อยู่) และขอ tmp_passwd
       PlainPass := SSORadiusAuth(PID, IsActive, Email, FullName, Address);
 
-      if not IsActive then
+      // SSO_AUTO_APPROVE=true: ไม่สนใจ active=Y/N เลย ผ่าน ThaID OAuth มาแล้วให้เข้าใช้ได้เลย
+      // SSO_AUTO_APPROVE=false: ต้องมี active=Y จึงจะเข้าได้
+      if (not AppCfg.SSOAutoApprove) and (not IsActive) then
       begin
         Redirect(Res, '/sso/?error=pending');
         Exit;

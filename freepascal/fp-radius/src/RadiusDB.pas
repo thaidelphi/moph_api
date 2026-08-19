@@ -135,31 +135,29 @@ begin
 
     if IsOAuthUser then
     begin
-      // ThaID/OAuth user: ตรวจแค่ radcheck_mirror ว่า active ไม่ใช่ N
-      Query.SQL.Text := 'SELECT active FROM radcheck_mirror WHERE username = :u LIMIT 1';
+      // ThaID/OAuth user (username เลขล้วน): ตรวจแค่ว่า user มีอยู่ใน radcheck_mirror ก็ Accept ทันที
+      // เหตุผล: fpsso คัดกรอง active/inactive ก่อนถึงหน้า handshake แล้ว
+      // SSO_AUTO_APPROVE=true: ไม่สนใจ active=Y/N เลย
+      // SSO_AUTO_APPROVE=false: fpsso บล็อก user ที่ inactive ไว้ก่อนแล้ว จึงไม่มี RADIUS request เข้ามา
+      Query.SQL.Text := 'SELECT COUNT(*) as cnt FROM radcheck_mirror WHERE username = :u';
       Query.Params.ParamByName('u').AsString := Username;
       Query.Open;
       if not Query.EOF then
-      begin
-        ActiveStr := UpperCase(Trim(Query.FieldByName('active').AsString));
-        Result := (ActiveStr <> 'N');
-        if Result then
-          LogMsg(1, 'ThaID/OAuth Accept: ' + Username + ' (active=' + ActiveStr + ')')
-        else
-          LogMsg(1, 'ThaID/OAuth Reject: ' + Username + ' (active=N)');
-      end
+        Result := (Query.FieldByName('cnt').AsInteger > 0);
+      Query.Close;
+      if Result then
+        LogMsg(1, 'ThaID/OAuth Accept: ' + Username + ' (exists in radcheck_mirror)')
       else
       begin
-        // ไม่พบใน radcheck_mirror → fallback ตรวจ Cleartext-Password
+        // ไม่พบใน radcheck_mirror เลย → fallback ตรวจ Cleartext-Password
         LogMsg(1, Username + ' not in radcheck_mirror, fallback to radcheck');
-        Query.Close;
         Query.SQL.Text := 'SELECT value FROM radcheck WHERE username = :u AND attribute = ''Cleartext-Password'' LIMIT 1';
         Query.Params.ParamByName('u').AsString := Username;
         Query.Open;
         if not Query.EOF then
           Result := (Query.FieldByName('value').AsString = Password);
+        Query.Close;
       end;
-      Query.Close;
     end
     else
     begin

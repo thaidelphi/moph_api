@@ -251,7 +251,9 @@ begin
       // บันทึกหรืออัปเดตข้อมูลผู้ใช้ใน radcheck_mirror และขอ tmp_passwd
       PlainPass := SSORadiusAuth(TargetUsername, IsActive, Email, FullName);
 
-      if not IsActive then
+      // SSO_AUTO_APPROVE=true: ไม่สนใจ active=Y/N เลย
+      // SSO_AUTO_APPROVE=false: ต้องมี active=Y จึงจะเข้าได้
+      if (not AppCfg.SSOAutoApprove) and (not IsActive) then
       begin
         Redirect(Res, '/sso/?error=pending');
         Exit;
