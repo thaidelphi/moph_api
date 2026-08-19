@@ -503,49 +503,37 @@ begin
           Query.Params.ParamByName('e').AsString := Email;
         Query.Params.ParamByName('u').AsString := Username;
         Query.ExecSQL;
-        // ซิงค์ข้อมูลลง radcheck (MD5-Password) และ radcheck_cleartext เพื่อให้ RADIUS ตรวจสอบรหัสผ่านได้ตรงกัน
+        // ซิงค์ข้อมูลลง radcheck (ทั้ง Cleartext-Password และ MD5-Password) และ radcheck_cleartext เพื่อให้ RADIUS ตรวจสอบรหัสผ่านได้ตรงกัน
         if IsActive then
         begin
           MD5Pass := MD5Print(MD5String(Result));
-          Query.SQL.Text := 'SELECT COUNT(*) as cnt FROM radcheck WHERE username = :u AND attribute = ''MD5-Password''';
-          Query.Params.ParamByName('u').AsString := Username;
-          Query.Open;
-          if Query.FieldByName('cnt').AsInteger > 0 then
-          begin
-            Query.Close;
-            Query.SQL.Text := 'UPDATE radcheck SET op = '':='', value = :v WHERE username = :u AND attribute = ''MD5-Password''';
-            Query.Params.ParamByName('v').AsString := MD5Pass;
-            Query.Params.ParamByName('u').AsString := Username;
-            Query.ExecSQL;
-          end
-          else
-          begin
-            Query.Close;
-            Query.SQL.Text := 'INSERT INTO radcheck (username, attribute, op, value) VALUES (:u, ''MD5-Password'', '':='', :v)';
-            Query.Params.ParamByName('u').AsString := Username;
-            Query.Params.ParamByName('v').AsString := MD5Pass;
-            Query.ExecSQL;
-          end;
 
-          Query.SQL.Text := 'SELECT COUNT(*) as cnt FROM radcheck_cleartext WHERE username = :u';
+          // ล้างรายการเดิมใน radcheck เพื่อป้องกัน row ซ้ำซ้อน
+          Query.SQL.Text := 'DELETE FROM radcheck WHERE username = :u AND attribute IN (''Cleartext-Password'', ''MD5-Password'')';
           Query.Params.ParamByName('u').AsString := Username;
-          Query.Open;
-          if Query.FieldByName('cnt').AsInteger > 0 then
-          begin
-            Query.Close;
-            Query.SQL.Text := 'UPDATE radcheck_cleartext SET value = :v WHERE username = :u';
-            Query.Params.ParamByName('v').AsString := Result;
-            Query.Params.ParamByName('u').AsString := Username;
-            Query.ExecSQL;
-          end
-          else
-          begin
-            Query.Close;
-            Query.SQL.Text := 'INSERT INTO radcheck_cleartext (username, attribute, op, value) VALUES (:u, ''Cleartext-Password'', '':='', :v)';
-            Query.Params.ParamByName('u').AsString := Username;
-            Query.Params.ParamByName('v').AsString := Result;
-            Query.ExecSQL;
-          end;
+          Query.ExecSQL;
+
+          // บันทึก Cleartext-Password ลง radcheck
+          Query.SQL.Text := 'INSERT INTO radcheck (username, attribute, op, value) VALUES (:u, ''Cleartext-Password'', '':='', :v)';
+          Query.Params.ParamByName('u').AsString := Username;
+          Query.Params.ParamByName('v').AsString := Result;
+          Query.ExecSQL;
+
+          // บันทึก MD5-Password ลง radcheck
+          Query.SQL.Text := 'INSERT INTO radcheck (username, attribute, op, value) VALUES (:u, ''MD5-Password'', '':='', :v)';
+          Query.Params.ParamByName('u').AsString := Username;
+          Query.Params.ParamByName('v').AsString := MD5Pass;
+          Query.ExecSQL;
+
+          // ซิงค์ตาราง radcheck_cleartext
+          Query.SQL.Text := 'DELETE FROM radcheck_cleartext WHERE username = :u';
+          Query.Params.ParamByName('u').AsString := Username;
+          Query.ExecSQL;
+
+          Query.SQL.Text := 'INSERT INTO radcheck_cleartext (username, attribute, op, value) VALUES (:u, ''Cleartext-Password'', '':='', :v)';
+          Query.Params.ParamByName('u').AsString := Username;
+          Query.Params.ParamByName('v').AsString := Result;
+          Query.ExecSQL;
         end;
 
         Trans.Commit;
@@ -566,47 +554,32 @@ begin
     // บันทึกใน radcheck และ radcheck_cleartext เฉพาะกรณี Active เท่านั้น
     if IsActive then
     begin
-      // บันทึกใน radcheck (MD5-Password)
-      Query.SQL.Text := 'SELECT COUNT(*) as cnt FROM radcheck WHERE username = :u AND attribute = ''MD5-Password''';
+      // ล้างรายการเดิมใน radcheck
+      Query.SQL.Text := 'DELETE FROM radcheck WHERE username = :u AND attribute IN (''Cleartext-Password'', ''MD5-Password'')';
       Query.Params.ParamByName('u').AsString := Username;
-      Query.Open;
-      if Query.FieldByName('cnt').AsInteger > 0 then
-      begin
-        Query.Close;
-        Query.SQL.Text := 'UPDATE radcheck SET op = '':='', value = :v WHERE username = :u AND attribute = ''MD5-Password''';
-        Query.Params.ParamByName('v').AsString := MD5Pass;
-        Query.Params.ParamByName('u').AsString := Username;
-        Query.ExecSQL;
-      end
-      else
-      begin
-        Query.Close;
-        Query.SQL.Text := 'INSERT INTO radcheck (username, attribute, op, value) VALUES (:u, ''MD5-Password'', '':='', :v)';
-        Query.Params.ParamByName('u').AsString := Username;
-        Query.Params.ParamByName('v').AsString := MD5Pass;
-        Query.ExecSQL;
-      end;
+      Query.ExecSQL;
+
+      // บันทึก Cleartext-Password ลง radcheck
+      Query.SQL.Text := 'INSERT INTO radcheck (username, attribute, op, value) VALUES (:u, ''Cleartext-Password'', '':='', :v)';
+      Query.Params.ParamByName('u').AsString := Username;
+      Query.Params.ParamByName('v').AsString := NewPass;
+      Query.ExecSQL;
+
+      // บันทึก MD5-Password ลง radcheck
+      Query.SQL.Text := 'INSERT INTO radcheck (username, attribute, op, value) VALUES (:u, ''MD5-Password'', '':='', :v)';
+      Query.Params.ParamByName('u').AsString := Username;
+      Query.Params.ParamByName('v').AsString := MD5Pass;
+      Query.ExecSQL;
 
       // บันทึกใน radcheck_cleartext
-      Query.SQL.Text := 'SELECT COUNT(*) as cnt FROM radcheck_cleartext WHERE username = :u';
+      Query.SQL.Text := 'DELETE FROM radcheck_cleartext WHERE username = :u';
       Query.Params.ParamByName('u').AsString := Username;
-      Query.Open;
-      if Query.FieldByName('cnt').AsInteger > 0 then
-      begin
-        Query.Close;
-        Query.SQL.Text := 'UPDATE radcheck_cleartext SET value = :v WHERE username = :u';
-        Query.Params.ParamByName('v').AsString := NewPass;
-        Query.Params.ParamByName('u').AsString := Username;
-        Query.ExecSQL;
-      end
-      else
-      begin
-        Query.Close;
-        Query.SQL.Text := 'INSERT INTO radcheck_cleartext (username, attribute, op, value) VALUES (:u, ''Cleartext-Password'', '':='', :v)';
-        Query.Params.ParamByName('u').AsString := Username;
-        Query.Params.ParamByName('v').AsString := NewPass;
-        Query.ExecSQL;
-      end;
+      Query.ExecSQL;
+
+      Query.SQL.Text := 'INSERT INTO radcheck_cleartext (username, attribute, op, value) VALUES (:u, ''Cleartext-Password'', '':='', :v)';
+      Query.Params.ParamByName('u').AsString := Username;
+      Query.Params.ParamByName('v').AsString := NewPass;
+      Query.ExecSQL;
     end;
     
     // บันทึกใน radcheck_mirror
