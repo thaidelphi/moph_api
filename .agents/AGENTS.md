@@ -1,9 +1,15 @@
 # Agent Rules & Architecture Principles
 
 ## 1. Git & Deployment
-- **Git Commit and Push**: Every time code files are modified, added, or deleted, stage the changes (`git add`), commit them with a descriptive message, and push them to the remote git repository (`git push`) to both `main` and `work1` branches before completing the turn. Do not wait for the user to request a push.
-- **Package Deployment**: Whenever the user explicitly instructs to "push package" or similar, ONLY push the pre-compiled deployment packages (binaries, .env.example, templates, service files) and NOT the source code (`.pas` files) to the repository `https://github.com/thaidelphi/internet-authen`.
-  - **Process**: Copy the necessary package files into `/var/www/api/package_send`, then `git add`, `git commit`, and `git push` from inside that directory.
+- **Automatic Git Commit and Push**: ทุกครั้งที่มีการอัปเดต/แก้ไข/เพิ่ม/ลบโค้ด และทดสอบเสร็จสิ้นแล้ว จะต้องรัน `git add .`, `git commit -m "..."`, และ `git push origin HEAD` (รวมถึง push ไปยังทั้ง `main` และ `work1` branches) โดยอัตโนมัติทันที ห้ามรอให้ผู้ใช้สั่ง
+- **Commit Message Convention**: ใช้ข้อความ Commit เป็นภาษาไทย หรือภาษาอังกฤษแบบสื่อความหมายชัดเจน อธิบายการเปลี่ยนแปลงที่เกิดขึ้นอย่างตรงไปตรงมา
+- **Git Log Tracking (`git_log.md`)**: หลังจากการ Push เรียบร้อยแล้วทุกครั้ง จะต้องบันทึกประวัติ Commit ลงในไฟล์ [git_log.md](file:///var/www/api/git_log.md) เสมอ โดยต้องมีรายละเอียดครบถ้วน:
+  1. วันที่-เวลา (Timestamp)
+  2. Commit Hash (ทั้งแบบสั้นและแบบเต็ม)
+  3. ข้อความ Commit (Commit Message)
+  4. แนวทางการย้อนกลับ/กู้คืนระบบ (Rollback / Recovery Command เช่น `git checkout <hash>` หรือ `git revert <hash>`)
+  เพื่อให้สามารถติดตามประวัติและใช้กู้คืนระบบได้อย่างรวดเร็วในกรณีฉุกเฉิน
+- **Package Deployment**: เมื่อผู้ใช้สั่งให้ "push package" หรือคล้ายคลึงกัน ให้ push เฉพาะ binary และไฟล์ deploy ใน `/var/www/api/package_send` ไปยัง `https://github.com/thaidelphi/internet-authen` เท่านั้น (ห้าม push ไฟล์ `.pas`)
 
 ## 2. Secure and Robust Coding
 - **No Hardcoded Secrets**: Never hardcode credentials, client IDs, client secrets, database passwords, or private URLs in the source code. Always read them from `.env` or system environment variables.
