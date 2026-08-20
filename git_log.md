@@ -8,6 +8,7 @@
 
 | วันที่-เวลา | Commit Hash | Commit Message | คำสั่งกู้คืน / ย้อนกลับ (Rollback) |
 |---|---|---|---|
+| 2026-08-20 10:40:35 | `2a2ccbf` | docs: บันทึกกฎการ commit/push อัตโนมัติและสร้างไฟล์ git_log.md สำหรับบันทึกประวัติการกู้คืน | `git checkout 2a2ccbf` |
 | 2026-08-19 19:11:09 | `effa8ee` | chore: ignore .key license files | `git checkout effa8ee` |
 | 2026-08-19 19:04:39 | `5f62f25` | fix(fpsso): replace target=_blank with hidden iframe in handshake to bypass Chrome popup blocker | `git checkout 5f62f25` |
 | 2026-08-19 16:16:44 | `067fc69` | fix(fpsso): form target=_blank so FortiGate auth opens in new tab, main tab setTimeout redirect to /sso/status works for all auth methods | `git checkout 067fc69` |
