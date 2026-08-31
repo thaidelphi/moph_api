@@ -194,21 +194,17 @@ begin
     '        <h2>กำลังอนุญาตสิทธิ์เข้าใช้งานอินเทอร์เน็ต</h2>' + LineEnding +
     '        <p>กรุณารอสักครู่ ระบบกำลังลงทะเบียนอุปกรณ์ของท่านกับทาง FortiGate...</p>' + LineEnding +
     '    </div>' + LineEnding +
-    '    <iframe name="fg_frame" style="display:none" title="FortiGate Auth"></iframe>' + LineEnding +
-    '    <form id="fortigate_form" action="' + HtmlEncode(TargetUrl) + '" method="post" style="display: none;" target="fg_frame">' + LineEnding +
+    '<form id="fortigate_form" action="' + HtmlEncode(TargetUrl) + '" method="post" style="display: none;">' + LineEnding +
     '        <input type="hidden" name="username" value="' + HtmlEncode(Data.Username) + '">' + LineEnding +
     '        <input type="hidden" name="password" value="' + HtmlEncode(Data.PlainPass) + '">' + LineEnding +
     '        <input type="hidden" name="magic" value="' + HtmlEncode(Data.Magic) + '">' + LineEnding +
+    '        <input type="hidden" name="4Tredir" value="' + HtmlEncode(RedirUrl) + '">' + LineEnding +
     '        <input type="hidden" name="redir" value="' + HtmlEncode(RedirUrl) + '">' + LineEnding +
     '    </form>' + LineEnding +
     '    <script>' + LineEnding +
     '        window.addEventListener("load", function() {' + LineEnding +
-    '            // Submit form ไปยัง FortiGate ผ่าน hidden iframe (ไม่ถูก popup blocker บล็อก)' + LineEnding +
-    '            // main tab ยังอยู่หน้านี้ ทำให้ setTimeout redirect ไป /sso/status ทำงานได้' + LineEnding +
+    '            // ส่งฟอร์มไปยัง FortiGate บนหน้าต่างหลัก (Top-level submit) เพื่อให้รับรอง SSL และ Handshake สำเร็จ 100%' + LineEnding +
     '            document.getElementById("fortigate_form").submit();' + LineEnding +
-    '            setTimeout(function() {' + LineEnding +
-    '                window.location.replace(' + QuotedStr(RedirUrl) + ');' + LineEnding +
-    '            }, 2000);' + LineEnding +
     '        });' + LineEnding +
     '    </script>' + LineEnding +
     '</body>' + LineEnding +
