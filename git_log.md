@@ -8,6 +8,7 @@
 
 | วันที่-เวลา | Commit Hash | Commit Message | คำสั่งกู้คืน / ย้อนกลับ (Rollback) |
 |---|---|---|---|
+| 2026-08-31 13:44:00 | `1bc670c` | chore: อัปเดต license.key สำหรับเครื่องปัจจุบันและ binary keygen | `git checkout 1bc670c` |
 | 2026-08-31 11:45:00 | `38ed5ba` | fix(fpsso): ยกเลิกการเพิ่มแถว MD5-Password ในตาราง radcheck และปรับ Handshake เป็น Top-level form submit | `git checkout 38ed5ba` |
 | 2026-08-20 10:40:35 | `2a2ccbf` | docs: บันทึกกฎการ commit/push อัตโนมัติและสร้างไฟล์ git_log.md สำหรับบันทึกประวัติการกู้คืน | `git checkout 2a2ccbf` |
 | 2026-08-19 19:11:09 | `effa8ee` | chore: ignore .key license files | `git checkout effa8ee` |
